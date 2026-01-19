@@ -3,7 +3,16 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import Dashboard from "./pages/Dashboard";
+import Orders from "./pages/Orders";
+import Clients from "./pages/Clients";
+import Motorcyclists from "./pages/Motorcyclists";
+import Payments from "./pages/Payments";
+import CashFlow from "./pages/CashFlow";
+import Recurring from "./pages/Recurring";
+import Categories from "./pages/Categories";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,8 +24,16 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/clients" element={<Clients />} />
+          <Route path="/motorcyclists" element={<Motorcyclists />} />
+          <Route path="/payments" element={<Payments />} />
+          <Route path="/cash-flow" element={<CashFlow />} />
+          <Route path="/recurring" element={<Recurring />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
