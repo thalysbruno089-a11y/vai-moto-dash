@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
 
 const navigation = [
@@ -26,8 +27,30 @@ const navigation = [
   { name: "Relatórios", href: "/reports", icon: FileText },
 ];
 
+const roleLabels: Record<string, string> = {
+  admin: 'Administrador',
+  manager: 'Gerente',
+  finance: 'Financeiro',
+};
+
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar">
@@ -60,7 +83,7 @@ const Sidebar = () => {
             <Settings className="h-5 w-5" />
             <span>Configurações</span>
           </Link>
-          <button className="sidebar-link w-full text-left">
+          <button onClick={handleSignOut} className="sidebar-link w-full text-left">
             <LogOut className="h-5 w-5" />
             <span>Sair</span>
           </button>
@@ -70,14 +93,16 @@ const Sidebar = () => {
         <div className="border-t border-sidebar-border p-4">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full bg-sidebar-accent flex items-center justify-center">
-              <span className="text-sm font-medium text-sidebar-foreground">AD</span>
+              <span className="text-sm font-medium text-sidebar-foreground">
+                {profile?.name ? getInitials(profile.name) : 'U'}
+              </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-sidebar-foreground truncate">
-                Admin
+                {profile?.name || 'Usuário'}
               </p>
               <p className="text-xs text-sidebar-muted truncate">
-                Empresa Demo
+                {profile?.role ? roleLabels[profile.role] : 'Carregando...'}
               </p>
             </div>
           </div>
