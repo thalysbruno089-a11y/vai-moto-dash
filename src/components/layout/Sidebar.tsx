@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -32,14 +33,8 @@ const Sidebar = () => {
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar">
       <div className="flex h-full flex-col">
         {/* Logo */}
-        <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Bike className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-sidebar-foreground">Vai Moto</h1>
-            <p className="text-xs text-sidebar-muted">Gestão de Entregas</p>
-          </div>
+        <div className="flex h-20 items-center justify-center px-4 border-b border-sidebar-border bg-white">
+          <img src={logo} alt="Vai Moto" className="h-14 w-auto object-contain" />
         </div>
 
         {/* Navigation */}
