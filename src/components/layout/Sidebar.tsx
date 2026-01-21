@@ -36,7 +36,7 @@ const roleLabels: Record<string, string> = {
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, canAccessSettings } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -79,10 +79,12 @@ const Sidebar = () => {
 
         {/* Bottom Actions */}
         <div className="border-t border-sidebar-border p-3 space-y-1">
-          <Link to="/settings" className="sidebar-link">
-            <Settings className="h-5 w-5" />
-            <span>Configurações</span>
-          </Link>
+          {canAccessSettings && (
+            <Link to="/settings" className="sidebar-link">
+              <Settings className="h-5 w-5" />
+              <span>Configurações</span>
+            </Link>
+          )}
           <button onClick={handleSignOut} className="sidebar-link w-full text-left">
             <LogOut className="h-5 w-5" />
             <span>Sair</span>
