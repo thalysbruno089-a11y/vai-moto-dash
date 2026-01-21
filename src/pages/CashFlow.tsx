@@ -18,48 +18,82 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BadgeStatus } from "@/components/ui/badge-status";
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Wallet, TrendingUp, TrendingDown, PiggyBank, ArrowUpRight, ArrowDownRight, MoreHorizontal, Pencil, Trash2, Loader2 } from "lucide-react";
+import { useCashFlow, useDeleteCashFlow, CashFlowWithCategory } from "@/hooks/useCashFlow";
+import { CashFlowFormDialog } from "@/components/cashflow/CashFlowFormDialog";
+import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import { Database } from "@/integrations/supabase/types";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-interface Transaction {
-  id: string;
-  description: string;
-  category: string;
-  type: "income" | "expense";
-  amount: string;
-  date: string;
-  recurring: boolean;
-}
-
-const mockTransactions: Transaction[] = [
-  { id: "1", description: "Pagamento Cliente - Restaurante Sabor", category: "Receita de Entregas", type: "income", amount: "R$ 2.500,00", date: "19/01/2025", recurring: false },
-  { id: "2", description: "Salário Motoboys - Semana 03", category: "Salários", type: "expense", amount: "R$ 8.500,00", date: "19/01/2025", recurring: false },
-  { id: "3", description: "Manutenção Motos", category: "Manutenção", type: "expense", amount: "R$ 450,00", date: "18/01/2025", recurring: false },
-  { id: "4", description: "Aluguel Escritório", category: "Aluguel", type: "expense", amount: "R$ 2.800,00", date: "15/01/2025", recurring: true },
-  { id: "5", description: "Pagamento Cliente - Farmácia Central", category: "Receita de Entregas", type: "income", amount: "R$ 1.850,00", date: "15/01/2025", recurring: false },
-  { id: "6", description: "Combustível", category: "Combustível", type: "expense", amount: "R$ 1.200,00", date: "14/01/2025", recurring: false },
-  { id: "7", description: "Pagamento Cliente - Loja Tech", category: "Receita de Entregas", type: "income", amount: "R$ 3.200,00", date: "12/01/2025", recurring: false },
-  { id: "8", description: "Conta de Telefone", category: "Telecomunicações", type: "expense", amount: "R$ 380,00", date: "10/01/2025", recurring: true },
-];
+type FlowType = Database['public']['Enums']['flow_type'];
 
 const CashFlow = () => {
-  const [periodFilter, setPeriodFilter] = useState<string>("month");
   const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<CashFlowWithCategory | null>(null);
+  const [defaultType, setDefaultType] = useState<FlowType>('revenue');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
 
-  const filteredTransactions = mockTransactions.filter((t) => {
+  const { data: entries, isLoading } = useCashFlow();
+  const deleteCashFlow = useDeleteCashFlow();
+
+  const filteredEntries = (entries || []).filter((t) => {
     const matchesType = typeFilter === "all" || t.type === typeFilter;
     return matchesType;
   });
 
-  const incomeTotal = mockTransactions
-    .filter(t => t.type === "income")
-    .reduce((acc, t) => acc + parseFloat(t.amount.replace(/[^\d,]/g, '').replace(',', '.')), 0);
+  const incomeTotal = (entries || [])
+    .filter(t => t.type === "revenue")
+    .reduce((acc, t) => acc + Number(t.value), 0);
   
-  const expenseTotal = mockTransactions
+  const expenseTotal = (entries || [])
     .filter(t => t.type === "expense")
-    .reduce((acc, t) => acc + parseFloat(t.amount.replace(/[^\d,]/g, '').replace(',', '.')), 0);
+    .reduce((acc, t) => acc + Number(t.value), 0);
 
   const balance = incomeTotal - expenseTotal;
+
+  const handleEdit = (entry: CashFlowWithCategory) => {
+    setSelectedEntry(entry);
+    setFormOpen(true);
+  };
+
+  const handleCreate = (type: FlowType) => {
+    setSelectedEntry(null);
+    setDefaultType(type);
+    setFormOpen(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setEntryToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (entryToDelete) {
+      await deleteCashFlow.mutateAsync(entryToDelete);
+      setDeleteDialogOpen(false);
+      setEntryToDelete(null);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
+  const formatDate = (dateStr: string) => {
+    return format(new Date(dateStr), "dd/MM/yyyy", { locale: ptBR });
+  };
 
   return (
     <MainLayout title="Fluxo de Caixa" subtitle="Controle financeiro completo">
@@ -67,25 +101,25 @@ const CashFlow = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard
           title="Saldo Atual"
-          value={`R$ ${balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          value={formatCurrency(balance)}
           icon={<Wallet className="h-6 w-6 text-primary-foreground" />}
           variant="primary"
         />
         <StatCard
           title="Total de Entradas"
-          value={`R$ ${incomeTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          value={formatCurrency(incomeTotal)}
           icon={<TrendingUp className="h-6 w-6 text-success-foreground" />}
           variant="success"
         />
         <StatCard
           title="Total de Saídas"
-          value={`R$ ${expenseTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          value={formatCurrency(expenseTotal)}
           icon={<TrendingDown className="h-6 w-6 text-destructive-foreground" />}
           variant="destructive"
         />
         <StatCard
-          title="Balanço Mensal"
-          value={`R$ ${balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+          title="Balanço"
+          value={formatCurrency(balance)}
           icon={<PiggyBank className="h-6 w-6 text-primary" />}
           trend={{ value: "12%", positive: balance > 0 }}
         />
@@ -93,49 +127,24 @@ const CashFlow = () => {
 
       {/* Filters */}
       <div className="filter-bar">
-        <Select value={periodFilter} onValueChange={setPeriodFilter}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Período" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="month">Este mês</SelectItem>
-            <SelectItem value="quarter">Trimestre</SelectItem>
-            <SelectItem value="semester">Semestre</SelectItem>
-            <SelectItem value="year">Este ano</SelectItem>
-          </SelectContent>
-        </Select>
-
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="income">Entradas</SelectItem>
+            <SelectItem value="revenue">Entradas</SelectItem>
             <SelectItem value="expense">Saídas</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas categorias</SelectItem>
-            <SelectItem value="entregas">Receita de Entregas</SelectItem>
-            <SelectItem value="salarios">Salários</SelectItem>
-            <SelectItem value="combustivel">Combustível</SelectItem>
-            <SelectItem value="manutencao">Manutenção</SelectItem>
           </SelectContent>
         </Select>
 
         <div className="flex-1" />
 
-        <Button variant="outline">
+        <Button variant="outline" onClick={() => handleCreate('expense')}>
           <TrendingDown className="mr-2 h-4 w-4" />
           Nova Saída
         </Button>
-        <Button>
+        <Button onClick={() => handleCreate('revenue')}>
           <TrendingUp className="mr-2 h-4 w-4" />
           Nova Entrada
         </Button>
@@ -143,57 +152,114 @@ const CashFlow = () => {
 
       {/* Table */}
       <div className="data-table">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
-              <TableHead>Descrição</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead className="text-right">Valor</TableHead>
-              <TableHead>Recorrente</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTransactions.map((transaction) => (
-              <TableRow key={transaction.id} className="border-border">
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                      transaction.type === "income" ? "bg-success/10" : "bg-destructive/10"
-                    }`}>
-                      {transaction.type === "income" ? (
-                        <ArrowUpRight className="h-5 w-5 text-success" />
-                      ) : (
-                        <ArrowDownRight className="h-5 w-5 text-destructive" />
-                      )}
-                    </div>
-                    {transaction.description}
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{transaction.category}</TableCell>
-                <TableCell className="text-muted-foreground">{transaction.date}</TableCell>
-                <TableCell className={`text-right font-semibold ${
-                  transaction.type === "income" ? "text-success" : "text-destructive"
-                }`}>
-                  {transaction.type === "income" ? "+" : "-"} {transaction.amount}
-                </TableCell>
-                <TableCell>
-                  {transaction.recurring ? (
-                    <BadgeStatus status="active">Sim</BadgeStatus>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : filteredEntries.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            {entries?.length === 0 
+              ? "Nenhum lançamento cadastrado. Clique em 'Nova Entrada' ou 'Nova Saída' para começar."
+              : "Nenhum lançamento encontrado com os filtros aplicados."}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead>Descrição</TableHead>
+                <TableHead>Categoria</TableHead>
+                <TableHead>Data</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
+                <TableHead>Recorrente</TableHead>
+                <TableHead className="w-[70px]">Ações</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredEntries.map((entry) => (
+                <TableRow key={entry.id} className="border-border">
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                        entry.type === "revenue" ? "bg-success/10" : "bg-destructive/10"
+                      }`}>
+                        {entry.type === "revenue" ? (
+                          <ArrowUpRight className="h-5 w-5 text-success" />
+                        ) : (
+                          <ArrowDownRight className="h-5 w-5 text-destructive" />
+                        )}
+                      </div>
+                      {entry.description || "Sem descrição"}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {entry.categories?.name || "-"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(entry.flow_date)}
+                  </TableCell>
+                  <TableCell className={`text-right font-semibold ${
+                    entry.type === "revenue" ? "text-success" : "text-destructive"
+                  }`}>
+                    {entry.type === "revenue" ? "+" : "-"} {formatCurrency(Number(entry.value))}
+                  </TableCell>
+                  <TableCell>
+                    {entry.is_recurring ? (
+                      <BadgeStatus status="active">Sim</BadgeStatus>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEdit(entry)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => handleDeleteClick(entry.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {/* Summary */}
       <div className="mt-4 text-sm text-muted-foreground">
-        Mostrando {filteredTransactions.length} transações
+        Mostrando {filteredEntries.length} lançamentos
       </div>
+
+      {/* Form Dialog */}
+      <CashFlowFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        entry={selectedEntry}
+        defaultType={defaultType}
+      />
+
+      {/* Delete Confirmation */}
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title="Excluir Lançamento"
+        description="Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita."
+        isLoading={deleteCashFlow.isPending}
+      />
     </MainLayout>
   );
 };
