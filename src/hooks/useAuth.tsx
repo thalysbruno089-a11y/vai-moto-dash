@@ -16,8 +16,8 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string, companyName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  canAccessSettings: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -90,52 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const signUp = async (email: string, password: string, name: string, companyName: string) => {
-    // First create the company
-    const { data: companyData, error: companyError } = await supabase
-      .from('companies')
-      .insert({ name: companyName })
-      .select()
-      .single();
-
-    if (companyError) {
-      return { error: new Error('Erro ao criar empresa: ' + companyError.message) };
-    }
-
-    // Then sign up the user
-    const redirectUrl = `${window.location.origin}/`;
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    });
-
-    if (authError) {
-      // Clean up company if auth fails
-      await supabase.from('companies').delete().eq('id', companyData.id);
-      return { error: authError };
-    }
-
-    if (authData.user) {
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          company_id: companyData.id,
-          name,
-          role: 'admin',
-        });
-
-      if (profileError) {
-        return { error: new Error('Erro ao criar perfil: ' + profileError.message) };
-      }
-    }
-
-    return { error: null };
-  };
+  // Removed signUp - users are pre-created
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -144,8 +99,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(null);
   };
 
+  // Only admin can access settings
+  const canAccessSettings = profile?.role === 'admin';
+
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signIn, signOut, canAccessSettings }}>
       {children}
     </AuthContext.Provider>
   );
