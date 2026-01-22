@@ -29,6 +29,7 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [shift, setShift] = useState<ShiftType>('day');
   const [status, setStatus] = useState<StatusType>('active');
 
@@ -42,12 +43,14 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
       setName(motoboy.name);
       setCpf(motoboy.cpf || '');
       setPhone(motoboy.phone || '');
+      setAddress((motoboy as any).address || '');
       setShift(motoboy.shift);
       setStatus(motoboy.status);
     } else {
       setName('');
       setCpf('');
       setPhone('');
+      setAddress('');
       setShift('day');
       setStatus('active');
     }
@@ -56,15 +59,18 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const data = { name, cpf: cpf || null, phone: phone || null, shift, status };
+    const data = { name, cpf: cpf || null, phone: phone || null, address: address || null, shift, status };
     
-    if (isEditing && motoboy) {
-      await updateMotoboy.mutateAsync({ id: motoboy.id, ...data });
-    } else {
-      await createMotoboy.mutateAsync(data);
+    try {
+      if (isEditing && motoboy) {
+        await updateMotoboy.mutateAsync({ id: motoboy.id, ...data });
+      } else {
+        await createMotoboy.mutateAsync(data);
+      }
+      onOpenChange(false);
+    } catch (error) {
+      // Error is handled by the mutation's onError callback
     }
-    
-    onOpenChange(false);
   };
 
   return (
@@ -105,6 +111,17 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
               onChange={(e) => setPhone(e.target.value)}
               placeholder="(00) 00000-0000"
               maxLength={15}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Endereço</Label>
+            <Input
+              id="address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Rua, número, bairro, cidade"
+              maxLength={200}
             />
           </div>
 

@@ -1,13 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
-  Package,
-  Users,
   Bike,
   CreditCard,
   TrendingUp,
-  RefreshCw,
-  FolderOpen,
   FileText,
   Settings,
   LogOut,
@@ -17,13 +13,9 @@ import logo from "@/assets/logo.png";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Pedidos", href: "/orders", icon: Package },
-  { name: "Clientes", href: "/clients", icon: Users },
   { name: "Motoboys", href: "/motorcyclists", icon: Bike },
   { name: "Pagamentos", href: "/payments", icon: CreditCard },
   { name: "Fluxo de Caixa", href: "/cash-flow", icon: TrendingUp },
-  { name: "Recorrências", href: "/recurring", icon: RefreshCw },
-  { name: "Categorias", href: "/categories", icon: FolderOpen },
   { name: "Relatórios", href: "/reports", icon: FileText },
 ];
 

@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Loader2 } from 'lucide-react';
 import { CashFlowEntry, useCreateCashFlow, useUpdateCashFlow } from '@/hooks/useCashFlow';
-import { useCategories } from '@/hooks/useCategories';
 import { Database } from '@/integrations/supabase/types';
 
 type FlowType = Database['public']['Enums']['flow_type'];
@@ -24,43 +23,29 @@ export function CashFlowFormDialog({ open, onOpenChange, entry, defaultType = 'r
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
   const [type, setType] = useState<FlowType>(defaultType);
-  const [categoryId, setCategoryId] = useState<string>('');
   const [flowDate, setFlowDate] = useState(new Date().toISOString().split('T')[0]);
   const [isRecurring, setIsRecurring] = useState(false);
 
-  const { data: categories } = useCategories();
   const createCashFlow = useCreateCashFlow();
   const updateCashFlow = useUpdateCashFlow();
   const isLoading = createCashFlow.isPending || updateCashFlow.isPending;
   const isEditing = !!entry;
-
-  // Filter categories by type
-  const filteredCategories = categories?.filter(c => c.type === type) || [];
 
   useEffect(() => {
     if (entry) {
       setDescription(entry.description || '');
       setValue(entry.value.toString());
       setType(entry.type);
-      setCategoryId(entry.category_id || '');
       setFlowDate(entry.flow_date);
       setIsRecurring(entry.is_recurring);
     } else {
       setDescription('');
       setValue('');
       setType(defaultType);
-      setCategoryId('');
       setFlowDate(new Date().toISOString().split('T')[0]);
       setIsRecurring(false);
     }
   }, [entry, open, defaultType]);
-
-  // Reset category when type changes
-  useEffect(() => {
-    if (!isEditing) {
-      setCategoryId('');
-    }
-  }, [type, isEditing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,18 +54,21 @@ export function CashFlowFormDialog({ open, onOpenChange, entry, defaultType = 'r
       description: description || null,
       value: parseFloat(value) || 0,
       type,
-      category_id: categoryId || null,
+      category_id: null,
       flow_date: flowDate,
       is_recurring: isRecurring,
     };
     
-    if (isEditing && entry) {
-      await updateCashFlow.mutateAsync({ id: entry.id, ...data });
-    } else {
-      await createCashFlow.mutateAsync(data);
+    try {
+      if (isEditing && entry) {
+        await updateCashFlow.mutateAsync({ id: entry.id, ...data });
+      } else {
+        await createCashFlow.mutateAsync(data);
+      }
+      onOpenChange(false);
+    } catch (error) {
+      // Error is handled by the mutation's onError callback
     }
-    
-    onOpenChange(false);
   };
 
   return (
@@ -128,23 +116,6 @@ export function CashFlowFormDialog({ open, onOpenChange, entry, defaultType = 'r
               <SelectContent>
                 <SelectItem value="revenue">Entrada</SelectItem>
                 <SelectItem value="expense">Saída</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoria</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Sem categoria</SelectItem>
-                {filteredCategories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </div>
