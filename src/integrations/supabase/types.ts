@@ -167,6 +167,7 @@ export type Database = {
       }
       motoboys: {
         Row: {
+          address: string | null
           company_id: string
           cpf: string | null
           created_at: string
@@ -178,6 +179,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address?: string | null
           company_id: string
           cpf?: string | null
           created_at?: string
@@ -189,6 +191,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address?: string | null
           company_id?: string
           cpf?: string | null
           created_at?: string
