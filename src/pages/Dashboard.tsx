@@ -1,140 +1,120 @@
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Package, Users, Bike } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, PiggyBank, Bike } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCashFlow } from "@/hooks/useCashFlow";
+import { useMotoboys } from "@/hooks/useMotoboys";
 
 const Dashboard = () => {
+  const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
+  const { data: motoboys, isLoading: loadingMotoboys } = useMotoboys();
+
+  // Calculate financial stats from real data
+  const incomeTotal = cashFlowEntries?.filter(e => e.type === 'revenue').reduce((sum, e) => sum + Number(e.value), 0) || 0;
+  const expenseTotal = cashFlowEntries?.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.value), 0) || 0;
+  const balance = incomeTotal - expenseTotal;
+
+  // Get active motoboys count
+  const activeMotoboys = motoboys?.filter(m => m.status === 'active').length || 0;
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
+  const isLoading = loadingCashFlow || loadingMotoboys;
+
   return (
-    <MainLayout title="Dashboard" subtitle="Visão geral da sua empresa">
+    <MainLayout title="Dashboard" subtitle="Visão geral financeira da sua empresa">
       {/* Financial Stats */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard
           title="Saldo Atual"
-          value="R$ 45.250,00"
+          value={isLoading ? "..." : formatCurrency(balance)}
           icon={<Wallet className="h-6 w-6 text-primary" />}
           variant="primary"
         />
         <StatCard
           title="Total de Entradas"
-          value="R$ 128.500,00"
+          value={isLoading ? "..." : formatCurrency(incomeTotal)}
           icon={<TrendingUp className="h-6 w-6 text-success" />}
-          trend={{ value: "12%", positive: true }}
           variant="success"
         />
         <StatCard
           title="Total de Saídas"
-          value="R$ 83.250,00"
+          value={isLoading ? "..." : formatCurrency(expenseTotal)}
           icon={<TrendingDown className="h-6 w-6 text-destructive" />}
-          trend={{ value: "5%", positive: false }}
           variant="destructive"
         />
         <StatCard
-          title="Balanço Mensal"
-          value="R$ 45.250,00"
+          title="Balanço Geral"
+          value={isLoading ? "..." : formatCurrency(balance)}
           icon={<PiggyBank className="h-6 w-6 text-primary" />}
-          trend={{ value: "8%", positive: true }}
+          variant={balance >= 0 ? "success" : "destructive"}
         />
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-6 md:grid-cols-3 mb-8">
-        <StatCard
-          title="Pedidos Hoje"
-          value="47"
-          icon={<Package className="h-6 w-6 text-primary" />}
-          trend={{ value: "15%", positive: true }}
-        />
-        <StatCard
-          title="Clientes Ativos"
-          value="234"
-          icon={<Users className="h-6 w-6 text-primary" />}
-          trend={{ value: "8", positive: true }}
-        />
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
         <StatCard
           title="Motoboys Ativos"
-          value="18"
+          value={isLoading ? "..." : String(activeMotoboys)}
+          icon={<Bike className="h-6 w-6 text-primary" />}
+        />
+        <StatCard
+          title="Total de Motoboys"
+          value={isLoading ? "..." : String(motoboys?.length || 0)}
           icon={<Bike className="h-6 w-6 text-primary" />}
         />
       </div>
 
-      {/* Recent Activity */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Motoboys em Atividade */}
+      <div className="grid gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Últimos Pedidos</CardTitle>
+            <CardTitle>Motoboys Cadastrados</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { id: "#1234", client: "Restaurante Sabor", value: "R$ 25,00", status: "Entregue", motoboy: "João Silva" },
-                { id: "#1233", client: "Farmácia Central", value: "R$ 18,00", status: "Em trânsito", motoboy: "Carlos Santos" },
-                { id: "#1232", client: "Loja Tech", value: "R$ 35,00", status: "Aguardando", motoboy: "Pedro Lima" },
-                { id: "#1231", client: "Padaria Pão Quente", value: "R$ 12,00", status: "Entregue", motoboy: "Ana Costa" },
-              ].map((order) => (
-                <div key={order.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                      <Package className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{order.client}</p>
-                      <p className="text-sm text-muted-foreground">{order.id} • {order.motoboy}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium text-foreground">{order.value}</p>
-                    <p className={`text-sm ${
-                      order.status === "Entregue" 
-                        ? "text-success" 
-                        : order.status === "Em trânsito" 
-                          ? "text-warning" 
-                          : "text-muted-foreground"
-                    }`}>
-                      {order.status}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Motoboys em Atividade</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[
-                { name: "João Silva", shift: "Diurno", deliveries: 12, status: "online" },
-                { name: "Carlos Santos", shift: "Diurno", deliveries: 8, status: "online" },
-                { name: "Pedro Lima", shift: "Noturno", deliveries: 5, status: "busy" },
-                { name: "Ana Costa", shift: "Estrela", deliveries: 15, status: "online" },
-              ].map((motoboy) => (
-                <div key={motoboy.name} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                        <span className="text-sm font-medium text-primary">
-                          {motoboy.name.split(" ").map(n => n[0]).join("")}
-                        </span>
+            {isLoading ? (
+              <p className="text-muted-foreground">Carregando...</p>
+            ) : motoboys && motoboys.length > 0 ? (
+              <div className="space-y-4">
+                {motoboys.slice(0, 5).map((motoboy) => (
+                  <div key={motoboy.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                          <span className="text-sm font-medium text-primary">
+                            {motoboy.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                          </span>
+                        </div>
+                        <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${
+                          motoboy.status === "active" ? "bg-success" : "bg-muted"
+                        }`} />
                       </div>
-                      <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${
-                        motoboy.status === "online" ? "bg-success" : "bg-warning"
-                      }`} />
+                      <div>
+                        <p className="font-medium text-foreground">{motoboy.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {motoboy.shift === 'day' ? 'Diurno' : motoboy.shift === 'night' ? 'Noturno' : 'Estrela'}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">{motoboy.name}</p>
-                      <p className="text-sm text-muted-foreground">{motoboy.shift}</p>
+                    <div className="text-right">
+                      <p className={`text-sm font-medium ${motoboy.status === "active" ? "text-success" : "text-muted-foreground"}`}>
+                        {motoboy.status === "active" ? "Ativo" : "Inativo"}
+                      </p>
+                      {motoboy.phone && (
+                        <p className="text-sm text-muted-foreground">{motoboy.phone}</p>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-medium text-foreground">{motoboy.deliveries}</p>
-                    <p className="text-sm text-muted-foreground">entregas</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">Nenhum motoboy cadastrado</p>
+            )}
           </CardContent>
         </Card>
       </div>
