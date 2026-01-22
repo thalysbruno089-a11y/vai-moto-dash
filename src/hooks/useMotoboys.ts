@@ -27,10 +27,15 @@ export const useCreateMotoboy = () => {
   
   return useMutation({
     mutationFn: async (motoboy: Omit<MotoboyInsert, 'company_id'>) => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
       // Get user's company_id
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
+        .eq('id', user.id)
         .single();
       
       if (!profile?.company_id) throw new Error('Empresa não encontrada');
