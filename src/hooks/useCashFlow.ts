@@ -34,10 +34,14 @@ export const useCreateCashFlow = () => {
   
   return useMutation({
     mutationFn: async (entry: Omit<CashFlowInsert, 'company_id'>) => {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('Usuário não autenticado');
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
-        .single();
+        .eq('id', user.id)
+        .maybeSingle();
       
       if (!profile?.company_id) throw new Error('Empresa não encontrada');
 

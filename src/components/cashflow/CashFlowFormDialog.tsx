@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,6 +78,13 @@ export function CashFlowFormDialog({ open, onOpenChange, entry, defaultType = 'r
           <DialogTitle>
             {isEditing ? 'Editar Lançamento' : type === 'revenue' ? 'Nova Entrada' : 'Nova Saída'}
           </DialogTitle>
+          <DialogDescription>
+            {isEditing 
+              ? 'Edite os dados do lançamento financeiro.' 
+              : type === 'revenue' 
+                ? 'Registre uma nova entrada no fluxo de caixa.' 
+                : 'Registre uma nova saída no fluxo de caixa.'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -140,7 +147,7 @@ export function CashFlowFormDialog({ open, onOpenChange, entry, defaultType = 'r
             <Label htmlFor="recurring">Lançamento recorrente</Label>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>

@@ -34,10 +34,14 @@ export const useCreatePayment = () => {
   
   return useMutation({
     mutationFn: async (payment: Omit<PaymentInsert, 'company_id'>) => {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('Usuário não autenticado');
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('company_id')
-        .single();
+        .eq('id', user.id)
+        .maybeSingle();
       
       if (!profile?.company_id) throw new Error('Empresa não encontrada');
 
@@ -52,6 +56,7 @@ export const useCreatePayment = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
+      queryClient.invalidateQueries({ queryKey: ['cash_flow'] });
       toast.success('Pagamento registrado com sucesso!');
     },
     onError: (error) => {

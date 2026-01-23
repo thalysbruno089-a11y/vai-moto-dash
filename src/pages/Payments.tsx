@@ -25,8 +25,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CreditCard, CheckCircle2, Clock, Search, MoreHorizontal, Check, Trash2, Loader2 } from "lucide-react";
-import { usePayments, useMarkPaymentAsPaid, useDeletePayment, PaymentWithMotoboy } from "@/hooks/usePayments";
+import { CreditCard, CheckCircle2, Clock, Search, MoreHorizontal, Check, Trash2, Loader2, Plus } from "lucide-react";
+import { usePayments, useMarkPaymentAsPaid, useDeletePayment } from "@/hooks/usePayments";
+import { PaymentFormDialog } from "@/components/payments/PaymentFormDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -36,6 +37,7 @@ const Payments = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
 
   const { data: payments, isLoading } = usePayments();
   const markAsPaid = useMarkPaymentAsPaid();
@@ -130,6 +132,11 @@ const Payments = () => {
             <SelectItem value="pending">Em aberto</SelectItem>
           </SelectContent>
         </Select>
+
+        <Button onClick={() => setFormOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Registrar Pagamento
+        </Button>
       </div>
 
       {/* Table */}
@@ -218,6 +225,9 @@ const Payments = () => {
       <div className="mt-4 text-sm text-muted-foreground">
         Mostrando {filteredPayments.length} de {payments?.length || 0} pagamentos
       </div>
+
+      {/* Payment Form Dialog */}
+      <PaymentFormDialog open={formOpen} onOpenChange={setFormOpen} />
 
       {/* Delete Confirmation */}
       <DeleteConfirmDialog
