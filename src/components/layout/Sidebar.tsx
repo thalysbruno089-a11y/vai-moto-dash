@@ -4,6 +4,7 @@ import {
   Bike,
   CreditCard,
   TrendingUp,
+  Tags,
   FileText,
   Settings,
   LogOut,
@@ -16,6 +17,7 @@ const navigation = [
   { name: "Motoboys", href: "/motorcyclists", icon: Bike },
   { name: "Pagamentos", href: "/payments", icon: CreditCard },
   { name: "Fluxo de Caixa", href: "/cash-flow", icon: TrendingUp },
+  { name: "Categorias", href: "/categories", icon: Tags },
   { name: "Relatórios", href: "/reports", icon: FileText },
 ];
 
