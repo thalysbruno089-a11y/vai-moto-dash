@@ -3,6 +3,13 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -10,14 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BadgeStatus } from "@/components/ui/badge-status";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tags, Search, MoreHorizontal, Edit, Trash2, Loader2, Plus, TrendingUp, TrendingDown } from "lucide-react";
+import { Tags, Search, MoreHorizontal, Edit, Trash2, Loader2, Plus, TrendingDown, Filter } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { CategoryFormDialog } from "@/components/categories/CategoryFormDialog";
@@ -26,6 +32,7 @@ import StatCard from "@/components/dashboard/StatCard";
 
 const Categories = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -35,9 +42,14 @@ const Categories = () => {
   const { data: cashFlow } = useCashFlow();
   const deleteCategory = useDeleteCategory();
 
-  const filteredCategories = (categories || []).filter((c) =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter only expense categories
+  const expenseCategories = (categories || []).filter(c => c.type === 'expense');
+
+  const filteredCategories = expenseCategories.filter((c) => {
+    const matchesSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === "all" || c.id === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   // Calcular totais por categoria
   const getCategoryTotal = (categoryId: string) => {
@@ -46,11 +58,7 @@ const Categories = () => {
       .reduce((acc, entry) => acc + Number(entry.value), 0);
   };
 
-  const expenseCategories = (categories || []).filter(c => c.type === 'expense');
-  const revenueCategories = (categories || []).filter(c => c.type === 'revenue');
-
   const totalExpensesByCategory = expenseCategories.reduce((acc, cat) => acc + getCategoryTotal(cat.id), 0);
-  const totalRevenuesByCategory = revenueCategories.reduce((acc, cat) => acc + getCategoryTotal(cat.id), 0);
 
   const handleEdit = (category: Category) => {
     setSelectedCategory(category);
@@ -83,12 +91,12 @@ const Categories = () => {
   };
 
   return (
-    <MainLayout title="Categorias" subtitle="Gerencie categorias de despesas e receitas">
+    <MainLayout title="Categorias" subtitle="Gerencie categorias de despesas">
       {/* Stats */}
-      <div className="grid gap-6 md:grid-cols-3 mb-8">
+      <div className="grid gap-6 md:grid-cols-2 mb-8">
         <StatCard
           title="Total de Categorias"
-          value={String(categories?.length || 0)}
+          value={String(expenseCategories.length)}
           icon={<Tags className="h-6 w-6 text-primary" />}
         />
         <StatCard
@@ -96,12 +104,6 @@ const Categories = () => {
           value={formatCurrency(totalExpensesByCategory)}
           icon={<TrendingDown className="h-6 w-6 text-destructive" />}
           variant="destructive"
-        />
-        <StatCard
-          title="Total em Receitas"
-          value={formatCurrency(totalRevenuesByCategory)}
-          icon={<TrendingUp className="h-6 w-6 text-success" />}
-          variant="success"
         />
       </div>
 
@@ -116,6 +118,21 @@ const Categories = () => {
             className="pl-9"
           />
         </div>
+
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[200px]">
+            <Filter className="mr-2 h-4 w-4" />
+            <SelectValue placeholder="Filtrar categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as categorias</SelectItem>
+            {expenseCategories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="flex-1" />
 
         <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
@@ -140,7 +157,6 @@ const Categories = () => {
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>Nome</TableHead>
-                <TableHead>Tipo</TableHead>
                 <TableHead className="text-right">Total Acumulado</TableHead>
                 <TableHead className="w-[70px]">Ações</TableHead>
               </TableRow>
@@ -150,25 +166,14 @@ const Categories = () => {
                 <TableRow key={category.id} className="border-border">
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                        category.type === 'expense' ? 'bg-destructive/10' : 'bg-success/10'
-                      }`}>
-                        {category.type === 'expense' ? (
-                          <TrendingDown className={`h-4 w-4 text-destructive`} />
-                        ) : (
-                          <TrendingUp className={`h-4 w-4 text-success`} />
-                        )}
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10">
+                        <TrendingDown className="h-4 w-4 text-destructive" />
                       </div>
                       {category.name}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <BadgeStatus status={category.type === 'expense' ? 'error' : 'success'}>
-                      {category.type === 'expense' ? 'Despesa' : 'Receita'}
-                    </BadgeStatus>
-                  </TableCell>
                   <TableCell className="text-right font-semibold">
-                    <span className={category.type === 'expense' ? 'text-destructive' : 'text-success'}>
+                    <span className="text-destructive">
                       {formatCurrency(getCategoryTotal(category.id))}
                     </span>
                   </TableCell>
@@ -203,7 +208,7 @@ const Categories = () => {
 
       {/* Summary */}
       <div className="mt-4 text-sm text-muted-foreground">
-        Mostrando {filteredCategories.length} de {categories?.length || 0} categorias
+        Mostrando {filteredCategories.length} de {expenseCategories.length} categorias
       </div>
 
       {/* Category Form Dialog */}

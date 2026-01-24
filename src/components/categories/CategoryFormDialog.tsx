@@ -28,7 +28,7 @@ export function CategoryFormDialog({ open, onOpenChange, category }: CategoryFor
   useEffect(() => {
     if (category) {
       setName(category.name);
-      setType(category.type);
+      setType('expense'); // Always expense
     } else {
       setName('');
       setType('expense');
@@ -73,19 +73,6 @@ export function CategoryFormDialog({ open, onOpenChange, category }: CategoryFor
               placeholder="Ex: Energia, Água, Aluguel..."
               required
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="type">Tipo *</Label>
-            <Select value={type} onValueChange={(v) => setType(v as FlowType)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="expense">Despesa (Saída)</SelectItem>
-                <SelectItem value="revenue">Receita (Entrada)</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <DialogFooter>
