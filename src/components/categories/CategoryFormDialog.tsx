@@ -3,12 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { Category, useCreateCategory, useUpdateCategory } from '@/hooks/useCategories';
-import { Database } from '@/integrations/supabase/types';
-
-type FlowType = Database['public']['Enums']['flow_type'];
+import { useCreateCashFlow } from '@/hooks/useCashFlow';
 
 interface CategoryFormDialogProps {
   open: boolean;
@@ -18,33 +15,45 @@ interface CategoryFormDialogProps {
 
 export function CategoryFormDialog({ open, onOpenChange, category }: CategoryFormDialogProps) {
   const [name, setName] = useState('');
-  const [type, setType] = useState<FlowType>('expense');
+  const [value, setValue] = useState('');
 
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
-  const isLoading = createCategory.isPending || updateCategory.isPending;
+  const createCashFlow = useCreateCashFlow();
+  const isLoading = createCategory.isPending || updateCategory.isPending || createCashFlow.isPending;
   const isEditing = !!category;
 
   useEffect(() => {
     if (category) {
       setName(category.name);
-      setType('expense'); // Always expense
+      setValue(''); // No value when editing
     } else {
       setName('');
-      setType('expense');
+      setValue('');
     }
   }, [category, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const data = { name, type };
-    
     try {
       if (isEditing && category) {
-        await updateCategory.mutateAsync({ id: category.id, ...data });
+        await updateCategory.mutateAsync({ id: category.id, name, type: 'expense' });
       } else {
-        await createCategory.mutateAsync(data);
+        // Create category first
+        const newCategory = await createCategory.mutateAsync({ name, type: 'expense' });
+        
+        // If value is provided, create a cash flow entry
+        if (value && parseFloat(value) > 0) {
+          await createCashFlow.mutateAsync({
+            category_id: newCategory.id,
+            type: 'expense',
+            value: parseFloat(value),
+            description: `Despesa: ${name}`,
+            flow_date: new Date().toISOString().split('T')[0],
+            is_recurring: false,
+          });
+        }
       }
       onOpenChange(false);
     } catch (error) {
@@ -59,8 +68,8 @@ export function CategoryFormDialog({ open, onOpenChange, category }: CategoryFor
           <DialogTitle>{isEditing ? 'Editar Categoria' : 'Nova Categoria'}</DialogTitle>
           <DialogDescription>
             {isEditing 
-              ? 'Edite os dados da categoria.' 
-              : 'Crie uma nova categoria para organizar suas despesas e receitas.'}
+              ? 'Edite o nome da categoria.' 
+              : 'Crie uma nova categoria e registre o valor da despesa.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -74,6 +83,24 @@ export function CategoryFormDialog({ open, onOpenChange, category }: CategoryFor
               required
             />
           </div>
+
+          {!isEditing && (
+            <div className="space-y-2">
+              <Label htmlFor="value">Valor da Despesa (R$)</Label>
+              <Input
+                id="value"
+                type="number"
+                step="0.01"
+                min="0"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="0,00"
+              />
+              <p className="text-xs text-muted-foreground">
+                Deixe em branco se não quiser registrar um valor agora.
+              </p>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
