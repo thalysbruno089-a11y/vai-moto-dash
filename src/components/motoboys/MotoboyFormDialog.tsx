@@ -22,7 +22,7 @@ const shiftLabels: Record<ShiftType, string> = {
   night: 'Noturno',
   weekend: 'Final de Semana',
   star: 'Estrela',
-  free: 'Livre',
+  free: 'Free',
 };
 
 export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDialogProps) {

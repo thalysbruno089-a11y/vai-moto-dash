@@ -37,7 +37,7 @@ const shiftLabels: Record<ShiftType, string> = {
   night: 'Noturno',
   weekend: 'Final de Semana',
   star: 'Estrela',
-  free: 'Livre',
+  free: 'Free',
 };
 
 const shiftColors: Record<ShiftType, string> = {
