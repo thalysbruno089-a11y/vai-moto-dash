@@ -9,17 +9,18 @@ const Dashboard = () => {
   const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
   const { data: motoboys, isLoading: loadingMotoboys } = useMotoboys();
 
-  // Calculate motoboy payments total (active motoboys weekly payment)
+  // Calculate motoboy payments total (only active motoboys with payment_status = 'paid')
+  // Motoboys PAY the company, so this is INCOME
   const motoboyPaymentsTotal = motoboys
-    ?.filter(m => m.status === 'active')
+    ?.filter(m => m.status === 'active' && (m as any).payment_status === 'paid')
     .reduce((sum, m) => sum + Number((m as any).weekly_payment || 0), 0) || 0;
 
   // Calculate financial stats from real data
-  const incomeTotal = cashFlowEntries?.filter(e => e.type === 'revenue').reduce((sum, e) => sum + Number(e.value), 0) || 0;
-  const cashFlowExpenseTotal = cashFlowEntries?.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.value), 0) || 0;
+  const cashFlowIncomeTotal = cashFlowEntries?.filter(e => e.type === 'revenue').reduce((sum, e) => sum + Number(e.value), 0) || 0;
+  const expenseTotal = cashFlowEntries?.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.value), 0) || 0;
   
-  // Total expenses includes cash flow expenses + motoboy payments
-  const expenseTotal = cashFlowExpenseTotal + motoboyPaymentsTotal;
+  // Total income includes cash flow revenue + motoboy payments (they pay us)
+  const incomeTotal = cashFlowIncomeTotal + motoboyPaymentsTotal;
   const balance = incomeTotal - expenseTotal;
 
   // Get active motoboys count
@@ -77,10 +78,10 @@ const Dashboard = () => {
           icon={<Bike className="h-6 w-6 text-primary" />}
         />
         <StatCard
-          title="Pagamentos Motoboys"
+          title="Receita Motoboys"
           value={isLoading ? "..." : formatCurrency(motoboyPaymentsTotal)}
-          icon={<DollarSign className="h-6 w-6 text-destructive" />}
-          variant="destructive"
+          icon={<DollarSign className="h-6 w-6 text-success" />}
+          variant="success"
         />
       </div>
 
