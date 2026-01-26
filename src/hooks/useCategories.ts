@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { categorySchema } from '@/lib/validation';
 
 export type Category = Tables<'categories'>;
 export type CategoryInsert = TablesInsert<'categories'>;
@@ -27,6 +28,13 @@ export const useCreateCategory = () => {
   
   return useMutation({
     mutationFn: async (category: Omit<CategoryInsert, 'company_id'>) => {
+      // Validate input data
+      const validationResult = categorySchema.safeParse(category);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors.map(e => e.message).join(', ');
+        throw new Error(errorMessages);
+      }
+
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error('Usuário não autenticado');
 
@@ -62,6 +70,14 @@ export const useUpdateCategory = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: CategoryUpdate & { id: string }) => {
+      // Validate input data (partial validation for updates)
+      const partialSchema = categorySchema.partial();
+      const validationResult = partialSchema.safeParse(updates);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors.map(e => e.message).join(', ');
+        throw new Error(errorMessages);
+      }
+
       const { data, error } = await supabase
         .from('categories')
         .update(updates)
