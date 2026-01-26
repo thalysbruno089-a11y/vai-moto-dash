@@ -21,7 +21,7 @@ const shiftLabels: Record<ShiftType, string> = {
   day: 'Diurno',
   night: 'Noturno',
   weekend: 'Final de Semana',
-  star: 'Estrela',
+  star: 'ESTRELINHA',
   free: 'Free',
 };
 
@@ -32,6 +32,8 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
   const [address, setAddress] = useState('');
   const [shift, setShift] = useState<ShiftType>('day');
   const [status, setStatus] = useState<StatusType>('active');
+  const [weeklyPayment, setWeeklyPayment] = useState('');
+  const [number, setNumber] = useState('');
 
   const createMotoboy = useCreateMotoboy();
   const updateMotoboy = useUpdateMotoboy();
@@ -46,6 +48,8 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
       setAddress((motoboy as any).address || '');
       setShift(motoboy.shift);
       setStatus(motoboy.status);
+      setWeeklyPayment((motoboy as any).weekly_payment?.toString() || '');
+      setNumber((motoboy as any).number || '');
     } else {
       setName('');
       setCpf('');
@@ -53,13 +57,24 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
       setAddress('');
       setShift('day');
       setStatus('active');
+      setWeeklyPayment('');
+      setNumber('');
     }
   }, [motoboy, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const data = { name, cpf: cpf || null, phone: phone || null, address: address || null, shift, status };
+    const data = { 
+      name, 
+      cpf: cpf || null, 
+      phone: phone || null, 
+      address: address || null, 
+      shift, 
+      status,
+      weekly_payment: weeklyPayment ? parseFloat(weeklyPayment) : 0,
+      number: number || null,
+    };
     
     try {
       if (isEditing && motoboy) {
@@ -111,6 +126,31 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
               onChange={(e) => setPhone(e.target.value)}
               placeholder="(00) 00000-0000"
               maxLength={15}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="number">Número do Motoboy</Label>
+            <Input
+              id="number"
+              value={number}
+              onChange={(e) => setNumber(e.target.value)}
+              placeholder="Ex: 01, 02, 03..."
+              maxLength={10}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="weeklyPayment">Valor Semanal (R$) *</Label>
+            <Input
+              id="weeklyPayment"
+              type="number"
+              step="0.01"
+              min="0"
+              value={weeklyPayment}
+              onChange={(e) => setWeeklyPayment(e.target.value)}
+              placeholder="0,00"
+              required
             />
           </div>
 
