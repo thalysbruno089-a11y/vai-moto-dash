@@ -173,10 +173,12 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          number: string | null
           phone: string | null
           shift: Database["public"]["Enums"]["shift_type"]
           status: Database["public"]["Enums"]["status_type"]
           updated_at: string
+          weekly_payment: number | null
         }
         Insert: {
           address?: string | null
@@ -185,10 +187,12 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          number?: string | null
           phone?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["status_type"]
           updated_at?: string
+          weekly_payment?: number | null
         }
         Update: {
           address?: string | null
@@ -197,10 +201,12 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          number?: string | null
           phone?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["status_type"]
           updated_at?: string
+          weekly_payment?: number | null
         }
         Relationships: [
           {

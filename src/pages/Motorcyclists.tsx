@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, Loader2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, Loader2, DollarSign } from "lucide-react";
 import { useMotoboys, useDeleteMotoboy, useUpdateMotoboy, Motoboy } from "@/hooks/useMotoboys";
 import { MotoboyFormDialog } from "@/components/motoboys/MotoboyFormDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
@@ -36,7 +36,7 @@ const shiftLabels: Record<ShiftType, string> = {
   day: 'Diurno',
   night: 'Noturno',
   weekend: 'Final de Semana',
-  star: 'Estrela',
+  star: 'ESTRELINHA',
   free: 'Free',
 };
 
@@ -67,6 +67,24 @@ const Motorcyclists = () => {
     const matchesStatus = statusFilter === "all" || m.status === statusFilter;
     return matchesSearch && matchesShift && matchesStatus;
   });
+
+  // Calculate totals by shift for active motoboys
+  const shiftTotals = Object.keys(shiftLabels).reduce((acc, shift) => {
+    const activeMotoboysInShift = (motoboys || []).filter(
+      m => m.shift === shift && m.status === 'active'
+    );
+    const total = activeMotoboysInShift.reduce(
+      (sum, m) => sum + (Number((m as any).weekly_payment) || 0), 
+      0
+    );
+    acc[shift as ShiftType] = { count: activeMotoboysInShift.length, total };
+    return acc;
+  }, {} as Record<ShiftType, { count: number; total: number }>);
+
+  // Calculate filtered totals
+  const filteredTotal = filteredMotoboys
+    .filter(m => m.status === 'active')
+    .reduce((sum, m) => sum + (Number((m as any).weekly_payment) || 0), 0);
 
   const handleEdit = (motoboy: Motoboy) => {
     setSelectedMotoboy(motoboy);
@@ -143,6 +161,36 @@ const Motorcyclists = () => {
         </Button>
       </div>
 
+      {/* Shift Totals Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+        {Object.entries(shiftLabels).map(([shift, label]) => {
+          const data = shiftTotals[shift as ShiftType] || { count: 0, total: 0 };
+          const isSelected = shiftFilter === shift;
+          return (
+            <button
+              key={shift}
+              onClick={() => setShiftFilter(isSelected ? "all" : shift)}
+              className={`p-3 rounded-lg border text-left transition-all ${
+                isSelected 
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary' 
+                  : 'border-border bg-card hover:border-primary/50'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">{label}</span>
+              </div>
+              <div className="text-lg font-bold">
+                {data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {data.count} motoboy{data.count !== 1 ? 's' : ''} ativo{data.count !== 1 ? 's' : ''}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Table */}
       <div className="data-table">
         {isLoading ? (
@@ -159,9 +207,9 @@ const Motorcyclists = () => {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-transparent">
+                <TableHead>Nº</TableHead>
                 <TableHead>Nome</TableHead>
-                <TableHead>CPF</TableHead>
-                <TableHead>Telefone</TableHead>
+                <TableHead>Valor Semanal</TableHead>
                 <TableHead>Turno</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-[70px]">Ações</TableHead>
@@ -170,6 +218,9 @@ const Motorcyclists = () => {
             <TableBody>
               {filteredMotoboys.map((motoboy) => (
                 <TableRow key={motoboy.id} className="border-border">
+                  <TableCell className="font-medium">
+                    {(motoboy as any).number || "-"}
+                  </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
@@ -180,8 +231,9 @@ const Motorcyclists = () => {
                       {motoboy.name}
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{motoboy.cpf || "-"}</TableCell>
-                  <TableCell className="text-muted-foreground">{motoboy.phone || "-"}</TableCell>
+                  <TableCell className="font-medium text-primary">
+                    {Number((motoboy as any).weekly_payment || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${shiftColors[motoboy.shift]}`}>
                       {shiftLabels[motoboy.shift]}
@@ -226,8 +278,11 @@ const Motorcyclists = () => {
       </div>
 
       {/* Summary */}
-      <div className="mt-4 text-sm text-muted-foreground">
-        Mostrando {filteredMotoboys.length} de {motoboys?.length || 0} motoboys
+      <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+        <span>Mostrando {filteredMotoboys.length} de {motoboys?.length || 0} motoboys</span>
+        <span className="font-medium text-foreground">
+          Total semanal (ativos filtrados): {filteredTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+        </span>
       </div>
 
       {/* Form Dialog */}
