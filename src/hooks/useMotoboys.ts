@@ -14,7 +14,7 @@ export const useMotoboys = () => {
       const { data, error } = await supabase
         .from('motoboys')
         .select('*')
-        .order('name');
+        .order('number');
       
       if (error) throw error;
       return data as Motoboy[];

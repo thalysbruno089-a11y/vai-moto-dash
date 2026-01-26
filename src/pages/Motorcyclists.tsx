@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, Loader2, DollarSign } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, Loader2, DollarSign, CheckCircle, XCircle } from "lucide-react";
 import { useMotoboys, useDeleteMotoboy, useUpdateMotoboy, Motoboy } from "@/hooks/useMotoboys";
 import { MotoboyFormDialog } from "@/components/motoboys/MotoboyFormDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
@@ -36,7 +36,7 @@ const shiftLabels: Record<ShiftType, string> = {
   day: 'Diurno',
   night: 'Noturno',
   weekend: 'Final de Semana',
-  star: 'ESTRELINHA',
+  star: 'Estrelinha',
   free: 'Free',
 };
 
@@ -61,12 +61,20 @@ const Motorcyclists = () => {
   const deleteMotoboy = useDeleteMotoboy();
   const updateMotoboy = useUpdateMotoboy();
 
-  const filteredMotoboys = (motoboys || []).filter((m) => {
-    const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesShift = shiftFilter === "all" || m.shift === shiftFilter;
-    const matchesStatus = statusFilter === "all" || m.status === statusFilter;
-    return matchesSearch && matchesShift && matchesStatus;
-  });
+  const filteredMotoboys = (motoboys || [])
+    .filter((m) => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesSearch = m.name.toLowerCase().includes(searchLower) || 
+        (m.number && m.number.toLowerCase().includes(searchLower));
+      const matchesShift = shiftFilter === "all" || m.shift === shiftFilter;
+      const matchesStatus = statusFilter === "all" || m.status === statusFilter;
+      return matchesSearch && matchesShift && matchesStatus;
+    })
+    .sort((a, b) => {
+      const numA = parseInt(a.number || '999999', 10);
+      const numB = parseInt(b.number || '999999', 10);
+      return numA - numB;
+    });
 
   // Calculate totals by shift for active motoboys
   const shiftTotals = Object.keys(shiftLabels).reduce((acc, shift) => {
@@ -116,6 +124,14 @@ const Motorcyclists = () => {
     });
   };
 
+  const handleTogglePaymentStatus = async (motoboy: Motoboy) => {
+    const currentStatus = (motoboy as any).payment_status || 'pending';
+    await updateMotoboy.mutateAsync({
+      id: motoboy.id,
+      payment_status: currentStatus === 'paid' ? 'pending' : 'paid',
+    });
+  };
+
   return (
     <MainLayout title="Motoboys" subtitle="Gerencie sua equipe de entregadores">
       {/* Filters */}
@@ -123,7 +139,7 @@ const Motorcyclists = () => {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome..."
+            placeholder="Buscar por nome ou número..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
@@ -212,6 +228,7 @@ const Motorcyclists = () => {
                 <TableHead>Valor Semanal</TableHead>
                 <TableHead>Turno</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Pagamento</TableHead>
                 <TableHead className="w-[70px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -245,6 +262,19 @@ const Motorcyclists = () => {
                     </BadgeStatus>
                   </TableCell>
                   <TableCell>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      (motoboy as any).payment_status === 'paid' 
+                        ? 'bg-success/10 text-success' 
+                        : 'bg-destructive/10 text-destructive'
+                    }`}>
+                      {(motoboy as any).payment_status === 'paid' ? (
+                        <><CheckCircle className="h-3 w-3" /> Pago</>
+                      ) : (
+                        <><XCircle className="h-3 w-3" /> Não Pago</>
+                      )}
+                    </span>
+                  </TableCell>
+                  <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -255,6 +285,13 @@ const Motorcyclists = () => {
                         <DropdownMenuItem onClick={() => handleEdit(motoboy)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleTogglePaymentStatus(motoboy)}>
+                          {(motoboy as any).payment_status === 'paid' ? (
+                            <><XCircle className="mr-2 h-4 w-4" /> Marcar Não Pago</>
+                          ) : (
+                            <><CheckCircle className="mr-2 h-4 w-4" /> Marcar Pago</>
+                          )}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleToggleStatus(motoboy)}>
                           <Power className="mr-2 h-4 w-4" />

@@ -174,6 +174,7 @@ export type Database = {
           id: string
           name: string
           number: string | null
+          payment_status: string | null
           phone: string | null
           shift: Database["public"]["Enums"]["shift_type"]
           status: Database["public"]["Enums"]["status_type"]
@@ -188,6 +189,7 @@ export type Database = {
           id?: string
           name: string
           number?: string | null
+          payment_status?: string | null
           phone?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["status_type"]
@@ -202,6 +204,7 @@ export type Database = {
           id?: string
           name?: string
           number?: string | null
+          payment_status?: string | null
           phone?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["status_type"]

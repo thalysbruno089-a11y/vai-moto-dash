@@ -1,6 +1,6 @@
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Bike } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, PiggyBank, Bike, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useMotoboys } from "@/hooks/useMotoboys";
@@ -9,9 +9,17 @@ const Dashboard = () => {
   const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
   const { data: motoboys, isLoading: loadingMotoboys } = useMotoboys();
 
+  // Calculate motoboy payments total (active motoboys weekly payment)
+  const motoboyPaymentsTotal = motoboys
+    ?.filter(m => m.status === 'active')
+    .reduce((sum, m) => sum + Number((m as any).weekly_payment || 0), 0) || 0;
+
   // Calculate financial stats from real data
   const incomeTotal = cashFlowEntries?.filter(e => e.type === 'revenue').reduce((sum, e) => sum + Number(e.value), 0) || 0;
-  const expenseTotal = cashFlowEntries?.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.value), 0) || 0;
+  const cashFlowExpenseTotal = cashFlowEntries?.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.value), 0) || 0;
+  
+  // Total expenses includes cash flow expenses + motoboy payments
+  const expenseTotal = cashFlowExpenseTotal + motoboyPaymentsTotal;
   const balance = incomeTotal - expenseTotal;
 
   // Get active motoboys count
@@ -57,7 +65,7 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-6 md:grid-cols-2 mb-8">
+      <div className="grid gap-6 md:grid-cols-3 mb-8">
         <StatCard
           title="Motoboys Ativos"
           value={isLoading ? "..." : String(activeMotoboys)}
@@ -67,6 +75,12 @@ const Dashboard = () => {
           title="Total de Motoboys"
           value={isLoading ? "..." : String(motoboys?.length || 0)}
           icon={<Bike className="h-6 w-6 text-primary" />}
+        />
+        <StatCard
+          title="Pagamentos Motoboys"
+          value={isLoading ? "..." : formatCurrency(motoboyPaymentsTotal)}
+          icon={<DollarSign className="h-6 w-6 text-destructive" />}
+          variant="destructive"
         />
       </div>
 
