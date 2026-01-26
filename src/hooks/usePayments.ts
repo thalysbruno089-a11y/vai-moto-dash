@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { paymentSchema } from '@/lib/validation';
 
 export type Payment = Tables<'payments'>;
 export type PaymentInsert = TablesInsert<'payments'>;
@@ -34,6 +35,13 @@ export const useCreatePayment = () => {
   
   return useMutation({
     mutationFn: async (payment: Omit<PaymentInsert, 'company_id'>) => {
+      // Validate input data
+      const validationResult = paymentSchema.safeParse(payment);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors.map(e => e.message).join(', ');
+        throw new Error(errorMessages);
+      }
+
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error('Usuário não autenticado');
 

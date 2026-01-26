@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { motoboySchema } from '@/lib/validation';
 
 export type Motoboy = Tables<'motoboys'>;
 export type MotoboyInsert = TablesInsert<'motoboys'>;
@@ -27,6 +28,13 @@ export const useCreateMotoboy = () => {
   
   return useMutation({
     mutationFn: async (motoboy: Omit<MotoboyInsert, 'company_id'>) => {
+      // Validate input data
+      const validationResult = motoboySchema.safeParse(motoboy);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors.map(e => e.message).join(', ');
+        throw new Error(errorMessages);
+      }
+
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
@@ -64,6 +72,14 @@ export const useUpdateMotoboy = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: MotoboyUpdate & { id: string }) => {
+      // Validate input data (partial validation for updates)
+      const partialSchema = motoboySchema.partial();
+      const validationResult = partialSchema.safeParse(updates);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors.map(e => e.message).join(', ');
+        throw new Error(errorMessages);
+      }
+
       const { data, error } = await supabase
         .from('motoboys')
         .update(updates)

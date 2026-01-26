@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { toast } from 'sonner';
+import { cashFlowSchema } from '@/lib/validation';
 
 export type CashFlowEntry = Tables<'cash_flow'>;
 export type CashFlowInsert = TablesInsert<'cash_flow'>;
@@ -34,6 +35,13 @@ export const useCreateCashFlow = () => {
   
   return useMutation({
     mutationFn: async (entry: Omit<CashFlowInsert, 'company_id'>) => {
+      // Validate input data
+      const validationResult = cashFlowSchema.safeParse(entry);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors.map(e => e.message).join(', ');
+        throw new Error(errorMessages);
+      }
+
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) throw new Error('Usuário não autenticado');
 
@@ -69,6 +77,14 @@ export const useUpdateCashFlow = () => {
   
   return useMutation({
     mutationFn: async ({ id, ...updates }: CashFlowUpdate & { id: string }) => {
+      // Validate input data (partial validation for updates)
+      const partialSchema = cashFlowSchema.partial();
+      const validationResult = partialSchema.safeParse(updates);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors.map(e => e.message).join(', ');
+        throw new Error(errorMessages);
+      }
+
       const { data, error } = await supabase
         .from('cash_flow')
         .update(updates)
