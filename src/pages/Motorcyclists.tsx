@@ -41,11 +41,11 @@ const shiftLabels: Record<ShiftType, string> = {
 };
 
 const shiftColors: Record<ShiftType, string> = {
-  day: "bg-primary/10 text-primary",
-  night: "bg-purple-500/10 text-purple-600",
-  weekend: "bg-orange-500/10 text-orange-600",
-  star: "bg-yellow-500/10 text-yellow-600",
-  free: "bg-muted text-muted-foreground",
+  day: "bg-orange-500/10 text-orange-600",
+  night: "bg-gray-900/10 text-gray-900 dark:bg-gray-100/10 dark:text-gray-100",
+  weekend: "bg-blue-500/10 text-blue-600",
+  star: "bg-green-500/10 text-green-600",
+  free: "bg-purple-500/10 text-purple-600",
 };
 
 const Motorcyclists = () => {
