@@ -38,7 +38,7 @@ const Dashboard = () => {
   return (
     <MainLayout title="Dashboard" subtitle="Visão geral financeira da sua empresa">
       {/* Financial Stats */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
         <StatCard
           title="Saldo Atual"
           value={isLoading ? "..." : formatCurrency(balance)}
@@ -66,7 +66,7 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-6 md:grid-cols-3 mb-8">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3 mb-6 sm:mb-8">
         <StatCard
           title="Motoboys Ativos"
           value={isLoading ? "..." : String(activeMotoboys)}

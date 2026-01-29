@@ -93,7 +93,7 @@ const Categories = () => {
   return (
     <MainLayout title="Categorias" subtitle="Gerencie categorias de despesas">
       {/* Stats */}
-      <div className="grid gap-6 md:grid-cols-2 mb-8">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 mb-6 sm:mb-8">
         <StatCard
           title="Total de Categorias"
           value={String(expenseCategories.length)}
@@ -108,8 +108,8 @@ const Categories = () => {
       </div>
 
       {/* Filters */}
-      <div className="filter-bar">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:flex-wrap">
+        <div className="relative flex-1 min-w-0 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar categoria..."
@@ -120,7 +120,7 @@ const Categories = () => {
         </div>
 
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <Filter className="mr-2 h-4 w-4" />
             <SelectValue placeholder="Filtrar categoria" />
           </SelectTrigger>
@@ -132,9 +132,9 @@ const Categories = () => {
           </SelectContent>
         </Select>
 
-        <div className="flex-1" />
+        <div className="hidden sm:flex sm:flex-1" />
 
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Nova Categoria
         </Button>

@@ -98,7 +98,7 @@ const CashFlow = () => {
   return (
     <MainLayout title="Fluxo de Caixa" subtitle="Controle financeiro completo">
       {/* Stats */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
         <StatCard
           title="Saldo Atual"
           value={formatCurrency(balance)}
@@ -126,9 +126,9 @@ const CashFlow = () => {
       </div>
 
       {/* Filters */}
-      <div className="filter-bar">
+      <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:flex-wrap">
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-[150px]">
+          <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -138,16 +138,20 @@ const CashFlow = () => {
           </SelectContent>
         </Select>
 
-        <div className="flex-1" />
+        <div className="hidden sm:flex sm:flex-1" />
 
-        <Button variant="outline" onClick={() => handleCreate('expense')}>
-          <TrendingDown className="mr-2 h-4 w-4" />
-          Nova Saída
-        </Button>
-        <Button onClick={() => handleCreate('revenue')}>
-          <TrendingUp className="mr-2 h-4 w-4" />
-          Nova Entrada
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button variant="outline" onClick={() => handleCreate('expense')} className="flex-1 sm:flex-initial">
+            <TrendingDown className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Nova Saída</span>
+            <span className="sm:hidden">Saída</span>
+          </Button>
+          <Button onClick={() => handleCreate('revenue')} className="flex-1 sm:flex-initial">
+            <TrendingUp className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Nova Entrada</span>
+            <span className="sm:hidden">Entrada</span>
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
