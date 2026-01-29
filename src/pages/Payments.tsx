@@ -90,7 +90,7 @@ const Payments = () => {
   return (
     <MainLayout title="Pagamentos" subtitle="Controle de pagamentos semanais">
       {/* Stats */}
-      <div className="grid gap-6 md:grid-cols-3 mb-8">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3 mb-6 sm:mb-8">
         <StatCard
           title="Total de Pagamentos"
           value={formatCurrency(totalPaid + totalPending)}
@@ -111,8 +111,8 @@ const Payments = () => {
       </div>
 
       {/* Filters */}
-      <div className="filter-bar">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:flex-wrap">
+        <div className="relative flex-1 min-w-0 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar motoboy..."
@@ -123,7 +123,7 @@ const Payments = () => {
         </div>
 
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -133,7 +133,9 @@ const Payments = () => {
           </SelectContent>
         </Select>
 
-        <Button onClick={() => setFormOpen(true)}>
+        <div className="hidden sm:flex sm:flex-1" />
+
+        <Button onClick={() => setFormOpen(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Registrar Pagamento
         </Button>

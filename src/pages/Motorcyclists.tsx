@@ -135,8 +135,8 @@ const Motorcyclists = () => {
   return (
     <MainLayout title="Motoboys" subtitle="Gerencie sua equipe de entregadores">
       {/* Filters */}
-      <div className="filter-bar">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-3 mb-4 lg:flex-row lg:items-center lg:flex-wrap">
+        <div className="relative flex-1 min-w-0 lg:max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar por nome ou número..."
@@ -146,39 +146,41 @@ const Motorcyclists = () => {
           />
         </div>
         
-        <Select value={shiftFilter} onValueChange={setShiftFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Turno" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os turnos</SelectItem>
-            {Object.entries(shiftLabels).map(([value, label]) => (
-              <SelectItem key={value} value={value}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2 flex-wrap">
+          <Select value={shiftFilter} onValueChange={setShiftFilter}>
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue placeholder="Turno" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os turnos</SelectItem>
+              {Object.entries(shiftLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="active">Ativo</SelectItem>
-            <SelectItem value="inactive">Inativo</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[160px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="active">Ativo</SelectItem>
+              <SelectItem value="inactive">Inativo</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-        <div className="flex-1" />
+        <div className="hidden lg:flex lg:flex-1" />
 
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Novo Motoboy
         </Button>
       </div>
 
       {/* Shift Totals Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 mb-4">
         {Object.entries(shiftLabels).map(([shift, label]) => {
           const data = shiftTotals[shift as ShiftType] || { count: 0, total: 0 };
           const isSelected = shiftFilter === shift;
