@@ -455,7 +455,7 @@ export type Database = {
       payment_status: "paid" | "pending"
       shift_type: "day" | "night" | "weekend" | "star" | "free"
       status_type: "active" | "inactive"
-      user_role: "admin" | "manager" | "finance"
+      user_role: "admin" | "manager" | "finance" | "employee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -588,7 +588,7 @@ export const Constants = {
       payment_status: ["paid", "pending"],
       shift_type: ["day", "night", "weekend", "star", "free"],
       status_type: ["active", "inactive"],
-      user_role: ["admin", "manager", "finance"],
+      user_role: ["admin", "manager", "finance", "employee"],
     },
   },
 } as const
