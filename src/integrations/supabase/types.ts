@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      bills: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          due_date: string
+          id: string
+          installment_number: number | null
+          name: string
+          paid_at: string | null
+          parent_bill_id: string | null
+          status: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          due_date: string
+          id?: string
+          installment_number?: number | null
+          name: string
+          paid_at?: string | null
+          parent_bill_id?: string | null
+          status?: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          id?: string
+          installment_number?: number | null
+          name?: string
+          paid_at?: string | null
+          parent_bill_id?: string | null
+          status?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bills_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bills_parent_bill_id_fkey"
+            columns: ["parent_bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_flow: {
         Row: {
           category_id: string | null
