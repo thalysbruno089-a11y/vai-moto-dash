@@ -6,9 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useCreateBill, useUpdateBill, Bill } from '@/hooks/useBills';
-import { format, addDays, addWeeks, addMonths } from 'date-fns';
+import { format, addWeeks, addMonths } from 'date-fns';
 
 interface BillFormDialogProps {
   open: boolean;
@@ -19,6 +19,21 @@ interface BillFormDialogProps {
 }
 
 type InstallmentInterval = 'weekly' | 'biweekly' | 'monthly';
+type InstallmentMode = 'auto' | 'manual';
+
+// Helper to parse YYYY-MM-DD string to local Date (avoids timezone issues)
+const parseDateString = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+// Helper to format Date to YYYY-MM-DD string using local components
+const formatDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export function BillFormDialog({ open, onOpenChange, bill, parentBill, installmentNumber }: BillFormDialogProps) {
   const [name, setName] = useState('');
@@ -26,8 +41,10 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
   const [value, setValue] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [isInstallment, setIsInstallment] = useState(false);
+  const [installmentMode, setInstallmentMode] = useState<InstallmentMode>('auto');
   const [totalInstallments, setTotalInstallments] = useState('2');
   const [installmentInterval, setInstallmentInterval] = useState<InstallmentInterval>('monthly');
+  const [manualDates, setManualDates] = useState<string[]>(['', '']);
 
   const createBill = useCreateBill();
   const updateBill = useUpdateBill();
@@ -44,23 +61,23 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
         setDueDate(bill.due_date);
         setIsInstallment(false);
       } else if (parentBill) {
-        // Creating installment from parent
         setName(`${parentBill.name}`);
         setDescription(parentBill.description || '');
         setValue(parentBill.value.toString());
-        // Default to next month
         const nextMonth = new Date();
         nextMonth.setMonth(nextMonth.getMonth() + 1);
-        setDueDate(format(nextMonth, 'yyyy-MM-dd'));
+        setDueDate(formatDateString(nextMonth));
         setIsInstallment(false);
       } else {
         setName('');
         setDescription('');
         setValue('');
-        setDueDate(format(new Date(), 'yyyy-MM-dd'));
+        setDueDate(formatDateString(new Date()));
         setIsInstallment(false);
+        setInstallmentMode('auto');
         setTotalInstallments('2');
         setInstallmentInterval('monthly');
+        setManualDates(['', '']);
       }
     }
   }, [open, bill, parentBill, installmentNumber]);
@@ -78,12 +95,27 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
     }
   };
 
+  const addManualDate = () => {
+    setManualDates([...manualDates, '']);
+  };
+
+  const removeManualDate = (index: number) => {
+    if (manualDates.length > 2) {
+      setManualDates(manualDates.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateManualDate = (index: number, value: string) => {
+    const updated = [...manualDates];
+    updated[index] = value;
+    setManualDates(updated);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       if (isEditing && bill) {
-        // Updating existing bill
         await updateBill.mutateAsync({
           id: bill.id,
           name,
@@ -92,7 +124,6 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
           due_date: dueDate,
         });
       } else if (isAddingToParent && parentBill) {
-        // Adding single installment to existing bill
         await createBill.mutateAsync({
           name: `${name} - Parcela ${installmentNumber}`,
           description: description || null,
@@ -103,27 +134,42 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
           installment_number: installmentNumber || null,
         });
       } else if (isInstallment) {
-        // Creating new bill with multiple installments
-        const numInstallments = parseInt(totalInstallments) || 2;
         const installmentValue = parseFloat(value) || 0;
-        const baseDate = new Date(dueDate);
         
-        // Create all installments
-        for (let i = 1; i <= numInstallments; i++) {
-          const installmentDate = i === 1 ? baseDate : getNextDate(baseDate, installmentInterval, i - 1);
+        if (installmentMode === 'manual') {
+          // Manual mode: use user-defined dates
+          const validDates = manualDates.filter(d => d.trim() !== '');
+          for (let i = 0; i < validDates.length; i++) {
+            await createBill.mutateAsync({
+              name: `${name} - Parcela ${i + 1}/${validDates.length}`,
+              description: description || null,
+              value: installmentValue,
+              due_date: validDates[i],
+              status: 'pending' as const,
+              parent_bill_id: null,
+              installment_number: i + 1,
+            });
+          }
+        } else {
+          // Auto mode: calculate dates automatically
+          const numInstallments = parseInt(totalInstallments) || 2;
+          const baseDate = parseDateString(dueDate);
           
-          await createBill.mutateAsync({
-            name: `${name} - Parcela ${i}/${numInstallments}`,
-            description: description || null,
-            value: installmentValue,
-            due_date: format(installmentDate, 'yyyy-MM-dd'),
-            status: 'pending' as const,
-            parent_bill_id: null,
-            installment_number: i,
-          });
+          for (let i = 1; i <= numInstallments; i++) {
+            const installmentDate = i === 1 ? baseDate : getNextDate(baseDate, installmentInterval, i - 1);
+            
+            await createBill.mutateAsync({
+              name: `${name} - Parcela ${i}/${numInstallments}`,
+              description: description || null,
+              value: installmentValue,
+              due_date: formatDateString(installmentDate),
+              status: 'pending' as const,
+              parent_bill_id: null,
+              installment_number: i,
+            });
+          }
         }
       } else {
-        // Creating single bill
         await createBill.mutateAsync({
           name,
           description: description || null,
@@ -146,20 +192,12 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
       ? `Adicionar Parcela ${installmentNumber}` 
       : 'Nova Conta a Pagar';
 
-  const getIntervalLabel = (interval: InstallmentInterval) => {
-    switch (interval) {
-      case 'weekly': return 'Semanal';
-      case 'biweekly': return 'Quinzenal';
-      case 'monthly': return 'Mensal';
-    }
-  };
-
-  // Calculate preview of installment dates
+  // Calculate preview of installment dates (auto mode only)
   const getInstallmentPreview = () => {
-    if (!isInstallment || !dueDate || !totalInstallments) return [];
+    if (!isInstallment || installmentMode === 'manual' || !dueDate || !totalInstallments) return [];
     
     const numInstallments = parseInt(totalInstallments) || 2;
-    const baseDate = new Date(dueDate);
+    const baseDate = parseDateString(dueDate);
     const preview: { number: number; date: string }[] = [];
     
     for (let i = 1; i <= Math.min(numInstallments, 6); i++) {
@@ -171,6 +209,16 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
     }
     
     return preview;
+  };
+
+  const getManualTotal = () => {
+    const validDates = manualDates.filter(d => d.trim() !== '');
+    return validDates.length;
+  };
+
+  const canSubmitManual = () => {
+    const validDates = manualDates.filter(d => d.trim() !== '');
+    return validDates.length >= 2;
   };
 
   return (
@@ -260,62 +308,139 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
           {/* Installment Options */}
           {isInstallment && !isEditing && !isAddingToParent && (
             <div className="space-y-4 rounded-lg border border-border p-4 bg-muted/30">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="totalInstallments">Número de Parcelas</Label>
-                  <Input
-                    id="totalInstallments"
-                    type="number"
-                    min="2"
-                    max="48"
-                    value={totalInstallments}
-                    onChange={(e) => setTotalInstallments(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="interval">Intervalo</Label>
-                  <Select value={installmentInterval} onValueChange={(v) => setInstallmentInterval(v as InstallmentInterval)}>
-                    <SelectTrigger id="interval">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="weekly">Semanal</SelectItem>
-                      <SelectItem value="biweekly">Quinzenal</SelectItem>
-                      <SelectItem value="monthly">Mensal</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Mode Selection */}
+              <div className="space-y-2">
+                <Label>Modo de Parcelamento</Label>
+                <Select value={installmentMode} onValueChange={(v) => setInstallmentMode(v as InstallmentMode)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Automático (calcular datas)</SelectItem>
+                    <SelectItem value="manual">Manual (escolher cada data)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Preview */}
-              {dueDate && (
-                <div className="space-y-2">
-                  <Label className="text-sm text-muted-foreground">Prévia das parcelas:</Label>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {getInstallmentPreview().map((p) => (
-                      <div key={p.number} className="flex justify-between bg-background rounded px-2 py-1">
-                        <span className="text-muted-foreground">Parcela {p.number}:</span>
-                        <span className="font-medium">{p.date}</span>
+              {installmentMode === 'auto' ? (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="totalInstallments">Número de Parcelas</Label>
+                      <Input
+                        id="totalInstallments"
+                        type="number"
+                        min="2"
+                        max="48"
+                        value={totalInstallments}
+                        onChange={(e) => setTotalInstallments(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="interval">Intervalo</Label>
+                      <Select value={installmentInterval} onValueChange={(v) => setInstallmentInterval(v as InstallmentInterval)}>
+                        <SelectTrigger id="interval">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Semanal</SelectItem>
+                          <SelectItem value="biweekly">Quinzenal</SelectItem>
+                          <SelectItem value="monthly">Mensal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Preview */}
+                  {dueDate && (
+                    <div className="space-y-2">
+                      <Label className="text-sm text-muted-foreground">Prévia das parcelas:</Label>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {getInstallmentPreview().map((p) => (
+                          <div key={p.number} className="flex justify-between bg-background rounded px-2 py-1">
+                            <span className="text-muted-foreground">Parcela {p.number}:</span>
+                            <span className="font-medium">{p.date}</span>
+                          </div>
+                        ))}
+                        {parseInt(totalInstallments) > 6 && (
+                          <div className="col-span-2 text-center text-muted-foreground text-xs">
+                            ... e mais {parseInt(totalInstallments) - 6} parcelas
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground border-t border-border pt-2 mt-2">
+                        Total: <span className="font-semibold text-foreground">
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                            (parseFloat(value) || 0) * (parseInt(totalInstallments) || 0)
+                          )}
+                        </span>
+                        {' '}em {totalInstallments}x de{' '}
+                        <span className="font-semibold text-foreground">
+                          {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Manual Mode */
+                <div className="space-y-3">
+                  <Label className="text-sm text-muted-foreground">
+                    Defina as datas de cada parcela:
+                  </Label>
+                  
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {manualDates.map((date, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground w-20">
+                          Parcela {index + 1}:
+                        </span>
+                        <Input
+                          type="date"
+                          value={date}
+                          onChange={(e) => updateManualDate(index, e.target.value)}
+                          className="flex-1"
+                        />
+                        {manualDates.length > 2 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => removeManualDate(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     ))}
-                    {parseInt(totalInstallments) > 6 && (
-                      <div className="col-span-2 text-center text-muted-foreground text-xs">
-                        ... e mais {parseInt(totalInstallments) - 6} parcelas
-                      </div>
-                    )}
                   </div>
-                  <div className="text-sm text-muted-foreground border-t border-border pt-2 mt-2">
-                    Total: <span className="font-semibold text-foreground">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-                        (parseFloat(value) || 0) * (parseInt(totalInstallments) || 0)
-                      )}
-                    </span>
-                    {' '}em {totalInstallments}x de{' '}
-                    <span className="font-semibold text-foreground">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0)}
-                    </span>
-                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addManualDate}
+                    className="w-full"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar Parcela
+                  </Button>
+
+                  {getManualTotal() > 0 && (
+                    <div className="text-sm text-muted-foreground border-t border-border pt-2 mt-2">
+                      Total: <span className="font-semibold text-foreground">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                          (parseFloat(value) || 0) * getManualTotal()
+                        )}
+                      </span>
+                      {' '}em {getManualTotal()}x de{' '}
+                      <span className="font-semibold text-foreground">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -325,7 +450,17 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading || !name || !value || !dueDate}>
+            <Button 
+              type="submit" 
+              disabled={
+                isLoading || 
+                !name || 
+                !value || 
+                (!isInstallment && !dueDate) ||
+                (isInstallment && installmentMode === 'auto' && !dueDate) ||
+                (isInstallment && installmentMode === 'manual' && !canSubmitManual())
+              }
+            >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? 'Salvar' : isInstallment ? 'Criar Parcelas' : 'Cadastrar'}
             </Button>
