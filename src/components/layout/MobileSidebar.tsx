@@ -35,6 +35,7 @@ const roleLabels: Record<string, string> = {
   admin: 'Administrador',
   manager: 'Gerente',
   finance: 'Financeiro',
+  employee: 'Funcionária',
 };
 
 const MobileSidebar = () => {
