@@ -121,7 +121,10 @@ const Bills = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return format(new Date(dateStr), "dd/MM/yyyy", { locale: ptBR });
+    // Parse YYYY-MM-DD locally to avoid timezone shift
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const localDate = new Date(year, month - 1, day);
+    return format(localDate, "dd/MM/yyyy", { locale: ptBR });
   };
 
   const getStatusBadge = (status: string) => {
