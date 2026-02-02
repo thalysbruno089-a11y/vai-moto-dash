@@ -6,10 +6,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
+import { BillsNotificationProvider } from "@/components/bills/BillsNotificationProvider";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Motorcyclists from "./pages/Motorcyclists";
 import Payments from "./pages/Payments";
+import Bills from "./pages/Bills";
 import CashFlow from "./pages/CashFlow";
 import Categories from "./pages/Categories";
 import Reports from "./pages/Reports";
@@ -22,21 +24,24 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-          <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/motorcyclists" element={<ProtectedRoute><Motorcyclists /></ProtectedRoute>} />
-            <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
-            <Route path="/cash-flow" element={<ProtectedRoute><CashFlow /></ProtectedRoute>} />
-            <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <BillsNotificationProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+            <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/motorcyclists" element={<ProtectedRoute><Motorcyclists /></ProtectedRoute>} />
+              <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+              <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
+              <Route path="/cash-flow" element={<ProtectedRoute><CashFlow /></ProtectedRoute>} />
+              <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </BillsNotificationProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
