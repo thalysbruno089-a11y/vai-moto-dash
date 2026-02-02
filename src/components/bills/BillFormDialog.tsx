@@ -111,24 +111,38 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
     setManualDates(updated);
   };
 
+  // Ensure date string is in correct YYYY-MM-DD format without any timezone conversion
+  const normalizeDateForSubmit = (dateStr: string): string => {
+    // If it's already in YYYY-MM-DD format from the input, just validate and return
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr;
+    }
+    // If somehow it's a Date object or ISO string, parse and format locally
+    const parsed = parseDateString(dateStr);
+    return formatDateString(parsed);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      // Normalize the date to ensure consistent YYYY-MM-DD format
+      const normalizedDueDate = normalizeDateForSubmit(dueDate);
+      
       if (isEditing && bill) {
         await updateBill.mutateAsync({
           id: bill.id,
           name,
           description: description || null,
           value: parseFloat(value) || 0,
-          due_date: dueDate,
+          due_date: normalizedDueDate,
         });
       } else if (isAddingToParent && parentBill) {
         await createBill.mutateAsync({
           name: `${name} - Parcela ${installmentNumber}`,
           description: description || null,
           value: parseFloat(value) || 0,
-          due_date: dueDate,
+          due_date: normalizedDueDate,
           status: 'pending' as const,
           parent_bill_id: parentBill.id,
           installment_number: installmentNumber || null,
@@ -137,8 +151,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
         const installmentValue = parseFloat(value) || 0;
         
         if (installmentMode === 'manual') {
-          // Manual mode: use user-defined dates
-          const validDates = manualDates.filter(d => d.trim() !== '');
+          // Manual mode: use user-defined dates (normalize each one)
+          const validDates = manualDates.filter(d => d.trim() !== '').map(d => normalizeDateForSubmit(d));
           for (let i = 0; i < validDates.length; i++) {
             await createBill.mutateAsync({
               name: `${name} - Parcela ${i + 1}/${validDates.length}`,
@@ -153,7 +167,7 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
         } else {
           // Auto mode: calculate dates automatically
           const numInstallments = parseInt(totalInstallments) || 2;
-          const baseDate = parseDateString(dueDate);
+          const baseDate = parseDateString(normalizedDueDate);
           
           for (let i = 1; i <= numInstallments; i++) {
             const installmentDate = i === 1 ? baseDate : getNextDate(baseDate, installmentInterval, i - 1);
@@ -174,7 +188,7 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
           name,
           description: description || null,
           value: parseFloat(value) || 0,
-          due_date: dueDate,
+          due_date: normalizedDueDate,
           status: 'pending' as const,
           parent_bill_id: null,
           installment_number: null,
