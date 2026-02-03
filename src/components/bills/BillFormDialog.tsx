@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { useCreateBill, useUpdateBill, Bill } from '@/hooks/useBills';
+import { useCategories } from '@/hooks/useCategories';
 import { format, addWeeks, addMonths } from 'date-fns';
 
 interface BillFormDialogProps {
@@ -40,6 +41,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [isFixed, setIsFixed] = useState(false);
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentMode, setInstallmentMode] = useState<InstallmentMode>('auto');
   const [totalInstallments, setTotalInstallments] = useState('2');
@@ -48,6 +51,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
 
   const createBill = useCreateBill();
   const updateBill = useUpdateBill();
+  const { data: categories } = useCategories();
+  const expenseCategories = (categories || []).filter(c => c.type === 'expense');
   const isLoading = createBill.isPending || updateBill.isPending;
   const isEditing = !!bill;
   const isAddingToParent = !!parentBill;
@@ -59,11 +64,15 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
         setDescription(bill.description || '');
         setValue(bill.value.toString());
         setDueDate(bill.due_date);
+        setCategoryId(bill.category_id);
+        setIsFixed(bill.is_fixed);
         setIsInstallment(false);
       } else if (parentBill) {
         setName(`${parentBill.name}`);
         setDescription(parentBill.description || '');
         setValue(parentBill.value.toString());
+        setCategoryId(parentBill.category_id);
+        setIsFixed(false);
         const nextMonth = new Date();
         nextMonth.setMonth(nextMonth.getMonth() + 1);
         setDueDate(formatDateString(nextMonth));
@@ -73,6 +82,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
         setDescription('');
         setValue('');
         setDueDate(formatDateString(new Date()));
+        setCategoryId(null);
+        setIsFixed(false);
         setIsInstallment(false);
         setInstallmentMode('auto');
         setTotalInstallments('2');
@@ -136,6 +147,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
           description: description || null,
           value: parseFloat(value) || 0,
           due_date: normalizedDueDate,
+          category_id: categoryId,
+          is_fixed: isFixed,
         });
       } else if (isAddingToParent && parentBill) {
         await createBill.mutateAsync({
@@ -146,6 +159,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
           status: 'pending' as const,
           parent_bill_id: parentBill.id,
           installment_number: installmentNumber || null,
+          category_id: categoryId,
+          is_fixed: false,
         });
       } else if (isInstallment) {
         const installmentValue = parseFloat(value) || 0;
@@ -162,6 +177,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
               status: 'pending' as const,
               parent_bill_id: null,
               installment_number: i + 1,
+              category_id: categoryId,
+              is_fixed: false,
             });
           }
         } else {
@@ -180,6 +197,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
               status: 'pending' as const,
               parent_bill_id: null,
               installment_number: i,
+              category_id: categoryId,
+              is_fixed: false,
             });
           }
         }
@@ -192,6 +211,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
           status: 'pending' as const,
           parent_bill_id: null,
           installment_number: null,
+          category_id: categoryId,
+          is_fixed: isFixed,
         });
       }
       onOpenChange(false);
@@ -300,8 +321,51 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
             </div>
           </div>
 
+          {/* Category Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="category">Categoria</Label>
+            <Select 
+              value={categoryId || 'none'} 
+              onValueChange={(v) => setCategoryId(v === 'none' ? null : v)}
+            >
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem categoria</SelectItem>
+                {expenseCategories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              A categoria será usada ao registrar no fluxo de caixa
+            </p>
+          </div>
+
+          {/* Fixed Bill Toggle - only show for non-installment bills */}
+          {!isInstallment && !isAddingToParent && (
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="fixed-toggle" className="text-base">
+                  Conta Fixa
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Esta conta se repete todos os meses
+                </p>
+              </div>
+              <Switch
+                id="fixed-toggle"
+                checked={isFixed}
+                onCheckedChange={setIsFixed}
+              />
+            </div>
+          )}
+
           {/* Installment Toggle - only show for new bills */}
-          {!isEditing && !isAddingToParent && (
+          {!isEditing && !isAddingToParent && !isFixed && (
             <div className="flex items-center justify-between rounded-lg border border-border p-4">
               <div className="space-y-0.5">
                 <Label htmlFor="installment-toggle" className="text-base">
