@@ -19,8 +19,9 @@ interface BillFormDialogProps {
   installmentNumber?: number;
 }
 
-type InstallmentInterval = 'weekly' | 'biweekly' | 'monthly' | 'every-friday';
+type InstallmentInterval = 'weekly' | 'biweekly' | 'monthly';
 type InstallmentMode = 'auto' | 'manual';
+type WeekDay = 'none' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
 
 // Helper to parse YYYY-MM-DD string to local Date (avoids timezone issues)
 const parseDateString = (dateStr: string): Date => {
@@ -46,7 +47,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
   const [isInstallment, setIsInstallment] = useState(false);
   const [installmentMode, setInstallmentMode] = useState<InstallmentMode>('auto');
   const [totalInstallments, setTotalInstallments] = useState('2');
-  const [installmentInterval, setInstallmentInterval] = useState<InstallmentInterval>('monthly');
+  const [installmentInterval, setInstallmentInterval] = useState<InstallmentInterval>('weekly');
+  const [selectedWeekDay, setSelectedWeekDay] = useState<WeekDay>('none');
   const [manualDates, setManualDates] = useState<string[]>(['', '']);
 
   const createBill = useCreateBill();
@@ -87,7 +89,8 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
         setIsInstallment(false);
         setInstallmentMode('auto');
         setTotalInstallments('2');
-        setInstallmentInterval('monthly');
+        setInstallmentInterval('weekly');
+        setSelectedWeekDay('none');
         setManualDates(['', '']);
       }
     }
@@ -101,21 +104,33 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
         return addWeeks(baseDate, multiplier * 2);
       case 'monthly':
         return addMonths(baseDate, multiplier);
-      case 'every-friday':
-        // Find next Friday from base date, then add weeks
-        return addWeeks(baseDate, multiplier);
       default:
-        return addMonths(baseDate, multiplier);
+        return addWeeks(baseDate, multiplier);
     }
   };
 
-  // Get next Friday from a given date
-  const getNextFriday = (date: Date): Date => {
-    const dayOfWeek = date.getDay();
-    const daysUntilFriday = dayOfWeek <= 5 ? (5 - dayOfWeek) : (7 - dayOfWeek + 5);
-    const nextFriday = new Date(date);
-    nextFriday.setDate(date.getDate() + daysUntilFriday);
-    return nextFriday;
+  // Get next occurrence of a specific weekday from a given date
+  const getNextWeekDay = (date: Date, weekDay: WeekDay): Date => {
+    if (weekDay === 'none') return date;
+    
+    const dayMap: Record<WeekDay, number> = {
+      'none': -1,
+      'sunday': 0,
+      'monday': 1,
+      'tuesday': 2,
+      'wednesday': 3,
+      'thursday': 4,
+      'friday': 5,
+      'saturday': 6,
+    };
+    
+    const targetDay = dayMap[weekDay];
+    const currentDay = date.getDay();
+    const daysUntilTarget = (targetDay - currentDay + 7) % 7;
+    
+    const nextDate = new Date(date);
+    nextDate.setDate(date.getDate() + (daysUntilTarget === 0 ? 0 : daysUntilTarget));
+    return nextDate;
   };
 
   const addManualDate = () => {
@@ -228,18 +243,13 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
     let baseDate = parseDateString(dueDate);
     const preview: { number: number; date: string }[] = [];
     
-    // For every-friday mode, start from the next Friday
-    if (installmentInterval === 'every-friday') {
-      baseDate = getNextFriday(baseDate);
+    // If a specific weekday is selected, start from the next occurrence
+    if (selectedWeekDay !== 'none') {
+      baseDate = getNextWeekDay(baseDate, selectedWeekDay);
     }
     
     for (let i = 1; i <= Math.min(numInstallments, 6); i++) {
-      let installmentDate: Date;
-      if (installmentInterval === 'every-friday') {
-        installmentDate = addWeeks(baseDate, i - 1);
-      } else {
-        installmentDate = i === 1 ? baseDate : getNextDate(baseDate, installmentInterval, i - 1);
-      }
+      const installmentDate = i === 1 ? baseDate : getNextDate(baseDate, installmentInterval, i - 1);
       preview.push({
         number: i,
         date: format(installmentDate, 'dd/MM/yyyy'),
@@ -412,7 +422,7 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
                         id="totalInstallments"
                         type="number"
                         min="2"
-                        max="48"
+                        max="100"
                         value={totalInstallments}
                         onChange={(e) => setTotalInstallments(e.target.value)}
                       />
@@ -428,10 +438,32 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
                           <SelectItem value="weekly">Semanal</SelectItem>
                           <SelectItem value="biweekly">Quinzenal</SelectItem>
                           <SelectItem value="monthly">Mensal</SelectItem>
-                          <SelectItem value="every-friday">Toda Sexta-feira</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  {/* Day of week selector */}
+                  <div className="space-y-2">
+                    <Label htmlFor="weekDay">Dia da Semana (opcional)</Label>
+                    <Select value={selectedWeekDay} onValueChange={(v) => setSelectedWeekDay(v as WeekDay)}>
+                      <SelectTrigger id="weekDay">
+                        <SelectValue placeholder="Selecione um dia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Usar data selecionada</SelectItem>
+                        <SelectItem value="monday">Segunda-feira</SelectItem>
+                        <SelectItem value="tuesday">Terça-feira</SelectItem>
+                        <SelectItem value="wednesday">Quarta-feira</SelectItem>
+                        <SelectItem value="thursday">Quinta-feira</SelectItem>
+                        <SelectItem value="friday">Sexta-feira</SelectItem>
+                        <SelectItem value="saturday">Sábado</SelectItem>
+                        <SelectItem value="sunday">Domingo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Se selecionado, as parcelas serão sempre neste dia da semana
+                    </p>
                   </div>
 
                   {/* Preview */}

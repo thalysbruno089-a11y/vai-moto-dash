@@ -73,6 +73,7 @@ const Bills = () => {
   });
 
   // Filter bills by selected month for stat cards
+  // For installment bills, calculate if any installment falls in the selected month
   const filterByMonth = (billsList: Bill[]) => {
     const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
     const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
@@ -81,6 +82,22 @@ const Bills = () => {
       const datePart = b.due_date.split('T')[0].split(' ')[0];
       const [year, month, day] = datePart.split('-').map(Number);
       const billDate = new Date(year, month - 1, day);
+      
+      // For installment bills, check if any installment falls in the month
+      if (b.total_installments && b.total_installments > 1) {
+        const paidCount = b.paid_installments || 0;
+        const remainingCount = b.total_installments - paidCount;
+        
+        // Check all remaining installments
+        for (let i = 0; i < remainingCount; i++) {
+          const installmentDate = new Date(year, month - 1 + i, day);
+          if (installmentDate >= monthStart && installmentDate <= monthEnd) {
+            return true;
+          }
+        }
+        return false;
+      }
+      
       return billDate >= monthStart && billDate <= monthEnd;
     });
   };
