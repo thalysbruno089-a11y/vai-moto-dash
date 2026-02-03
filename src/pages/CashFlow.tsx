@@ -92,7 +92,13 @@ const CashFlow = () => {
   };
 
   const formatDate = (dateStr: string) => {
-    return format(new Date(dateStr), "dd/MM/yyyy", { locale: ptBR });
+    if (!dateStr) return "-";
+    // Handle both YYYY-MM-DD and ISO timestamp formats to avoid timezone shift
+    const datePart = dateStr.split('T')[0].split(' ')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    if (isNaN(year) || isNaN(month) || isNaN(day)) return "-";
+    const localDate = new Date(year, month - 1, day);
+    return format(localDate, "dd/MM/yyyy", { locale: ptBR });
   };
 
   return (
