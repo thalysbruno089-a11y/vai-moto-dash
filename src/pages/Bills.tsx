@@ -278,17 +278,17 @@ const Bills = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {(bill.status === "pending" || bill.status === "overdue") && (
+                          <DropdownMenuItem onClick={() => handleMarkAsPaid(bill)}>
+                            <Check className="mr-2 h-4 w-4" />
+                            Marcar como pago
+                          </DropdownMenuItem>
+                        )}
                         {bill.status === "pending" && (
-                          <>
-                            <DropdownMenuItem onClick={() => handleMarkAsPaid(bill)}>
-                              <Check className="mr-2 h-4 w-4" />
-                              Marcar como pago
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleMarkAsNotPaid(bill)}>
-                              <X className="mr-2 h-4 w-4" />
-                              Não pago
-                            </DropdownMenuItem>
-                          </>
+                          <DropdownMenuItem onClick={() => handleMarkAsNotPaid(bill)}>
+                            <X className="mr-2 h-4 w-4" />
+                            Não pago
+                          </DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={() => handleAddInstallment(bill)}>
                           <Plus className="mr-2 h-4 w-4" />
