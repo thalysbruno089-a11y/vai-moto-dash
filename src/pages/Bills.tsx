@@ -80,8 +80,12 @@ const Bills = () => {
     
     let matchesMonth = false;
     
+    // Fixed bills always appear in all months
+    if (b.is_fixed) {
+      matchesMonth = true;
+    }
     // For installment bills, check if any installment falls in the month
-    if (b.total_installments && b.total_installments > 1) {
+    else if (b.total_installments && b.total_installments > 1) {
       const paidCount = b.paid_installments || 0;
       const remainingCount = b.total_installments - paidCount;
       
