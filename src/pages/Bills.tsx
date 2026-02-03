@@ -110,6 +110,11 @@ const Bills = () => {
     const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
     
     return billsList.filter(b => {
+      // Fixed bills always appear in all months
+      if (b.is_fixed) {
+        return true;
+      }
+      
       const datePart = b.due_date.split('T')[0].split(' ')[0];
       const [year, month, day] = datePart.split('-').map(Number);
       const billDate = new Date(year, month - 1, day);
