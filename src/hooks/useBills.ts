@@ -16,6 +16,8 @@ export interface Bill {
   paid_at: string | null;
   parent_bill_id: string | null;
   installment_number: number | null;
+  category_id: string | null;
+  is_fixed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +34,8 @@ export const billSchema = z.object({
   status: z.enum(['pending', 'paid', 'overdue']).optional(),
   parent_bill_id: z.string().uuid().optional().nullable(),
   installment_number: z.number().int().positive().optional().nullable(),
+  category_id: z.string().uuid().optional().nullable(),
+  is_fixed: z.boolean().optional(),
 });
 
 export const useBills = () => {
@@ -167,31 +171,36 @@ export const useMarkBillAsPaid = () => {
       
       if (!profile?.company_id) throw new Error('Empresa não encontrada');
 
-      // 3. Check if category exists with the bill name, if not create it
+      // 3. Use bill's category if it has one, otherwise check/create one with the bill name
       let categoryId: string;
-      const { data: existingCategory } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('name', bill.name)
-        .eq('company_id', profile.company_id)
-        .eq('type', 'expense')
-        .maybeSingle();
-
-      if (existingCategory) {
-        categoryId = existingCategory.id;
+      
+      if (bill.category_id) {
+        categoryId = bill.category_id;
       } else {
-        const { data: newCategory, error: categoryError } = await supabase
+        const { data: existingCategory } = await supabase
           .from('categories')
-          .insert({
-            name: bill.name,
-            type: 'expense',
-            company_id: profile.company_id,
-          })
           .select('id')
-          .single();
-        
-        if (categoryError) throw categoryError;
-        categoryId = newCategory.id;
+          .eq('name', bill.name)
+          .eq('company_id', profile.company_id)
+          .eq('type', 'expense')
+          .maybeSingle();
+
+        if (existingCategory) {
+          categoryId = existingCategory.id;
+        } else {
+          const { data: newCategory, error: categoryError } = await supabase
+            .from('categories')
+            .insert({
+              name: bill.name,
+              type: 'expense',
+              company_id: profile.company_id,
+            })
+            .select('id')
+            .single();
+          
+          if (categoryError) throw categoryError;
+          categoryId = newCategory.id;
+        }
       }
 
       // 4. Create expense entry in cash_flow

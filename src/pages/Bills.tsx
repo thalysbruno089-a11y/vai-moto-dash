@@ -79,7 +79,12 @@ const Bills = () => {
   };
 
   const handleMarkAsNotPaid = async (bill: Bill) => {
-    await updateBill.mutateAsync({ id: bill.id, status: 'overdue' });
+    // Check if due date is in the past to determine correct status
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dueDate = new Date(bill.due_date + 'T00:00:00');
+    const newStatus = dueDate < today ? 'overdue' : 'pending';
+    await updateBill.mutateAsync({ id: bill.id, status: newStatus });
   };
 
   const handleEditClick = (bill: Bill) => {
@@ -243,6 +248,11 @@ const Bills = () => {
                         {bill.installment_number && (
                           <Badge variant="secondary" className="ml-2 text-xs">
                             Parcela {bill.installment_number}
+                          </Badge>
+                        )}
+                        {bill.is_fixed && (
+                          <Badge variant="outline" className="ml-2 text-xs">
+                            Fixa
                           </Badge>
                         )}
                       </div>

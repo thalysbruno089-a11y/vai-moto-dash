@@ -16,8 +16,51 @@ Deno.serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    // Verify authentication
     const authHeader = req.headers.get('Authorization')
+    
+    // Check if this is a cron job call (no auth or anon key)
+    // For cron jobs, we allow the call but reset ALL companies (automated)
+    const isCronCall = !authHeader || authHeader === `Bearer ${supabaseAnonKey}`
+    
+    if (isCronCall) {
+      // Cron job call - reset payment status for ALL motoboys in ALL companies
+      console.log('Cron job triggered: resetting all motoboys payment status')
+      
+      const supabase = createClient(supabaseUrl, supabaseServiceKey)
+      
+      const { data, error } = await supabase
+        .from('motoboys')
+        .update({ payment_status: 'pending' })
+        .neq('payment_status', 'pending')
+        .select('id, company_id')
+
+      if (error) {
+        console.error('Error resetting payment status:', error)
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
+      }
+
+      console.log(`Cron: Reset payment status for ${data?.length || 0} motoboys`)
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `Reset payment status for ${data?.length || 0} motoboys (cron job)`,
+          resetCount: data?.length || 0
+        }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Manual call from admin - requires proper authentication
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('Missing or invalid Authorization header')
       return new Response(

@@ -16,12 +16,14 @@ export type Database = {
     Tables: {
       bills: {
         Row: {
+          category_id: string | null
           company_id: string
           created_at: string
           description: string | null
           due_date: string
           id: string
           installment_number: number | null
+          is_fixed: boolean
           name: string
           paid_at: string | null
           parent_bill_id: string | null
@@ -30,12 +32,14 @@ export type Database = {
           value: number
         }
         Insert: {
+          category_id?: string | null
           company_id: string
           created_at?: string
           description?: string | null
           due_date: string
           id?: string
           installment_number?: number | null
+          is_fixed?: boolean
           name: string
           paid_at?: string | null
           parent_bill_id?: string | null
@@ -44,12 +48,14 @@ export type Database = {
           value: number
         }
         Update: {
+          category_id?: string | null
           company_id?: string
           created_at?: string
           description?: string | null
           due_date?: string
           id?: string
           installment_number?: number | null
+          is_fixed?: boolean
           name?: string
           paid_at?: string | null
           parent_bill_id?: string | null
@@ -58,6 +64,13 @@ export type Database = {
           value?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "bills_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bills_company_id_fkey"
             columns: ["company_id"]
