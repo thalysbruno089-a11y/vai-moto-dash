@@ -38,10 +38,13 @@ import {
   Plus, 
   Trash2, 
   Loader2, 
-  Edit 
+  Edit,
+  Eye
 } from "lucide-react";
 import { useBills, useMarkBillAsPaid, useUpdateBill, useDeleteBill, Bill } from "@/hooks/useBills";
 import { BillFormDialog } from "@/components/bills/BillFormDialog";
+import { BillInstallmentsModal } from "@/components/bills/BillInstallmentsModal";
+import { MonthFilter } from "@/components/bills/MonthFilter";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,11 +52,14 @@ import { ptBR } from "date-fns/locale";
 const Bills = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [billToDelete, setBillToDelete] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<Bill | null>(null);
   const [installmentParent, setInstallmentParent] = useState<Bill | null>(null);
+  const [installmentsModalOpen, setInstallmentsModalOpen] = useState(false);
+  const [selectedBillForDetails, setSelectedBillForDetails] = useState<Bill | null>(null);
 
   const { data: bills, isLoading } = useBills();
   const markAsPaid = useMarkBillAsPaid();
@@ -66,9 +72,23 @@ const Bills = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const paidBills = (bills || []).filter(b => b.status === "paid");
-  const pendingBills = (bills || []).filter(b => b.status === "pending");
-  const overdueBills = (bills || []).filter(b => b.status === "overdue");
+  // Filter bills by selected month for stat cards
+  const filterByMonth = (billsList: Bill[]) => {
+    const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+    
+    return billsList.filter(b => {
+      const datePart = b.due_date.split('T')[0].split(' ')[0];
+      const [year, month, day] = datePart.split('-').map(Number);
+      const billDate = new Date(year, month - 1, day);
+      return billDate >= monthStart && billDate <= monthEnd;
+    });
+  };
+
+  const monthBills = filterByMonth(bills || []);
+  const paidBills = monthBills.filter(b => b.status === "paid");
+  const pendingBills = monthBills.filter(b => b.status === "pending");
+  const overdueBills = monthBills.filter(b => b.status === "overdue");
   
   const totalPaid = paidBills.reduce((acc, b) => acc + Number(b.value), 0);
   const totalPending = pendingBills.reduce((acc, b) => acc + Number(b.value), 0);
@@ -108,6 +128,11 @@ const Bills = () => {
   const handleDeleteClick = (id: string) => {
     setBillToDelete(id);
     setDeleteDialogOpen(true);
+  };
+
+  const handleViewInstallments = (bill: Bill) => {
+    setSelectedBillForDetails(bill);
+    setInstallmentsModalOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -157,6 +182,11 @@ const Bills = () => {
 
   return (
     <MainLayout title="Contas a Pagar" subtitle="Gerencie suas contas e receba lembretes">
+      {/* Month Filter */}
+      <div className="flex justify-end mb-4">
+        <MonthFilter selectedDate={selectedMonth} onDateChange={setSelectedMonth} />
+      </div>
+
       {/* Stats */}
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3 mb-6 sm:mb-8">
         <StatCard
@@ -237,7 +267,15 @@ const Bills = () => {
             </TableHeader>
             <TableBody>
               {filteredBills.map((bill) => (
-                <TableRow key={bill.id} className="border-border">
+                <TableRow 
+                  key={bill.id} 
+                  className={`border-border ${bill.total_installments && bill.total_installments > 1 ? 'cursor-pointer hover:bg-muted/80' : ''}`}
+                  onClick={() => {
+                    if (bill.total_installments && bill.total_installments > 1) {
+                      handleViewInstallments(bill);
+                    }
+                  }}
+                >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
@@ -245,9 +283,9 @@ const Bills = () => {
                       </div>
                       <div>
                         <span>{bill.name}</span>
-                        {bill.installment_number && (
+                        {bill.total_installments && bill.total_installments > 1 && (
                           <Badge variant="secondary" className="ml-2 text-xs">
-                            Parcela {bill.installment_number}
+                            {bill.paid_installments || 0}/{bill.total_installments}x
                           </Badge>
                         )}
                         {bill.is_fixed && (
@@ -263,6 +301,11 @@ const Bills = () => {
                   </TableCell>
                   <TableCell className="text-right font-semibold">
                     {formatCurrency(Number(bill.value))}
+                    {bill.total_installments && bill.total_installments > 1 && (
+                      <span className="text-xs text-muted-foreground block">
+                        Total: {formatCurrency(Number(bill.value) * bill.total_installments)}
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {getStatusBadge(bill.status)}
@@ -272,35 +315,39 @@ const Bills = () => {
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {bill.total_installments && bill.total_installments > 1 && (
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewInstallments(bill); }}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Ver parcelas
+                          </DropdownMenuItem>
+                        )}
                         {(bill.status === "pending" || bill.status === "overdue") && (
-                          <DropdownMenuItem onClick={() => handleMarkAsPaid(bill)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkAsPaid(bill); }}>
                             <Check className="mr-2 h-4 w-4" />
-                            Marcar como pago
+                            {bill.total_installments && bill.total_installments > 1 
+                              ? `Pagar parcela ${(bill.paid_installments || 0) + 1}` 
+                              : 'Marcar como pago'}
                           </DropdownMenuItem>
                         )}
                         {bill.status === "pending" && (
-                          <DropdownMenuItem onClick={() => handleMarkAsNotPaid(bill)}>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleMarkAsNotPaid(bill); }}>
                             <X className="mr-2 h-4 w-4" />
                             Não pago
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem onClick={() => handleAddInstallment(bill)}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Adicionar parcela
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleEditClick(bill)}>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditClick(bill); }}>
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           className="text-destructive"
-                          onClick={() => handleDeleteClick(bill.id)}
+                          onClick={(e) => { e.stopPropagation(); handleDeleteClick(bill.id); }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Excluir
@@ -337,6 +384,13 @@ const Bills = () => {
         title="Excluir Conta"
         description="Tem certeza que deseja excluir esta conta? Esta ação não pode ser desfeita."
         isLoading={deleteBill.isPending}
+      />
+
+      {/* Installments Details Modal */}
+      <BillInstallmentsModal
+        open={installmentsModalOpen}
+        onOpenChange={setInstallmentsModalOpen}
+        bill={selectedBillForDetails}
       />
     </MainLayout>
   );

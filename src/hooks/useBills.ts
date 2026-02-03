@@ -18,11 +18,17 @@ export interface Bill {
   installment_number: number | null;
   category_id: string | null;
   is_fixed: boolean;
+  total_installments: number | null;
+  paid_installments: number;
   created_at: string;
   updated_at: string;
 }
 
-export type BillInsert = Omit<Bill, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'paid_at'> & { paid_at?: string | null };
+export type BillInsert = Omit<Bill, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'paid_at' | 'paid_installments' | 'total_installments'> & { 
+  paid_at?: string | null;
+  paid_installments?: number;
+  total_installments?: number | null;
+};
 export type BillUpdate = Partial<BillInsert>;
 
 // Validation schema
@@ -151,10 +157,26 @@ export const useMarkBillAsPaid = () => {
   
   return useMutation({
     mutationFn: async (bill: Bill) => {
-      // 1. Mark bill as paid
+      const isInstallmentBill = bill.total_installments && bill.total_installments > 1;
+      const currentPaid = bill.paid_installments || 0;
+      const newPaidCount = currentPaid + 1;
+      const isFullyPaid = isInstallmentBill 
+        ? newPaidCount >= bill.total_installments! 
+        : true;
+
+      // 1. Update bill status and paid_installments
+      const updateData: Record<string, unknown> = {
+        paid_installments: newPaidCount,
+      };
+      
+      if (isFullyPaid) {
+        updateData.status = 'paid';
+        updateData.paid_at = new Date().toISOString();
+      }
+
       const { error: billError } = await supabase
         .from('bills')
-        .update({ status: 'paid', paid_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', bill.id);
       
       if (billError) throw billError;
