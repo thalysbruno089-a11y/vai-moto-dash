@@ -26,8 +26,10 @@ export type Database = {
           is_fixed: boolean
           name: string
           paid_at: string | null
+          paid_installments: number | null
           parent_bill_id: string | null
           status: string
+          total_installments: number | null
           updated_at: string
           value: number
         }
@@ -42,8 +44,10 @@ export type Database = {
           is_fixed?: boolean
           name: string
           paid_at?: string | null
+          paid_installments?: number | null
           parent_bill_id?: string | null
           status?: string
+          total_installments?: number | null
           updated_at?: string
           value: number
         }
@@ -58,8 +62,10 @@ export type Database = {
           is_fixed?: boolean
           name?: string
           paid_at?: string | null
+          paid_installments?: number | null
           parent_bill_id?: string | null
           status?: string
+          total_installments?: number | null
           updated_at?: string
           value?: number
         }

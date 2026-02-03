@@ -19,7 +19,7 @@ interface BillFormDialogProps {
   installmentNumber?: number;
 }
 
-type InstallmentInterval = 'weekly' | 'biweekly' | 'monthly';
+type InstallmentInterval = 'weekly' | 'biweekly' | 'monthly' | 'every-friday';
 type InstallmentMode = 'auto' | 'manual';
 
 // Helper to parse YYYY-MM-DD string to local Date (avoids timezone issues)
@@ -101,9 +101,21 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
         return addWeeks(baseDate, multiplier * 2);
       case 'monthly':
         return addMonths(baseDate, multiplier);
+      case 'every-friday':
+        // Find next Friday from base date, then add weeks
+        return addWeeks(baseDate, multiplier);
       default:
         return addMonths(baseDate, multiplier);
     }
+  };
+
+  // Get next Friday from a given date
+  const getNextFriday = (date: Date): Date => {
+    const dayOfWeek = date.getDay();
+    const daysUntilFriday = dayOfWeek <= 5 ? (5 - dayOfWeek) : (7 - dayOfWeek + 5);
+    const nextFriday = new Date(date);
+    nextFriday.setDate(date.getDate() + daysUntilFriday);
+    return nextFriday;
   };
 
   const addManualDate = () => {
@@ -164,44 +176,24 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
         });
       } else if (isInstallment) {
         const installmentValue = parseFloat(value) || 0;
+        const numInstallments = installmentMode === 'manual' 
+          ? manualDates.filter(d => d.trim() !== '').length 
+          : parseInt(totalInstallments) || 2;
         
-        if (installmentMode === 'manual') {
-          // Manual mode: use user-defined dates (normalize each one)
-          const validDates = manualDates.filter(d => d.trim() !== '').map(d => normalizeDateForSubmit(d));
-          for (let i = 0; i < validDates.length; i++) {
-            await createBill.mutateAsync({
-              name: `${name} - Parcela ${i + 1}/${validDates.length}`,
-              description: description || null,
-              value: installmentValue,
-              due_date: validDates[i],
-              status: 'pending' as const,
-              parent_bill_id: null,
-              installment_number: i + 1,
-              category_id: categoryId,
-              is_fixed: false,
-            });
-          }
-        } else {
-          // Auto mode: calculate dates automatically
-          const numInstallments = parseInt(totalInstallments) || 2;
-          const baseDate = parseDateString(normalizedDueDate);
-          
-          for (let i = 1; i <= numInstallments; i++) {
-            const installmentDate = i === 1 ? baseDate : getNextDate(baseDate, installmentInterval, i - 1);
-            
-            await createBill.mutateAsync({
-              name: `${name} - Parcela ${i}/${numInstallments}`,
-              description: description || null,
-              value: installmentValue,
-              due_date: formatDateString(installmentDate),
-              status: 'pending' as const,
-              parent_bill_id: null,
-              installment_number: i,
-              category_id: categoryId,
-              is_fixed: false,
-            });
-          }
-        }
+        // Create a single bill with installment tracking
+        await createBill.mutateAsync({
+          name,
+          description: description || null,
+          value: installmentValue,
+          due_date: normalizedDueDate,
+          status: 'pending' as const,
+          parent_bill_id: null,
+          installment_number: null,
+          category_id: categoryId,
+          is_fixed: false,
+          total_installments: numInstallments,
+          paid_installments: 0,
+        });
       } else {
         await createBill.mutateAsync({
           name,
@@ -213,6 +205,7 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
           installment_number: null,
           category_id: categoryId,
           is_fixed: isFixed,
+          total_installments: null,
         });
       }
       onOpenChange(false);
@@ -232,11 +225,21 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
     if (!isInstallment || installmentMode === 'manual' || !dueDate || !totalInstallments) return [];
     
     const numInstallments = parseInt(totalInstallments) || 2;
-    const baseDate = parseDateString(dueDate);
+    let baseDate = parseDateString(dueDate);
     const preview: { number: number; date: string }[] = [];
     
+    // For every-friday mode, start from the next Friday
+    if (installmentInterval === 'every-friday') {
+      baseDate = getNextFriday(baseDate);
+    }
+    
     for (let i = 1; i <= Math.min(numInstallments, 6); i++) {
-      const installmentDate = i === 1 ? baseDate : getNextDate(baseDate, installmentInterval, i - 1);
+      let installmentDate: Date;
+      if (installmentInterval === 'every-friday') {
+        installmentDate = addWeeks(baseDate, i - 1);
+      } else {
+        installmentDate = i === 1 ? baseDate : getNextDate(baseDate, installmentInterval, i - 1);
+      }
       preview.push({
         number: i,
         date: format(installmentDate, 'dd/MM/yyyy'),
@@ -425,6 +428,7 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
                           <SelectItem value="weekly">Semanal</SelectItem>
                           <SelectItem value="biweekly">Quinzenal</SelectItem>
                           <SelectItem value="monthly">Mensal</SelectItem>
+                          <SelectItem value="every-friday">Toda Sexta-feira</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
