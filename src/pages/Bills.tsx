@@ -66,10 +66,37 @@ const Bills = () => {
   const updateBill = useUpdateBill();
   const deleteBill = useDeleteBill();
 
+  // Apply all filters including month filter
   const filteredBills = (bills || []).filter((b) => {
     const matchesSearch = b.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || b.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    // Month filter
+    const monthStart = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    const monthEnd = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1, 0);
+    const datePart = b.due_date.split('T')[0].split(' ')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    const billDate = new Date(year, month - 1, day);
+    
+    let matchesMonth = false;
+    
+    // For installment bills, check if any installment falls in the month
+    if (b.total_installments && b.total_installments > 1) {
+      const paidCount = b.paid_installments || 0;
+      const remainingCount = b.total_installments - paidCount;
+      
+      for (let i = 0; i < remainingCount; i++) {
+        const installmentDate = new Date(year, month - 1 + i, day);
+        if (installmentDate >= monthStart && installmentDate <= monthEnd) {
+          matchesMonth = true;
+          break;
+        }
+      }
+    } else {
+      matchesMonth = billDate >= monthStart && billDate <= monthEnd;
+    }
+    
+    return matchesSearch && matchesStatus && matchesMonth;
   });
 
   // Filter bills by selected month for stat cards
