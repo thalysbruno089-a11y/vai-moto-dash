@@ -204,13 +204,17 @@ export const useMarkBillAsPaid = () => {
       }
 
       // 4. Create expense entry in cash_flow
+      // Use local date to avoid timezone shift
+      const today = new Date();
+      const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
       const { error: cashFlowError } = await supabase
         .from('cash_flow')
         .insert({
           type: 'expense',
           value: bill.value,
           description: bill.description || `Pagamento: ${bill.name}`,
-          flow_date: new Date().toISOString().split('T')[0],
+          flow_date: localDate,
           category_id: categoryId,
           company_id: profile.company_id,
           is_recurring: false,
