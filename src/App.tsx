@@ -10,7 +10,7 @@ import { BillsNotificationProvider } from "@/components/bills/BillsNotificationP
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Motorcyclists from "./pages/Motorcyclists";
-import Payments from "./pages/Payments";
+import Clients from "./pages/Clients";
 import Bills from "./pages/Bills";
 import CashFlow from "./pages/CashFlow";
 import Categories from "./pages/Categories";
@@ -32,7 +32,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/motorcyclists" element={<ProtectedRoute><Motorcyclists /></ProtectedRoute>} />
-              <Route path="/payments" element={<ProtectedRoute><Payments /></ProtectedRoute>} />
+              <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
               <Route path="/bills" element={<ProtectedRoute><Bills /></ProtectedRoute>} />
               <Route path="/cash-flow" element={<ProtectedRoute><CashFlow /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />

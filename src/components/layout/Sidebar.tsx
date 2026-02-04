@@ -16,7 +16,7 @@ import logo from "@/assets/logo.png";
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Motoboys", href: "/motorcyclists", icon: Bike },
-  { name: "Pagamentos", href: "/payments", icon: CreditCard },
+  { name: "Clientes", href: "/clients", icon: CreditCard },
   { name: "Contas a Pagar", href: "/bills", icon: Bell },
   { name: "Fluxo de Caixa", href: "/cash-flow", icon: TrendingUp },
   { name: "Categorias", href: "/categories", icon: Tags },
