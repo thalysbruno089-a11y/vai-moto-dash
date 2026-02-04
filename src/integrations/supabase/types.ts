@@ -453,6 +453,64 @@ export type Database = {
           },
         ]
       }
+      rides: {
+        Row: {
+          client_id: string
+          company_id: string
+          created_at: string
+          id: string
+          motoboy_id: string
+          notes: string | null
+          ride_date: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          client_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          motoboy_id: string
+          notes?: string | null
+          ride_date?: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          client_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          motoboy_id?: string
+          notes?: string | null
+          ride_date?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rides_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rides_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rides_motoboy_id_fkey"
+            columns: ["motoboy_id"]
+            isOneToOne: false
+            referencedRelation: "motoboys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
