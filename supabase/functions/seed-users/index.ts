@@ -18,184 +18,127 @@ Deno.serve(async (req) => {
     // Verify authentication
     const authHeader = req.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
-      console.error('Missing or invalid Authorization header')
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized: Missing authentication' }),
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Create client with user's auth context to validate JWT
+    // Create client with user's auth context
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } }
     })
 
-    // Verify the JWT and get claims
-    const token = authHeader.replace('Bearer ', '')
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token)
-    
-    if (claimsError || !claimsData?.claims) {
-      console.error('JWT verification failed:', claimsError)
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser()
+    if (userError || !user) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized: Invalid token' }),
+        JSON.stringify({ success: false, error: 'Invalid token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
-
-    const userId = claimsData.claims.sub
-    console.log(`Authenticated user: ${userId}`)
 
     // Use service role client for operations
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
+      auth: { autoRefreshToken: false, persistSession: false }
     })
 
     // Verify user is an admin
-    const { data: callerProfile, error: profileError } = await supabase
+    const { data: callerProfile } = await supabase
       .from('profiles')
       .select('role, company_id')
-      .eq('id', userId)
+      .eq('id', user.id)
       .single()
 
-    if (profileError || !callerProfile) {
-      console.error('Failed to fetch user profile:', profileError)
+    if (!callerProfile || callerProfile.role !== 'admin') {
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized: User profile not found' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (callerProfile.role !== 'admin') {
-      console.error(`Access denied: User ${userId} has role ${callerProfile.role}, admin required`)
-      return new Response(
-        JSON.stringify({ success: false, error: 'Forbidden: Admin access required' }),
+        JSON.stringify({ success: false, error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Parse request body - passwords must be provided by the caller
-    let requestBody
-    try {
-      requestBody = await req.json()
-    } catch {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Invalid request body: JSON expected' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const { users } = requestBody
-
-    // Validate users array
-    if (!users || !Array.isArray(users) || users.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Invalid request: users array required with format [{ username, password, name, role }]' 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Validate each user object
-    for (const user of users) {
-      if (!user.username || typeof user.username !== 'string' || user.username.length < 3) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Each user must have a valid username (min 3 chars)' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      if (!user.password || typeof user.password !== 'string' || user.password.length < 8) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Each user must have a password (min 8 chars)' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      if (!user.name || typeof user.name !== 'string') {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Each user must have a name' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      if (!user.role || !['admin', 'manager', 'finance', 'employee'].includes(user.role)) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Each user must have a valid role (admin, manager, finance, or employee)' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    }
-
-    // Get the company ID from caller's profile
     const companyId = callerProfile.company_id
     if (!companyId) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Admin user has no company assigned' }),
+        JSON.stringify({ success: false, error: 'Admin has no company' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Parse request body
+    const { users } = await req.json()
+    if (!users || !Array.isArray(users) || users.length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Users array required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Validate users
+    const validRoles = ['admin', 'manager', 'finance', 'employee']
+    for (const u of users) {
+      if (!u.username || u.username.length < 3) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Username min 3 chars' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      if (!u.password || u.password.length < 8) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Password min 8 chars' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      if (!u.name) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Name required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      if (!u.role || !validRoles.includes(u.role)) {
+        return new Response(
+          JSON.stringify({ success: false, error: `Role must be one of: ${validRoles.join(', ')}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     const results = []
 
-    for (const user of users) {
-      const email = `${user.username}@vaimoto.app`
+    for (const u of users) {
+      const email = `${u.username}@vaimoto.app`
       
-      // Check if user already exists
+      // Check if user exists
       const { data: existingUsers } = await supabase.auth.admin.listUsers()
-      const existingUser = existingUsers?.users?.find(u => u.email === email)
+      const existingUser = existingUsers?.users?.find(eu => eu.email === email)
 
       if (existingUser) {
-        // Update password if user exists
-        await supabase.auth.admin.updateUserById(existingUser.id, {
-          password: user.password
+        await supabase.auth.admin.updateUserById(existingUser.id, { password: u.password })
+        await supabase.from('profiles').upsert({
+          id: existingUser.id,
+          name: u.name,
+          role: u.role,
+          company_id: companyId
         })
-
-        // Update profile
-        await supabase
-          .from('profiles')
-          .upsert({
-            id: existingUser.id,
-            name: user.name,
-            role: user.role,
-            company_id: companyId
-          })
-
-        console.log(`Updated user: ${user.username}`)
-        results.push({ user: user.username, status: 'updated' })
+        results.push({ user: u.username, status: 'updated' })
       } else {
-        // Create new user
         const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
           email,
-          password: user.password,
+          password: u.password,
           email_confirm: true
         })
 
         if (authError) {
-          console.error(`Error creating user ${user.username}:`, authError)
-          results.push({ user: user.username, status: 'error', error: authError.message })
+          results.push({ user: u.username, status: 'error', error: authError.message })
           continue
         }
 
-        // Create profile
-        const { error: profileCreateError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authUser.user.id,
-            name: user.name,
-            role: user.role,
-            company_id: companyId
-          })
-
-        if (profileCreateError) {
-          console.error(`Error creating profile for ${user.username}:`, profileCreateError)
-          results.push({ user: user.username, status: 'error', error: profileCreateError.message })
-          continue
-        }
-
-        console.log(`Created user: ${user.username}`)
-        results.push({ user: user.username, status: 'created' })
+        await supabase.from('profiles').insert({
+          id: authUser.user.id,
+          name: u.name,
+          role: u.role,
+          company_id: companyId
+        })
+        results.push({ user: u.username, status: 'created' })
       }
     }
 
@@ -203,11 +146,10 @@ Deno.serve(async (req) => {
       JSON.stringify({ success: true, results }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error: unknown) {
-    console.error('Unexpected error:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : 'Unknown error'
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
+      JSON.stringify({ success: false, error: msg }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
