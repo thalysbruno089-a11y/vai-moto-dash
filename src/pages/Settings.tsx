@@ -5,12 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Building2, User, Bell, Shield, Palette } from "lucide-react";
+import { Building2, User, Bell, Shield } from "lucide-react";
+import UserManagement from "@/components/settings/UserManagement";
 
 const Settings = () => {
   return (
     <MainLayout title="Configurações" subtitle="Gerencie as configurações do sistema">
       <div className="max-w-3xl space-y-8">
+        {/* User Management */}
+        <UserManagement />
+
         {/* Company Settings */}
         <Card>
           <CardHeader>
