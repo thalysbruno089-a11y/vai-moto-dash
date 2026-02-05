@@ -120,9 +120,9 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
-      if (!user.role || !['admin', 'manager', 'finance'].includes(user.role)) {
+      if (!user.role || !['admin', 'manager', 'finance', 'employee'].includes(user.role)) {
         return new Response(
-          JSON.stringify({ success: false, error: 'Each user must have a valid role (admin, manager, or finance)' }),
+          JSON.stringify({ success: false, error: 'Each user must have a valid role (admin, manager, finance, or employee)' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
