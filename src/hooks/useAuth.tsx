@@ -7,7 +7,7 @@ interface Profile {
   company_id: string | null;
   name: string;
   avatar_url: string | null;
-  role: 'admin' | 'manager' | 'finance';
+  role: 'admin' | 'manager' | 'finance' | 'employee';
 }
 
 interface AuthContextType {

@@ -13,7 +13,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
 
-const navigation = [
+const fullNavigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Motoboys", href: "/motorcyclists", icon: Bike },
   { name: "Clientes", href: "/clients", icon: CreditCard },
@@ -21,6 +21,10 @@ const navigation = [
   { name: "Fluxo de Caixa", href: "/cash-flow", icon: TrendingUp },
   { name: "Categorias", href: "/categories", icon: Tags },
   { name: "Relatórios", href: "/reports", icon: FileText },
+];
+
+const employeeNavigation = [
+  { name: "Clientes", href: "/clients", icon: CreditCard },
 ];
 
 const roleLabels: Record<string, string> = {
@@ -59,7 +63,7 @@ const Sidebar = () => {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
-          {navigation.map((item) => {
+          {(profile?.role === 'employee' ? employeeNavigation : fullNavigation).map((item) => {
             const isActive = location.pathname === item.href;
             return (
               <Link
