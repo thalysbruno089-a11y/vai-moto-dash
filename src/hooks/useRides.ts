@@ -189,6 +189,50 @@ export const useCreateRide = () => {
   });
 };
 
+export interface RideUpdate {
+  id: string;
+  client_id?: string;
+  motoboy_id?: string;
+  ride_date?: string;
+  value?: number;
+  notes?: string | null;
+}
+
+export const useUpdateRide = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: RideUpdate) => {
+      // Validate input data (partial validation for updates)
+      const partialSchema = rideSchema.partial();
+      const validationResult = partialSchema.safeParse(updates);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors.map(e => e.message).join(', ');
+        throw new Error(errorMessages);
+      }
+
+      const { data, error } = await supabase
+        .from('rides')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rides'] });
+      queryClient.invalidateQueries({ queryKey: ['rides-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-with-stats'] });
+      toast.success('Corrida atualizada com sucesso!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao atualizar corrida', { description: error.message });
+    },
+  });
+};
+
 export const useDeleteRide = () => {
   const queryClient = useQueryClient();
   
