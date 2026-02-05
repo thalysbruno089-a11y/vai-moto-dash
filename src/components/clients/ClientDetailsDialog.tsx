@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, Search, Calendar, Bike, DollarSign } from 'lucide-react';
+import { Loader2, Plus, Trash2, Search, Calendar, Bike, DollarSign, Pencil } from 'lucide-react';
 import { Client } from '@/hooks/useClients';
-import { useRidesByClient, useDeleteRide } from '@/hooks/useRides';
+import { useRidesByClient, useDeleteRide, RideWithRelations } from '@/hooks/useRides';
 import { useMotoboys } from '@/hooks/useMotoboys';
 import { RideFormDialog } from './RideFormDialog';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
@@ -22,6 +22,7 @@ interface ClientDetailsDialogProps {
 
 export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetailsDialogProps) {
   const [rideFormOpen, setRideFormOpen] = useState(false);
+  const [editingRide, setEditingRide] = useState<RideWithRelations | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rideToDelete, setRideToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -72,6 +73,16 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
   const formatDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-').map(Number);
     return format(new Date(year, month - 1, day), "dd/MM/yyyy", { locale: ptBR });
+  };
+
+  const handleEditClick = (ride: RideWithRelations) => {
+    setEditingRide(ride);
+    setRideFormOpen(true);
+  };
+
+  const handleNewRide = () => {
+    setEditingRide(null);
+    setRideFormOpen(true);
   };
 
   const handleDeleteClick = (id: string) => {
@@ -178,7 +189,7 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
 
             <div className="hidden sm:flex sm:flex-1" />
 
-            <Button onClick={() => setRideFormOpen(true)} className="w-full sm:w-auto">
+            <Button onClick={handleNewRide} className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Nova Corrida
             </Button>
@@ -233,14 +244,24 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
                         {ride.notes || '-'}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteClick(ride.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEditClick(ride)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteClick(ride.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -261,6 +282,7 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
         open={rideFormOpen} 
         onOpenChange={setRideFormOpen}
         preselectedClientId={client?.id}
+        editingRide={editingRide}
       />
 
       {/* Delete Confirmation */}

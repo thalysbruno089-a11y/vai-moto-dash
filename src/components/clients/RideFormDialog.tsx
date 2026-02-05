@@ -6,18 +6,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
-import { useCreateRide } from '@/hooks/useRides';
+import { useCreateRide, useUpdateRide, RideWithRelations } from '@/hooks/useRides';
 import { useMotoboys } from '@/hooks/useMotoboys';
 import { useClients } from '@/hooks/useClients';
+import { MotoboyCombobox } from './MotoboyCombobox';
 import { format } from 'date-fns';
 
 interface RideFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preselectedClientId?: string;
+  editingRide?: RideWithRelations | null;
 }
 
-export function RideFormDialog({ open, onOpenChange, preselectedClientId }: RideFormDialogProps) {
+export function RideFormDialog({ open, onOpenChange, preselectedClientId, editingRide }: RideFormDialogProps) {
   const [clientId, setClientId] = useState('');
   const [motoboyId, setMotoboyId] = useState('');
   const [rideDate, setRideDate] = useState('');
@@ -25,21 +27,31 @@ export function RideFormDialog({ open, onOpenChange, preselectedClientId }: Ride
   const [notes, setNotes] = useState('');
 
   const createRide = useCreateRide();
+  const updateRide = useUpdateRide();
   const { data: motoboys } = useMotoboys();
   const { data: clients } = useClients();
-  const isLoading = createRide.isPending;
+  const isLoading = createRide.isPending || updateRide.isPending;
+  const isEditing = !!editingRide;
 
   const activeMotoboys = (motoboys || []).filter(m => m.status === 'active');
 
   useEffect(() => {
     if (open) {
-      setClientId(preselectedClientId || '');
-      setMotoboyId('');
-      setRideDate(format(new Date(), 'yyyy-MM-dd'));
-      setValue('');
-      setNotes('');
+      if (editingRide) {
+        setClientId(editingRide.client_id);
+        setMotoboyId(editingRide.motoboy_id);
+        setRideDate(editingRide.ride_date);
+        setValue(String(editingRide.value));
+        setNotes(editingRide.notes || '');
+      } else {
+        setClientId(preselectedClientId || '');
+        setMotoboyId('');
+        setRideDate(format(new Date(), 'yyyy-MM-dd'));
+        setValue('');
+        setNotes('');
+      }
     }
-  }, [open, preselectedClientId]);
+  }, [open, preselectedClientId, editingRide]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +65,11 @@ export function RideFormDialog({ open, onOpenChange, preselectedClientId }: Ride
     };
     
     try {
-      await createRide.mutateAsync(data);
+      if (isEditing && editingRide) {
+        await updateRide.mutateAsync({ id: editingRide.id, ...data });
+      } else {
+        await createRide.mutateAsync(data);
+      }
       onOpenChange(false);
     } catch (error) {
       // Error is handled by the mutation's onError callback
@@ -64,9 +80,9 @@ export function RideFormDialog({ open, onOpenChange, preselectedClientId }: Ride
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Registrar Corrida</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Corrida' : 'Registrar Corrida'}</DialogTitle>
           <DialogDescription>
-            Registre uma nova corrida para um cliente.
+            {isEditing ? 'Edite os dados da corrida.' : 'Registre uma nova corrida para um cliente.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,18 +104,11 @@ export function RideFormDialog({ open, onOpenChange, preselectedClientId }: Ride
 
           <div className="space-y-2">
             <Label htmlFor="motoboy">Motoboy *</Label>
-            <Select value={motoboyId} onValueChange={setMotoboyId} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o motoboy" />
-              </SelectTrigger>
-              <SelectContent>
-                {activeMotoboys.map((motoboy) => (
-                  <SelectItem key={motoboy.id} value={motoboy.id}>
-                    {motoboy.number ? `#${motoboy.number} - ` : ''}{motoboy.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MotoboyCombobox
+              motoboys={activeMotoboys}
+              value={motoboyId}
+              onValueChange={setMotoboyId}
+            />
           </div>
 
           <div className="space-y-2">
@@ -144,7 +153,7 @@ export function RideFormDialog({ open, onOpenChange, preselectedClientId }: Ride
             </Button>
             <Button type="submit" disabled={isLoading || !clientId || !motoboyId || !rideDate}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Registrar
+              {isEditing ? 'Salvar' : 'Registrar'}
             </Button>
           </DialogFooter>
         </form>

@@ -24,7 +24,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, Loader2, DollarSign, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, Loader2, DollarSign, CheckCircle, XCircle, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { useMotoboys, useDeleteMotoboy, useUpdateMotoboy, Motoboy } from "@/hooks/useMotoboys";
 import { MotoboyFormDialog } from "@/components/motoboys/MotoboyFormDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
@@ -60,6 +61,29 @@ const Motorcyclists = () => {
   const { data: motoboys, isLoading } = useMotoboys();
   const deleteMotoboy = useDeleteMotoboy();
   const updateMotoboy = useUpdateMotoboy();
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetAllPayments = async () => {
+    const unpaidMotoboys = (motoboys || []).filter(m => m.payment_status === 'paid');
+    if (unpaidMotoboys.length === 0) {
+      toast.info('Todos os motoboys já estão como "Não Pago"');
+      return;
+    }
+    
+    setIsResetting(true);
+    try {
+      await Promise.all(
+        unpaidMotoboys.map(m => 
+          updateMotoboy.mutateAsync({ id: m.id, payment_status: 'pending' })
+        )
+      );
+      toast.success(`${unpaidMotoboys.length} motoboys redefinidos para "Não Pago"`);
+    } catch (error) {
+      toast.error('Erro ao redefinir pagamentos');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const filteredMotoboys = (motoboys || [])
     .filter((m) => {
@@ -172,6 +196,20 @@ const Motorcyclists = () => {
         </div>
 
         <div className="hidden lg:flex lg:flex-1" />
+
+        <Button 
+          onClick={handleResetAllPayments} 
+          variant="outline" 
+          className="w-full sm:w-auto"
+          disabled={isResetting}
+        >
+          {isResetting ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <RotateCcw className="mr-2 h-4 w-4" />
+          )}
+          Redefinir Pagamentos
+        </Button>
 
         <Button onClick={handleCreate} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
