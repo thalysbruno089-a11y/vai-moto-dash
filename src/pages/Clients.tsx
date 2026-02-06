@@ -17,11 +17,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Bike, DollarSign, Search, MoreHorizontal, Eye, Edit, Trash2, Loader2, Plus } from "lucide-react";
+import { Users, Bike, DollarSign, Search, MoreHorizontal, Eye, Edit, Trash2, Loader2, Plus, CalendarDays } from "lucide-react";
 import { useClientsWithStats, useDeleteClient, ClientWithStats } from "@/hooks/useClients";
 import { ClientFormDialog } from "@/components/clients/ClientFormDialog";
 import { ClientDetailsDialog } from "@/components/clients/ClientDetailsDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,6 +32,7 @@ const Clients = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientWithStats | null>(null);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
+  const [dateFilter, setDateFilter] = useState("");
 
   const { data: clients, isLoading } = useClientsWithStats();
   const deleteClient = useDeleteClient();
@@ -40,15 +43,27 @@ const Clients = () => {
            c.address?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
+  const getClientValue = (c: ClientWithStats) => {
+    if (dateFilter) {
+      const dayStats = c.rides_by_date.find(d => d.date === dateFilter);
+      return { rides: dayStats?.total_rides || 0, value: dayStats?.total_value || 0 };
+    }
+    return { rides: c.total_rides, value: c.total_value };
+  };
+
   const totalClients = clients?.length || 0;
-  const totalRides = (clients || []).reduce((acc, c) => acc + c.total_rides, 0);
-  const totalValue = (clients || []).reduce((acc, c) => acc + c.total_value, 0);
+  const totalRides = filteredClients.reduce((acc, c) => acc + getClientValue(c).rides, 0);
+  const totalValue = filteredClients.reduce((acc, c) => acc + getClientValue(c).value, 0);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     }).format(value);
+  };
+  const formatDateLabel = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return format(new Date(year, month - 1, day), "dd/MM/yyyy", { locale: ptBR });
   };
 
   const handleViewDetails = (client: ClientWithStats) => {
@@ -91,12 +106,12 @@ const Clients = () => {
           icon={<Users className="h-6 w-6 text-primary" />}
         />
         <StatCard
-          title="Total de Corridas"
+          title={dateFilter ? `Corridas em ${formatDateLabel(dateFilter)}` : "Total de Corridas"}
           value={totalRides.toString()}
           icon={<Bike className="h-6 w-6 text-primary" />}
         />
         <StatCard
-          title="Valor Total"
+          title={dateFilter ? `Valor em ${formatDateLabel(dateFilter)}` : "Valor Total"}
           value={formatCurrency(totalValue)}
           icon={<DollarSign className="h-6 w-6 text-success" />}
           variant="success"
@@ -114,6 +129,23 @@ const Clients = () => {
             className="pl-9"
           />
         </div>
+
+        <div className="relative sm:w-[180px]">
+          <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="pl-9"
+            placeholder="Filtrar por dia"
+          />
+        </div>
+
+        {dateFilter && (
+          <Button variant="ghost" size="sm" onClick={() => setDateFilter("")} className="text-muted-foreground">
+            Limpar filtro
+          </Button>
+        )}
 
         <div className="hidden sm:flex sm:flex-1" />
 
@@ -141,8 +173,8 @@ const Clients = () => {
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>Cliente</TableHead>
                 <TableHead>Telefone</TableHead>
-                <TableHead className="text-center">Corridas</TableHead>
-                <TableHead className="text-right">Valor Total</TableHead>
+                 <TableHead className="text-center">Corridas</TableHead>
+                 <TableHead className="text-right">{dateFilter ? "Valor do Dia" : "Valor Total"}</TableHead>
                 <TableHead className="w-[70px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -175,11 +207,11 @@ const Clients = () => {
                   </TableCell>
                   <TableCell className="text-center">
                     <span className="inline-flex items-center justify-center rounded-full bg-info/10 px-2.5 py-0.5 text-sm font-medium text-info">
-                      {client.total_rides}
+                      {getClientValue(client).rides}
                     </span>
                   </TableCell>
                   <TableCell className="text-right font-semibold">
-                    {formatCurrency(client.total_value)}
+                    {formatCurrency(getClientValue(client).value)}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>

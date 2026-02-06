@@ -11,6 +11,7 @@ export type ClientUpdate = TablesUpdate<'clients'>;
 export interface ClientWithStats extends Client {
   total_rides: number;
   total_value: number;
+  rides_by_date: { date: string; total_rides: number; total_value: number }[];
 }
 
 // Validation schema
@@ -51,26 +52,36 @@ export const useClientsWithStats = () => {
       // Then get ride stats for each client
       const { data: rides, error: ridesError } = await supabase
         .from('rides')
-        .select('client_id, value');
+        .select('client_id, value, ride_date');
       
       if (ridesError) throw ridesError;
 
       // Calculate stats
-      const statsMap = new Map<string, { total_rides: number; total_value: number }>();
+      const statsMap = new Map<string, { total_rides: number; total_value: number; byDate: Map<string, { total_rides: number; total_value: number }> }>();
       
       (rides || []).forEach(ride => {
-        const current = statsMap.get(ride.client_id) || { total_rides: 0, total_value: 0 };
-        statsMap.set(ride.client_id, {
-          total_rides: current.total_rides + 1,
-          total_value: current.total_value + Number(ride.value),
-        });
+        const current = statsMap.get(ride.client_id) || { total_rides: 0, total_value: 0, byDate: new Map() };
+        current.total_rides += 1;
+        current.total_value += Number(ride.value);
+        
+        const dateKey = ride.ride_date;
+        const dateStats = current.byDate.get(dateKey) || { total_rides: 0, total_value: 0 };
+        dateStats.total_rides += 1;
+        dateStats.total_value += Number(ride.value);
+        current.byDate.set(dateKey, dateStats);
+        
+        statsMap.set(ride.client_id, current);
       });
 
-      return (clients || []).map(client => ({
-        ...client,
-        total_rides: statsMap.get(client.id)?.total_rides || 0,
-        total_value: statsMap.get(client.id)?.total_value || 0,
-      })) as ClientWithStats[];
+      return (clients || []).map(client => {
+        const stats = statsMap.get(client.id);
+        return {
+          ...client,
+          total_rides: stats?.total_rides || 0,
+          total_value: stats?.total_value || 0,
+          rides_by_date: stats ? Array.from(stats.byDate.entries()).map(([date, s]) => ({ date, ...s })) : [],
+        };
+      }) as ClientWithStats[];
     },
   });
 };
