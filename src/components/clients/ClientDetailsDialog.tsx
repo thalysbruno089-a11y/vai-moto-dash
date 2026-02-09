@@ -5,9 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash2, Search, Calendar, Bike, DollarSign, Pencil } from 'lucide-react';
+import { Loader2, Plus, Trash2, Search, Calendar, Bike, DollarSign, Pencil, CheckCircle2, Clock } from 'lucide-react';
 import { Client } from '@/hooks/useClients';
-import { useRidesByClient, useDeleteRide, RideWithRelations } from '@/hooks/useRides';
+import { useRidesByClient, useDeleteRide, useToggleRidePayment, RideWithRelations } from '@/hooks/useRides';
 import { useMotoboys } from '@/hooks/useMotoboys';
 import { RideFormDialog } from './RideFormDialog';
 import { DeleteConfirmDialog } from '@/components/shared/DeleteConfirmDialog';
@@ -32,6 +32,7 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
   const { data: rides, isLoading } = useRidesByClient(client?.id || '');
   const { data: motoboys } = useMotoboys();
   const deleteRide = useDeleteRide();
+  const togglePayment = useToggleRidePayment();
 
   const filteredRides = (rides || []).filter(ride => {
     const matchesMotoboy = motoboyFilter === 'all' || ride.motoboy_id === motoboyFilter;
@@ -45,7 +46,8 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
   // Calculate stats
   const totalRides = filteredRides.length;
   const totalValue = filteredRides.reduce((acc, r) => acc + Number(r.value), 0);
-  
+  const paidValue = filteredRides.filter(r => (r as any).payment_status === 'paid').reduce((acc, r) => acc + Number(r.value), 0);
+  const unpaidValue = totalValue - paidValue;
   // Group by motoboy
   const motoboyStats = new Map<string, { name: string; number: string | null; rides: number; value: number }>();
   filteredRides.forEach(ride => {
@@ -120,7 +122,6 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
             </DialogDescription>
           </DialogHeader>
 
-          {/* Stats Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-b">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
               <Bike className="h-5 w-5 text-primary" />
@@ -130,25 +131,24 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
               </div>
             </div>
             <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <DollarSign className="h-5 w-5 text-success" />
+              <DollarSign className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">Valor Total</p>
                 <p className="text-lg font-semibold">{formatCurrency(totalValue)}</p>
               </div>
             </div>
-            <div className="col-span-2 p-3 rounded-lg bg-muted/50">
-              <p className="text-sm text-muted-foreground mb-2">Por Motoboy</p>
-              <div className="flex flex-wrap gap-2">
-                {Array.from(motoboyStats.values()).slice(0, 4).map((stat, idx) => (
-                  <Badge key={idx} variant="secondary" className="text-xs">
-                    {stat.number ? `#${stat.number}` : stat.name}: {stat.rides} corridas
-                  </Badge>
-                ))}
-                {motoboyStats.size > 4 && (
-                  <Badge variant="outline" className="text-xs">
-                    +{motoboyStats.size - 4} mais
-                  </Badge>
-                )}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-success/10">
+              <CheckCircle2 className="h-5 w-5 text-success" />
+              <div>
+                <p className="text-sm text-muted-foreground">Pago</p>
+                <p className="text-lg font-semibold text-success">{formatCurrency(paidValue)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-warning/10">
+              <Clock className="h-5 w-5 text-warning" />
+              <div>
+                <p className="text-sm text-muted-foreground">A Pagar</p>
+                <p className="text-lg font-semibold text-warning">{formatCurrency(unpaidValue)}</p>
               </div>
             </div>
           </div>
@@ -214,6 +214,7 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
                     <TableHead>Data</TableHead>
                     <TableHead>Motoboy</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
                     <TableHead>Observações</TableHead>
                     <TableHead className="w-[70px]">Ações</TableHead>
                   </TableRow>
@@ -239,6 +240,28 @@ export function ClientDetailsDialog({ open, onOpenChange, client }: ClientDetail
                       </TableCell>
                       <TableCell className="text-right font-semibold">
                         {formatCurrency(Number(ride.value))}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`gap-1.5 text-xs font-medium ${
+                            (ride as any).payment_status === 'paid'
+                              ? 'text-success hover:text-success'
+                              : 'text-warning hover:text-warning'
+                          }`}
+                          onClick={() => togglePayment.mutate({
+                            id: ride.id,
+                            payment_status: (ride as any).payment_status === 'paid' ? 'pending' : 'paid'
+                          })}
+                          disabled={togglePayment.isPending}
+                        >
+                          {(ride as any).payment_status === 'paid' ? (
+                            <><CheckCircle2 className="h-4 w-4" /> Pago</>
+                          ) : (
+                            <><Clock className="h-4 w-4" /> Não Pago</>
+                          )}
+                        </Button>
                       </TableCell>
                       <TableCell className="text-muted-foreground max-w-[200px] truncate">
                         {ride.notes || '-'}

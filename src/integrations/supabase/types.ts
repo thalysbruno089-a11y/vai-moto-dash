@@ -461,6 +461,7 @@ export type Database = {
           id: string
           motoboy_id: string
           notes: string | null
+          payment_status: string
           ride_date: string
           updated_at: string
           value: number
@@ -472,6 +473,7 @@ export type Database = {
           id?: string
           motoboy_id: string
           notes?: string | null
+          payment_status?: string
           ride_date?: string
           updated_at?: string
           value?: number
@@ -483,6 +485,7 @@ export type Database = {
           id?: string
           motoboy_id?: string
           notes?: string | null
+          payment_status?: string
           ride_date?: string
           updated_at?: string
           value?: number

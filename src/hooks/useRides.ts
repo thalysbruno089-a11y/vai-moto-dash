@@ -233,6 +233,33 @@ export const useUpdateRide = () => {
   });
 };
 
+export const useToggleRidePayment = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, payment_status }: { id: string; payment_status: string }) => {
+      const { data, error } = await supabase
+        .from('rides')
+        .update({ payment_status })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['rides'] });
+      queryClient.invalidateQueries({ queryKey: ['rides-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['clients-with-stats'] });
+      toast.success('Status de pagamento atualizado!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao atualizar pagamento', { description: error.message });
+    },
+  });
+};
+
 export const useDeleteRide = () => {
   const queryClient = useQueryClient();
   
