@@ -145,7 +145,9 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
   
   const sortedPayments = [...payments].sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime());
   
+  // Normalize to start of day to avoid time-of-day comparison issues with date-only payment_date
   const loanStart = new Date(loan.created_at);
+  loanStart.setHours(0, 0, 0, 0);
   const now = new Date();
   const monthsDiff = Math.max(0, (now.getFullYear() - loanStart.getFullYear()) * 12 + (now.getMonth() - loanStart.getMonth()));
   
