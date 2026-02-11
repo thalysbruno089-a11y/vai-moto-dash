@@ -244,6 +244,98 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_payments: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          id: string
+          loan_id: string
+          notes: string | null
+          payment_date: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          id?: string
+          loan_id: string
+          notes?: string | null
+          payment_date?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          loan_id?: string
+          notes?: string | null
+          payment_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_payments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loans: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          interest_rate: number
+          notes: string | null
+          person_name: string
+          principal_amount: number
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          interest_rate: number
+          notes?: string | null
+          person_name: string
+          principal_amount: number
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          interest_rate?: number
+          notes?: string | null
+          person_name?: string
+          principal_amount?: number
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       motoboys: {
         Row: {
           address: string | null
