@@ -76,7 +76,7 @@ const LoanCard = ({ loan }: Props) => {
         {loan.notes && <p className="text-sm text-muted-foreground mt-1">{loan.notes}</p>}
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
           <div>
             <p className="text-xs text-muted-foreground">Valor Emprestado</p>
             <p className="text-sm font-semibold">{formatCurrency(Number(loan.principal_amount))}</p>
@@ -88,6 +88,10 @@ const LoanCard = ({ loan }: Props) => {
           <div>
             <p className="text-xs text-muted-foreground">Juros Mensal Atual</p>
             <p className="text-sm font-semibold text-amber-600">{formatCurrency(details.monthlyInterest)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Juros Pagos</p>
+            <p className="text-sm font-semibold text-blue-600">{formatCurrency(details.totalInterestPaid)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Total Pago</p>
