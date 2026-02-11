@@ -9,6 +9,8 @@ import {
   Settings,
   LogOut,
   Bell,
+  HandCoins,
+  Landmark,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -21,6 +23,11 @@ const fullNavigation = [
   { name: "Fluxo de Caixa", href: "/cash-flow", icon: TrendingUp },
   { name: "Categorias", href: "/categories", icon: Tags },
   { name: "Relatórios", href: "/reports", icon: FileText },
+];
+
+const adminNavigation = [
+  { name: "Emprestei", href: "/loans-lent", icon: HandCoins },
+  { name: "Peguei Emprestado", href: "/loans-borrowed", icon: Landmark },
 ];
 
 const employeeNavigation = [
@@ -64,6 +71,19 @@ const Sidebar = () => {
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {(profile?.role === 'employee' ? employeeNavigation : fullNavigation).map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={isActive ? "sidebar-link-active" : "sidebar-link"}
+              >
+                <item.icon className="h-5 w-5 flex-shrink-0" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+          {profile?.role === 'admin' && adminNavigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
               <Link

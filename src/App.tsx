@@ -16,6 +16,8 @@ import CashFlow from "./pages/CashFlow";
 import Categories from "./pages/Categories";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import LoansLent from "./pages/LoansLent";
+import LoansBorrowed from "./pages/LoansBorrowed";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +40,8 @@ const App = () => (
               <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
+              <Route path="/loans-lent" element={<AdminRoute><LoansLent /></AdminRoute>} />
+              <Route path="/loans-borrowed" element={<AdminRoute><LoansBorrowed /></AdminRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
