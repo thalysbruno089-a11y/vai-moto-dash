@@ -144,8 +144,11 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
   const rate = Number(loan.interest_rate) / 100;
 
   // Group payments by month (YYYY-MM)
+  // Use T12:00:00 to avoid timezone date shift (UTC midnight in Brazil = previous day)
+  const parseDate = (d: string) => new Date(d + 'T12:00:00');
+
   const sortedPayments = [...payments].sort(
-    (a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime()
+    (a, b) => parseDate(a.payment_date).getTime() - parseDate(b.payment_date).getTime()
   );
 
   const loanStart = new Date(loan.created_at);
@@ -156,7 +159,7 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
   const now = new Date();
   let lastMonth = now.getFullYear() * 12 + now.getMonth();
   for (const p of sortedPayments) {
-    const d = new Date(p.payment_date);
+    const d = parseDate(p.payment_date);
     const pm = d.getFullYear() * 12 + d.getMonth();
     if (pm > lastMonth) lastMonth = pm;
   }
@@ -175,7 +178,7 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
     // Find payments in the month that is (loanStartMonth + m + 1)
     const targetMonth = loanStartMonth + m + 1;
     const monthPayments = sortedPayments.filter(p => {
-      const d = new Date(p.payment_date);
+      const d = parseDate(p.payment_date);
       return d.getFullYear() * 12 + d.getMonth() === targetMonth;
     });
 
@@ -193,7 +196,7 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
 
   // Handle payments in the loan creation month itself (same month)
   const creationMonthPayments = sortedPayments.filter(p => {
-    const d = new Date(p.payment_date);
+    const d = parseDate(p.payment_date);
     return d.getFullYear() * 12 + d.getMonth() === loanStartMonth;
   });
   const creationMonthTotal = creationMonthPayments.reduce((s, p) => s + Number(p.amount), 0);
