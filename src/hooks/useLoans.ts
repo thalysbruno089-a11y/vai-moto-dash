@@ -142,39 +142,47 @@ export const useDeleteLoan = () => {
 export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
   const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const rate = Number(loan.interest_rate) / 100;
-  
-  const sortedPayments = [...payments].sort((a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime());
-  
-  // Normalize to start of day to avoid time-of-day comparison issues with date-only payment_date
+
+  // Group payments by month (YYYY-MM)
+  const sortedPayments = [...payments].sort(
+    (a, b) => new Date(a.payment_date).getTime() - new Date(b.payment_date).getTime()
+  );
+
   const loanStart = new Date(loan.created_at);
   loanStart.setHours(0, 0, 0, 0);
+  const loanStartMonth = loanStart.getFullYear() * 12 + loanStart.getMonth();
+
+  // Find the last month we need to process: max of now and latest payment
   const now = new Date();
-  const monthsDiff = Math.max(0, (now.getFullYear() - loanStart.getFullYear()) * 12 + (now.getMonth() - loanStart.getMonth()));
-  
+  let lastMonth = now.getFullYear() * 12 + now.getMonth();
+  for (const p of sortedPayments) {
+    const d = new Date(p.payment_date);
+    const pm = d.getFullYear() * 12 + d.getMonth();
+    if (pm > lastMonth) lastMonth = pm;
+  }
+
+  const totalMonths = lastMonth - loanStartMonth;
+
   let balance = Number(loan.principal_amount);
   let totalInterestAccrued = 0;
   let totalInterestPaid = 0;
   let totalPrincipalPaid = 0;
-  
-  for (let m = 0; m < monthsDiff; m++) {
+
+  for (let m = 0; m < totalMonths; m++) {
     const monthInterest = balance * rate;
     totalInterestAccrued += monthInterest;
-    
-    // Find payments in this month
-    const monthDate = new Date(loanStart.getFullYear(), loanStart.getMonth() + m + 1, 1);
-    const nextMonth = new Date(loanStart.getFullYear(), loanStart.getMonth() + m + 2, 1);
-    
+
+    // Find payments in the month that is (loanStartMonth + m + 1)
+    const targetMonth = loanStartMonth + m + 1;
     const monthPayments = sortedPayments.filter(p => {
       const d = new Date(p.payment_date);
-      return d >= monthDate && d < nextMonth;
+      return d.getFullYear() * 12 + d.getMonth() === targetMonth;
     });
-    
-    let monthPaidTotal = monthPayments.reduce((s, p) => s + Number(p.amount), 0);
-    
-    // First cover interest, then reduce principal
+
+    const monthPaidTotal = monthPayments.reduce((s, p) => s + Number(p.amount), 0);
+
     if (monthPaidTotal <= monthInterest) {
       totalInterestPaid += monthPaidTotal;
-      // Nothing reduces the principal
     } else {
       totalInterestPaid += monthInterest;
       const principalReduction = monthPaidTotal - monthInterest;
@@ -183,37 +191,17 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
     }
   }
 
-  // Payments made in current month (not yet accrued interest month)
-  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const currentMonthPayments = sortedPayments.filter(p => {
+  // Handle payments in the loan creation month itself (same month)
+  const creationMonthPayments = sortedPayments.filter(p => {
     const d = new Date(p.payment_date);
-    return d >= currentMonthStart && d < currentMonthEnd && d >= loanStart;
+    return d.getFullYear() * 12 + d.getMonth() === loanStartMonth;
   });
-  // Check if these weren't already counted
-  const alreadyCounted = new Set<string>();
-  for (let m = 0; m < monthsDiff; m++) {
-    const monthDate = new Date(loanStart.getFullYear(), loanStart.getMonth() + m + 1, 1);
-    const nextMonth = new Date(loanStart.getFullYear(), loanStart.getMonth() + m + 2, 1);
-    sortedPayments.filter(p => {
-      const d = new Date(p.payment_date);
-      if (d >= monthDate && d < nextMonth) alreadyCounted.add(p.id);
-    });
-  }
-  const uncountedPayments = currentMonthPayments.filter(p => !alreadyCounted.has(p.id));
-  const uncountedTotal = uncountedPayments.reduce((s, p) => s + Number(p.amount), 0);
-  
-  // Current month interest on current balance
-  const currentMonthInterest = balance * rate;
-  if (uncountedTotal > 0) {
-    if (uncountedTotal <= currentMonthInterest) {
-      totalInterestPaid += uncountedTotal;
-    } else {
-      totalInterestPaid += currentMonthInterest;
-      const principalReduction = uncountedTotal - currentMonthInterest;
-      totalPrincipalPaid += principalReduction;
-      balance = Math.max(0, balance - principalReduction);
-    }
+  const creationMonthTotal = creationMonthPayments.reduce((s, p) => s + Number(p.amount), 0);
+
+  // No interest accrued in the creation month itself, so all goes to principal
+  if (creationMonthTotal > 0) {
+    totalPrincipalPaid += creationMonthTotal;
+    balance = Math.max(0, balance - creationMonthTotal);
   }
 
   const monthlyInterest = balance * rate;
