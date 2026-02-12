@@ -171,11 +171,22 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
   let totalInterestPaid = 0;
   let totalPrincipalPaid = 0;
 
+  // FIRST: Handle payments in the loan creation month (no interest yet, all goes to principal)
+  const creationMonthPayments = sortedPayments.filter(p => {
+    const d = parseDate(p.payment_date);
+    return d.getFullYear() * 12 + d.getMonth() === loanStartMonth;
+  });
+  const creationMonthTotal = creationMonthPayments.reduce((s, p) => s + Number(p.amount), 0);
+  if (creationMonthTotal > 0) {
+    totalPrincipalPaid += creationMonthTotal;
+    balance = Math.max(0, balance - creationMonthTotal);
+  }
+
+  // THEN: Process each subsequent month with interest
   for (let m = 0; m < totalMonths; m++) {
     const monthInterest = balance * rate;
     totalInterestAccrued += monthInterest;
 
-    // Find payments in the month that is (loanStartMonth + m + 1)
     const targetMonth = loanStartMonth + m + 1;
     const monthPayments = sortedPayments.filter(p => {
       const d = parseDate(p.payment_date);
@@ -192,19 +203,6 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
       totalPrincipalPaid += principalReduction;
       balance = Math.max(0, balance - principalReduction);
     }
-  }
-
-  // Handle payments in the loan creation month itself (same month)
-  const creationMonthPayments = sortedPayments.filter(p => {
-    const d = parseDate(p.payment_date);
-    return d.getFullYear() * 12 + d.getMonth() === loanStartMonth;
-  });
-  const creationMonthTotal = creationMonthPayments.reduce((s, p) => s + Number(p.amount), 0);
-
-  // No interest accrued in the creation month itself, so all goes to principal
-  if (creationMonthTotal > 0) {
-    totalPrincipalPaid += creationMonthTotal;
-    balance = Math.max(0, balance - creationMonthTotal);
   }
 
   const monthlyInterest = balance * rate;
