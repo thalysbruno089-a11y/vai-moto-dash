@@ -392,6 +392,62 @@ export type Database = {
           },
         ]
       }
+      motorcycle_rentals: {
+        Row: {
+          color: string
+          company_id: string
+          created_at: string
+          daily_rate: number
+          id: string
+          notes: string | null
+          pickup_date: string
+          plate: string
+          renter_name: string
+          renter_phone: string | null
+          return_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          color: string
+          company_id: string
+          created_at?: string
+          daily_rate: number
+          id?: string
+          notes?: string | null
+          pickup_date?: string
+          plate: string
+          renter_name: string
+          renter_phone?: string | null
+          return_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          company_id?: string
+          created_at?: string
+          daily_rate?: number
+          id?: string
+          notes?: string | null
+          pickup_date?: string
+          plate?: string
+          renter_name?: string
+          renter_phone?: string | null
+          return_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycle_rentals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           client_id: string | null
