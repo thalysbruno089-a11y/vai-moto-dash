@@ -12,6 +12,7 @@ import {
   Bell,
   HandCoins,
   Landmark,
+  CarFront,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -36,6 +37,7 @@ const fullNavigation = [
 const adminNavigation = [
   { name: "Emprestei", href: "/loans-lent", icon: HandCoins },
   { name: "Peguei Emprestado", href: "/loans-borrowed", icon: Landmark },
+  { name: "Aluguel Moto", href: "/motorcycle-rentals", icon: CarFront },
 ];
 
 const employeeNavigation = [
