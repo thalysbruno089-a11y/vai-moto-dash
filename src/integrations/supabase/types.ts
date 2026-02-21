@@ -392,6 +392,50 @@ export type Database = {
           },
         ]
       }
+      motorcycle_expenses: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          mileage: number | null
+          service_date: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          mileage?: number | null
+          service_date?: string
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          mileage?: number | null
+          service_date?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycle_expenses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       motorcycle_rentals: {
         Row: {
           color: string
