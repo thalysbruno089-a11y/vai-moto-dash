@@ -34,6 +34,7 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
   const [status, setStatus] = useState<StatusType>('active');
   const [weeklyPayment, setWeeklyPayment] = useState('');
   const [number, setNumber] = useState('');
+  const [pixKey, setPixKey] = useState('');
 
   const createMotoboy = useCreateMotoboy();
   const updateMotoboy = useUpdateMotoboy();
@@ -50,6 +51,7 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
       setStatus(motoboy.status);
       setWeeklyPayment((motoboy as any).weekly_payment?.toString() || '');
       setNumber((motoboy as any).number || '');
+      setPixKey((motoboy as any).pix_key || '');
     } else {
       setName('');
       setCpf('');
@@ -59,6 +61,7 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
       setStatus('active');
       setWeeklyPayment('');
       setNumber('');
+      setPixKey('');
     }
   }, [motoboy, open]);
 
@@ -74,6 +77,7 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
       status,
       weekly_payment: weeklyPayment ? parseFloat(weeklyPayment) : 0,
       number: number || null,
+      pix_key: pixKey || null,
     };
     
     try {
@@ -151,6 +155,17 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
               onChange={(e) => setWeeklyPayment(e.target.value)}
               placeholder="0,00"
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pixKey">Chave PIX</Label>
+            <Input
+              id="pixKey"
+              value={pixKey}
+              onChange={(e) => setPixKey(e.target.value)}
+              placeholder="CPF, email, telefone ou chave aleatória"
+              maxLength={100}
             />
           </div>
 

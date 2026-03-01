@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loan, useLoanPayments, calculateLoanDetails, useUpdateLoanStatus, useDeleteLoan } from "@/hooks/useLoans";
 import LoanPaymentDialog from "./LoanPaymentDialog";
-import { ChevronDown, ChevronUp, Trash2, CheckCircle, Clock } from "lucide-react";
+import LoanEditDialog from "./LoanEditDialog";
+import { ChevronDown, ChevronUp, Trash2, CheckCircle, Clock, Pencil } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -19,6 +20,7 @@ const formatCurrency = (v: number) =>
 const LoanCard = ({ loan }: Props) => {
   const [expanded, setExpanded] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const { data: payments = [] } = useLoanPayments(loan.id);
   const updateStatus = useUpdateLoanStatus();
   const deleteLoan = useDeleteLoan();
@@ -38,6 +40,9 @@ const LoanCard = ({ loan }: Props) => {
             <Badge variant="outline">{loan.interest_rate}% a.m.</Badge>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)} title="Editar">
+              <Pencil className="h-4 w-4" />
+            </Button>
             {isActive && (
               <>
                 <LoanPaymentDialog loanId={loan.id} maxAmount={details.remainingBalance} />
@@ -124,6 +129,7 @@ const LoanCard = ({ loan }: Props) => {
           </div>
         )}
       </CardContent>
+      <LoanEditDialog loan={loan} open={editOpen} onOpenChange={setEditOpen} />
     </Card>
   );
 };

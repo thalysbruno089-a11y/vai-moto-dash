@@ -347,6 +347,7 @@ export type Database = {
           number: string | null
           payment_status: string | null
           phone: string | null
+          pix_key: string | null
           shift: Database["public"]["Enums"]["shift_type"]
           status: Database["public"]["Enums"]["status_type"]
           updated_at: string
@@ -362,6 +363,7 @@ export type Database = {
           number?: string | null
           payment_status?: string | null
           phone?: string | null
+          pix_key?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["status_type"]
           updated_at?: string
@@ -377,6 +379,7 @@ export type Database = {
           number?: string | null
           payment_status?: string | null
           phone?: string | null
+          pix_key?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["status_type"]
           updated_at?: string
@@ -400,6 +403,7 @@ export type Database = {
           description: string | null
           id: string
           mileage: number | null
+          plate: string | null
           service_date: string
           updated_at: string
           value: number
@@ -411,6 +415,7 @@ export type Database = {
           description?: string | null
           id?: string
           mileage?: number | null
+          plate?: string | null
           service_date?: string
           updated_at?: string
           value: number
@@ -422,6 +427,7 @@ export type Database = {
           description?: string | null
           id?: string
           mileage?: number | null
+          plate?: string | null
           service_date?: string
           updated_at?: string
           value?: number
