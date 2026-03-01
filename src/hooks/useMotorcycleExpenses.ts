@@ -12,6 +12,7 @@ export interface MotorcycleExpense {
   mileage: number | null;
   description: string | null;
   service_date: string;
+  plate: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +23,7 @@ export interface MotorcycleExpenseInsert {
   mileage?: number | null;
   description?: string | null;
   service_date: string;
+  plate?: string | null;
 }
 
 export const categoryLabels: Record<ExpenseCategory, string> = {
@@ -45,6 +47,20 @@ export const useMotorcycleExpenses = (category?: ExpenseCategory) => {
       }
 
       const { data, error } = await query;
+      if (error) throw error;
+      return data as MotorcycleExpense[];
+    },
+  });
+};
+
+export const useAllMotorcycleExpenses = () => {
+  return useQuery({
+    queryKey: ['motorcycle_expenses', 'all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('motorcycle_expenses')
+        .select('*')
+        .order('service_date', { ascending: false });
       if (error) throw error;
       return data as MotorcycleExpense[];
     },

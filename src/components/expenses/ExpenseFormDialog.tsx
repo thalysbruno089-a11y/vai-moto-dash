@@ -17,9 +17,10 @@ interface ExpenseFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category: ExpenseCategory;
+  plate?: string;
 }
 
-export function ExpenseFormDialog({ open, onOpenChange, category }: ExpenseFormDialogProps) {
+export function ExpenseFormDialog({ open, onOpenChange, category, plate: defaultPlate }: ExpenseFormDialogProps) {
   const createExpense = useCreateMotorcycleExpense();
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -28,10 +29,11 @@ export function ExpenseFormDialog({ open, onOpenChange, category }: ExpenseFormD
   const [mileage, setMileage] = useState("");
   const [description, setDescription] = useState("");
   const [serviceDate, setServiceDate] = useState(todayStr);
+  const [plate, setPlate] = useState(defaultPlate || "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!value || !serviceDate) return;
+    if (!value || !serviceDate || !plate.trim()) return;
 
     await createExpense.mutateAsync({
       category,
@@ -39,12 +41,14 @@ export function ExpenseFormDialog({ open, onOpenChange, category }: ExpenseFormD
       mileage: mileage ? parseFloat(mileage) : null,
       description: description || null,
       service_date: serviceDate,
+      plate: plate.trim().toUpperCase(),
     });
 
     setValue("");
     setMileage("");
     setDescription("");
     setServiceDate(todayStr);
+    if (!defaultPlate) setPlate("");
     onOpenChange(false);
   };
 
@@ -56,6 +60,18 @@ export function ExpenseFormDialog({ open, onOpenChange, category }: ExpenseFormD
           <DialogDescription>Registre uma despesa de {categoryLabels[category].toLowerCase()}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="plate">Placa da Moto *</Label>
+            <Input
+              id="plate"
+              placeholder="ABC-1234"
+              value={plate}
+              onChange={(e) => setPlate(e.target.value)}
+              required
+              maxLength={10}
+              disabled={!!defaultPlate}
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="value">Valor (R$) *</Label>
             <Input
