@@ -79,6 +79,11 @@ const LoanCard = ({ loan }: Props) => {
           </div>
         </div>
         {loan.notes && <p className="text-sm text-muted-foreground mt-1">{loan.notes}</p>}
+        {loan.due_date && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Vencimento: {format(new Date(loan.due_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })}
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">

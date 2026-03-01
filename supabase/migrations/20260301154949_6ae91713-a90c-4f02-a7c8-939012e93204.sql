@@ -1,0 +1,1 @@
+ALTER TABLE public.loans ADD COLUMN due_date date NULL;
