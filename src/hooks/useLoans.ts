@@ -10,6 +10,7 @@ export interface Loan {
   notes: string | null;
   principal_amount: number;
   interest_rate: number;
+  due_date: string | null;
   status: string;
   created_at: string;
   updated_at: string;
@@ -59,7 +60,7 @@ export const useLoanPayments = (loanId: string) => {
 export const useCreateLoan = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (loan: { type: 'lent' | 'borrowed'; person_name: string; notes?: string; principal_amount: number; interest_rate: number }) => {
+    mutationFn: async (loan: { type: 'lent' | 'borrowed'; person_name: string; notes?: string; principal_amount: number; interest_rate: number; due_date?: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Não autenticado');
       const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle();

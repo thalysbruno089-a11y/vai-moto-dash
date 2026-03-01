@@ -17,6 +17,7 @@ const LoanFormDialog = ({ type }: Props) => {
   const [personName, setPersonName] = useState("");
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("10");
+  const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const createLoan = useCreateLoan();
 
@@ -24,8 +25,8 @@ const LoanFormDialog = ({ type }: Props) => {
     e.preventDefault();
     if (!personName.trim() || !amount) return;
     createLoan.mutate(
-      { type, person_name: personName.trim(), principal_amount: Number(amount), interest_rate: Number(rate), notes: notes.trim() || undefined },
-      { onSuccess: () => { setOpen(false); setPersonName(""); setAmount(""); setRate("10"); setNotes(""); } }
+      { type, person_name: personName.trim(), principal_amount: Number(amount), interest_rate: Number(rate), due_date: dueDate || undefined, notes: notes.trim() || undefined },
+      { onSuccess: () => { setOpen(false); setPersonName(""); setAmount(""); setRate("10"); setDueDate(""); setNotes(""); } }
     );
   };
 
@@ -58,6 +59,10 @@ const LoanFormDialog = ({ type }: Props) => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Data de Vencimento</Label>
+            <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Observações</Label>

@@ -21,6 +21,7 @@ const LoanEditDialog = ({ loan, open, onOpenChange }: Props) => {
   const [personName, setPersonName] = useState("");
   const [amount, setAmount] = useState("");
   const [rate, setRate] = useState("10");
+  const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const queryClient = useQueryClient();
@@ -30,6 +31,7 @@ const LoanEditDialog = ({ loan, open, onOpenChange }: Props) => {
       setPersonName(loan.person_name);
       setAmount(String(loan.principal_amount));
       setRate(String(loan.interest_rate));
+      setDueDate(loan.due_date || "");
       setNotes(loan.notes || "");
     }
   }, [open, loan]);
@@ -45,6 +47,7 @@ const LoanEditDialog = ({ loan, open, onOpenChange }: Props) => {
           person_name: personName.trim(),
           principal_amount: Number(amount),
           interest_rate: Number(rate),
+          due_date: dueDate || null,
           notes: notes.trim() || null,
         })
         .eq('id', loan.id);
@@ -85,6 +88,10 @@ const LoanEditDialog = ({ loan, open, onOpenChange }: Props) => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Data de Vencimento</Label>
+            <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Observações</Label>
