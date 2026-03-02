@@ -54,6 +54,7 @@ const LoanFormDialog = ({ type }: Props) => {
               <Select value={rate} onValueChange={setRate}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="5">5%</SelectItem>
                   <SelectItem value="10">10%</SelectItem>
                   <SelectItem value="20">20%</SelectItem>
                 </SelectContent>
