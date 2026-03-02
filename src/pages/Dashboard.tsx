@@ -1,91 +1,172 @@
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Bike, DollarSign } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, Bike, RotateCcw, Calendar, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useCashFlow } from "@/hooks/useCashFlow";
+import { Button } from "@/components/ui/button";
 import { useMotoboys } from "@/hooks/useMotoboys";
+import { useCashFlow } from "@/hooks/useCashFlow";
+import { useState } from "react";
+import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+type ViewMode = 'week' | 'month';
+
+const getWeekRange = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 3=Wed
+  // Week starts on Wednesday
+  const diffToWed = day >= 3 ? day - 3 : day + 4;
+  const start = new Date(now);
+  start.setDate(now.getDate() - diffToWed);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+};
+
+const getMonthRange = () => {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return { start, end };
+};
+
+const formatDateStr = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const Dashboard = () => {
-  const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
   const { data: motoboys, isLoading: loadingMotoboys } = useMotoboys();
+  const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
+  const [viewMode, setViewMode] = useState<ViewMode>('week');
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Calculate motoboy payments total (only active motoboys with payment_status = 'paid')
-  // Motoboys PAY the company, so this is INCOME
+  const weekRange = getWeekRange();
+  const monthRange = getMonthRange();
+
+  const range = viewMode === 'week' ? weekRange : monthRange;
+  const rangeStartStr = formatDateStr(range.start);
+  const rangeEndStr = formatDateStr(range.end);
+
+  // Motoboy payments (income) - only paid active motoboys
   const motoboyPaymentsTotal = motoboys
-    ?.filter(m => m.status === 'active' && (m as any).payment_status === 'paid')
-    .reduce((sum, m) => sum + Number((m as any).weekly_payment || 0), 0) || 0;
+    ?.filter(m => m.status === 'active' && m.payment_status === 'paid')
+    .reduce((sum, m) => sum + Number(m.weekly_payment || 0), 0) || 0;
 
-  // Calculate financial stats from real data
-  const cashFlowIncomeTotal = cashFlowEntries?.filter(e => e.type === 'revenue').reduce((sum, e) => sum + Number(e.value), 0) || 0;
-  const expenseTotal = cashFlowEntries?.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.value), 0) || 0;
-  
-  // Total income includes cash flow revenue + motoboy payments (they pay us)
-  const incomeTotal = cashFlowIncomeTotal + motoboyPaymentsTotal;
-  const balance = incomeTotal - expenseTotal;
+  // Cash flow entries in range
+  const entriesInRange = cashFlowEntries?.filter(e => {
+    return e.flow_date >= rangeStartStr && e.flow_date <= rangeEndStr;
+  }) || [];
 
-  // Get active motoboys count
+  const cashFlowIncome = entriesInRange.filter(e => e.type === 'revenue').reduce((sum, e) => sum + Number(e.value), 0);
+  const cashFlowExpense = entriesInRange.filter(e => e.type === 'expense').reduce((sum, e) => sum + Number(e.value), 0);
+
+  const totalIncome = cashFlowIncome + motoboyPaymentsTotal;
+  const totalExpense = cashFlowExpense;
+  const balance = totalIncome - totalExpense;
+
   const activeMotoboys = motoboys?.filter(m => m.status === 'active').length || 0;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(value);
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      // Reset all motoboy payment status to pending
+      const paidMotoboys = (motoboys || []).filter(m => m.payment_status === 'paid');
+      for (const m of paidMotoboys) {
+        await supabase.from('motoboys').update({ payment_status: 'pending' }).eq('id', m.id);
+      }
+      queryClient.invalidateQueries({ queryKey: ['motoboys'] });
+      toast.success('Semana zerada com sucesso!');
+      setResetDialogOpen(false);
+    } catch {
+      toast.error('Erro ao zerar semana');
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const isLoading = loadingCashFlow || loadingMotoboys;
 
+  const periodLabel = viewMode === 'week' ? 'Semana' : 'Mês';
+  const formatPeriod = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+
   return (
     <MainLayout title="Dashboard" subtitle="Visão geral financeira da sua empresa">
+      {/* Period Toggle + Reset */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-2">
+          <Button
+            variant={viewMode === 'week' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('week')}
+          >
+            <Calendar className="h-4 w-4 mr-1" /> Semana
+          </Button>
+          <Button
+            variant={viewMode === 'month' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('month')}
+          >
+            <CalendarDays className="h-4 w-4 mr-1" /> Mês
+          </Button>
+          <span className="text-sm text-muted-foreground ml-2">
+            {formatPeriod(range.start)} - {formatPeriod(range.end)}
+          </span>
+        </div>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => setResetDialogOpen(true)}
+        >
+          <RotateCcw className="h-4 w-4 mr-1" /> Zerar Semana
+        </Button>
+      </div>
+
       {/* Financial Stats */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
+      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-8">
         <StatCard
-          title="Saldo Atual"
-          value={isLoading ? "..." : formatCurrency(balance)}
-          icon={<Wallet className="h-6 w-6 text-primary" />}
-          variant="primary"
-        />
-        <StatCard
-          title="Total de Entradas"
-          value={isLoading ? "..." : formatCurrency(incomeTotal)}
+          title={`Entradas (${periodLabel})`}
+          value={isLoading ? "..." : formatCurrency(totalIncome)}
           icon={<TrendingUp className="h-6 w-6 text-success" />}
           variant="success"
         />
         <StatCard
-          title="Total de Saídas"
-          value={isLoading ? "..." : formatCurrency(expenseTotal)}
+          title={`Saídas (${periodLabel})`}
+          value={isLoading ? "..." : formatCurrency(totalExpense)}
           icon={<TrendingDown className="h-6 w-6 text-destructive" />}
           variant="destructive"
         />
         <StatCard
-          title="Balanço Geral"
+          title="Saldo Atual"
           value={isLoading ? "..." : formatCurrency(balance)}
-          icon={<PiggyBank className="h-6 w-6 text-primary" />}
+          icon={<Wallet className="h-6 w-6 text-primary" />}
           variant={balance >= 0 ? "success" : "destructive"}
         />
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3 mb-6 sm:mb-8">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 mb-6 sm:mb-8">
         <StatCard
           title="Motoboys Ativos"
           value={isLoading ? "..." : String(activeMotoboys)}
           icon={<Bike className="h-6 w-6 text-primary" />}
         />
         <StatCard
-          title="Total de Motoboys"
-          value={isLoading ? "..." : String(motoboys?.length || 0)}
-          icon={<Bike className="h-6 w-6 text-primary" />}
-        />
-        <StatCard
-          title="Receita Motoboys"
+          title="Receita Motoboys (Pagos)"
           value={isLoading ? "..." : formatCurrency(motoboyPaymentsTotal)}
-          icon={<DollarSign className="h-6 w-6 text-success" />}
+          icon={<TrendingUp className="h-6 w-6 text-success" />}
           variant="success"
         />
       </div>
 
-      {/* Motoboys em Atividade */}
+      {/* Motoboys */}
       <div className="grid gap-6">
         <Card>
           <CardHeader>
@@ -112,17 +193,17 @@ const Dashboard = () => {
                       <div>
                         <p className="font-medium text-foreground">{motoboy.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {motoboy.shift === 'day' ? 'Diurno' : motoboy.shift === 'night' ? 'Noturno' : 'Estrela'}
+                          {motoboy.shift === 'day' ? 'Diurno' : motoboy.shift === 'night' ? 'Noturno' : motoboy.shift === 'star' ? 'Estrela' : motoboy.shift === 'free' ? 'Free' : 'Fim de Semana'}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-sm font-medium ${motoboy.status === "active" ? "text-success" : "text-muted-foreground"}`}>
-                        {motoboy.status === "active" ? "Ativo" : "Inativo"}
+                      <p className={`text-sm font-medium ${motoboy.payment_status === "paid" ? "text-success" : "text-destructive"}`}>
+                        {motoboy.payment_status === "paid" ? "Pago" : "Não Pago"}
                       </p>
-                      {motoboy.phone && (
-                        <p className="text-sm text-muted-foreground">{motoboy.phone}</p>
-                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(Number(motoboy.weekly_payment || 0))}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -133,6 +214,15 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      <DeleteConfirmDialog
+        open={resetDialogOpen}
+        onOpenChange={setResetDialogOpen}
+        onConfirm={handleReset}
+        title="Zerar Semana"
+        description="Isso vai redefinir todos os pagamentos dos motoboys para 'Não Pago' e zerar o saldo. Deseja continuar?"
+        isLoading={isResetting}
+      />
     </MainLayout>
   );
 };
