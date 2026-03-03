@@ -31,6 +31,7 @@ export type Database = {
           status: string
           total_installments: number | null
           updated_at: string
+          vale_amount: number | null
           value: number
         }
         Insert: {
@@ -49,6 +50,7 @@ export type Database = {
           status?: string
           total_installments?: number | null
           updated_at?: string
+          vale_amount?: number | null
           value: number
         }
         Update: {
@@ -67,6 +69,7 @@ export type Database = {
           status?: string
           total_installments?: number | null
           updated_at?: string
+          vale_amount?: number | null
           value?: number
         }
         Relationships: [

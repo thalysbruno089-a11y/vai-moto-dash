@@ -20,16 +20,18 @@ export interface Bill {
   is_fixed: boolean;
   total_installments: number | null;
   paid_installments: number;
+  vale_amount: number;
   created_at: string;
   updated_at: string;
 }
 
-export type BillInsert = Omit<Bill, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'paid_at' | 'paid_installments' | 'total_installments'> & { 
+export type BillInsert = Omit<Bill, 'id' | 'created_at' | 'updated_at' | 'company_id' | 'paid_at' | 'paid_installments' | 'total_installments' | 'vale_amount'> & { 
   paid_at?: string | null;
   paid_installments?: number;
   total_installments?: number | null;
+  vale_amount?: number;
 };
-export type BillUpdate = Partial<BillInsert>;
+export type BillUpdate = Partial<BillInsert> & { vale_amount?: number };
 
 // Validation schema
 export const billSchema = z.object({
