@@ -1,0 +1,1 @@
+ALTER TABLE public.loans DROP CONSTRAINT IF EXISTS loans_interest_rate_check;
