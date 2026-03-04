@@ -144,8 +144,6 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
   const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const rate = Number(loan.interest_rate) / 100;
 
-  // Group payments by month (YYYY-MM)
-  // Use T12:00:00 to avoid timezone date shift (UTC midnight in Brazil = previous day)
   const parseDate = (d: string) => new Date(d + 'T12:00:00');
 
   const sortedPayments = [...payments].sort(
@@ -156,7 +154,6 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
   loanStart.setHours(0, 0, 0, 0);
   const loanStartMonth = loanStart.getFullYear() * 12 + loanStart.getMonth();
 
-  // Find the last month we need to process: max of now and latest payment
   const now = new Date();
   let lastMonth = now.getFullYear() * 12 + now.getMonth();
   for (const p of sortedPayments) {
@@ -172,7 +169,7 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
   let totalInterestPaid = 0;
   let totalPrincipalPaid = 0;
 
-  // FIRST: Handle payments in the loan creation month (no interest yet, all goes to principal)
+  // Payments in creation month: no interest, all goes to principal
   const creationMonthPayments = sortedPayments.filter(p => {
     const d = parseDate(p.payment_date);
     return d.getFullYear() * 12 + d.getMonth() === loanStartMonth;
@@ -183,10 +180,14 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
     balance = Math.max(0, balance - creationMonthTotal);
   }
 
-  // THEN: Process each subsequent month with interest
+  // Track unpaid interest that accumulates across months
+  let unpaidInterest = 0;
+
+  // Process each subsequent month
   for (let m = 0; m < totalMonths; m++) {
     const monthInterest = balance * rate;
     totalInterestAccrued += monthInterest;
+    unpaidInterest += monthInterest;
 
     const targetMonth = loanStartMonth + m + 1;
     const monthPayments = sortedPayments.filter(p => {
@@ -194,15 +195,20 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
       return d.getFullYear() * 12 + d.getMonth() === targetMonth;
     });
 
-    const monthPaidTotal = monthPayments.reduce((s, p) => s + Number(p.amount), 0);
+    let monthPaidTotal = monthPayments.reduce((s, p) => s + Number(p.amount), 0);
 
-    if (monthPaidTotal <= monthInterest) {
-      totalInterestPaid += monthPaidTotal;
-    } else {
-      totalInterestPaid += monthInterest;
-      const principalReduction = monthPaidTotal - monthInterest;
-      totalPrincipalPaid += principalReduction;
-      balance = Math.max(0, balance - principalReduction);
+    // First: pay off accumulated interest
+    if (monthPaidTotal > 0) {
+      const interestPayment = Math.min(monthPaidTotal, unpaidInterest);
+      totalInterestPaid += interestPayment;
+      unpaidInterest -= interestPayment;
+      monthPaidTotal -= interestPayment;
+
+      // Remainder reduces principal
+      if (monthPaidTotal > 0) {
+        totalPrincipalPaid += monthPaidTotal;
+        balance = Math.max(0, balance - monthPaidTotal);
+      }
     }
   }
 
@@ -217,4 +223,39 @@ export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
     totalPrincipalPaid,
     totalWithInterest: balance + monthlyInterest,
   };
+};
+
+export const useUpdateLoanPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, amount, payment_date, notes }: { id: string; amount: number; payment_date: string; notes?: string }) => {
+      const { error } = await supabase
+        .from('loan_payments')
+        .update({ amount, payment_date, notes: notes || null })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['loan_payments'] });
+      queryClient.invalidateQueries({ queryKey: ['loans'] });
+      toast.success('Pagamento atualizado!');
+    },
+    onError: (e) => toast.error('Erro ao atualizar', { description: e.message }),
+  });
+};
+
+export const useDeleteLoanPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('loan_payments').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['loan_payments'] });
+      queryClient.invalidateQueries({ queryKey: ['loans'] });
+      toast.success('Pagamento excluído!');
+    },
+    onError: (e) => toast.error('Erro ao excluir', { description: e.message }),
+  });
 };
