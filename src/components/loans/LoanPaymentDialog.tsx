@@ -10,9 +10,10 @@ import { DollarSign } from "lucide-react";
 interface Props {
   loanId: string;
   maxAmount?: number;
+  monthlyInterest?: number;
 }
 
-const LoanPaymentDialog = ({ loanId, maxAmount }: Props) => {
+const LoanPaymentDialog = ({ loanId, maxAmount, monthlyInterest = 0 }: Props) => {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(() => {
@@ -22,9 +23,14 @@ const LoanPaymentDialog = ({ loanId, maxAmount }: Props) => {
   const [notes, setNotes] = useState("");
   const createPayment = useCreateLoanPayment();
 
+  const minPayment = monthlyInterest > 0 ? monthlyInterest : 0;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || Number(amount) <= 0) return;
+    if (Number(amount) < minPayment) {
+      return;
+    }
     createPayment.mutate(
       { loan_id: loanId, amount: Number(amount), payment_date: date, notes: notes.trim() || undefined },
       { onSuccess: () => { setOpen(false); setAmount(""); setNotes(""); } }
@@ -44,7 +50,12 @@ const LoanPaymentDialog = ({ loanId, maxAmount }: Props) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Valor (R$)</Label>
-              <Input type="number" step="0.01" min="0" max={maxAmount} value={amount} onChange={e => setAmount(e.target.value)} placeholder="0,00" required />
+              <Input type="number" step="0.01" min={minPayment || 0} max={maxAmount} value={amount} onChange={e => setAmount(e.target.value)} placeholder="0,00" required />
+              {minPayment > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Mínimo (juros do mês): R$ {minPayment.toFixed(2)}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Data</Label>
