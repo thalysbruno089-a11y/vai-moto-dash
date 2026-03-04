@@ -45,7 +45,7 @@ const LoanCard = ({ loan }: Props) => {
             </Button>
             {isActive && (
               <>
-                <LoanPaymentDialog loanId={loan.id} maxAmount={details.remainingBalance} />
+                <LoanPaymentDialog loanId={loan.id} maxAmount={details.totalWithInterest} monthlyInterest={details.monthlyInterest} />
                 <Button
                   variant="ghost"
                   size="sm"

@@ -46,7 +46,7 @@ import { ContaEntryFormDialog } from "@/components/contas/ContaEntryFormDialog";
 import { ValeDialog } from "@/components/contas/ValeDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import StatCard from "@/components/dashboard/StatCard";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addMonths, addWeeks, isWithinInterval } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addMonths, addWeeks, addDays, isWithinInterval, isBefore, isAfter, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -240,6 +240,22 @@ const Contas = () => {
     return cat.name.toLowerCase().includes("funcion");
   };
 
+  // Upcoming bills (this week + next week)
+  const upcomingBills = useMemo(() => {
+    if (!bills) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const twoWeeksLater = addDays(today, 14);
+    return bills
+      .filter(b => {
+        if (b.status === "paid") return false;
+        const dueDate = new Date(b.due_date + "T12:00:00");
+        return dueDate >= today && dueDate <= twoWeeksLater;
+      })
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))
+      .slice(0, 8);
+  }, [bills]);
+
   return (
     <MainLayout title="Contas" subtitle="Gerencie todas as suas despesas por categoria">
       {/* Stats */}
@@ -261,6 +277,33 @@ const Contas = () => {
           variant="destructive"
         />
       </div>
+
+      {/* Upcoming Bills Highlight */}
+      {upcomingBills.length > 0 && (
+        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+          <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Próximas Contas (14 dias)
+          </h3>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {upcomingBills.map(bill => {
+              const dueDate = new Date(bill.due_date + "T12:00:00");
+              const isUrgent = isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
+              return (
+                <div key={bill.id} className={`flex items-center justify-between rounded-md border p-3 text-sm ${isUrgent ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-card'}`}>
+                  <div>
+                    <p className="font-medium truncate">{bill.name}</p>
+                    <p className={`text-xs ${isUrgent ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
+                      {format(dueDate, "dd/MM/yyyy")}
+                    </p>
+                  </div>
+                  <p className="font-semibold text-sm ml-2">{formatCurrency(bill.value)}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Period Filter */}
       <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -373,6 +416,7 @@ const Contas = () => {
                         <TableHeader>
                           <TableRow className="border-border hover:bg-transparent">
                             <TableHead>Nome</TableHead>
+                            <TableHead className="text-center">Vencimento</TableHead>
                             <TableHead className="text-right">Valor</TableHead>
                             {isFuncionarios && <TableHead className="text-right">Vale</TableHead>}
                             <TableHead className="text-center">Status</TableHead>
@@ -381,9 +425,15 @@ const Contas = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {entries.map((entry) => (
+                          {entries.map((entry) => {
+                            const dueDate = new Date(entry.due_date + "T12:00:00");
+                            const isOverdue = entry.status !== "paid" && isBefore(dueDate, new Date()) && !isToday(dueDate);
+                            return (
                             <TableRow key={entry.id} className="border-border">
                               <TableCell className="font-medium">{entry.name}</TableCell>
+                              <TableCell className={`text-center text-sm ${isOverdue ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
+                                {format(dueDate, "dd/MM/yyyy")}
+                              </TableCell>
                               <TableCell className="text-right font-semibold">
                                 {formatCurrency(entry.value)}
                               </TableCell>
@@ -445,7 +495,8 @@ const Contas = () => {
                                 </DropdownMenu>
                               </TableCell>
                             </TableRow>
-                          ))}
+                            );
+                          })}
                         </TableBody>
                       </Table>
                     )}
