@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loan, useLoanPayments, calculateLoanDetails, useUpdateLoanStatus, useDeleteLoan } from "@/hooks/useLoans";
+import { Loan, useLoanPayments, calculateLoanDetails, useUpdateLoanStatus, useDeleteLoan, useUpdateLoanPayment, useDeleteLoanPayment } from "@/hooks/useLoans";
 import LoanPaymentDialog from "./LoanPaymentDialog";
 import LoanEditDialog from "./LoanEditDialog";
-import { ChevronDown, ChevronUp, Trash2, CheckCircle, Clock, Pencil } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, CheckCircle, Clock, Pencil, Save, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -21,9 +22,17 @@ const LoanCard = ({ loan }: Props) => {
   const [expanded, setExpanded] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [deletePaymentOpen, setDeletePaymentOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
   const { data: payments = [] } = useLoanPayments(loan.id);
   const updateStatus = useUpdateLoanStatus();
   const deleteLoan = useDeleteLoan();
+  const updatePayment = useUpdateLoanPayment();
+  const deletePayment = useDeleteLoanPayment();
   const details = calculateLoanDetails(loan, payments);
 
   const isActive = loan.status === 'active';
@@ -119,20 +128,57 @@ const LoanCard = ({ loan }: Props) => {
             {payments.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Nenhum pagamento registrado</p>
             ) : (
-              payments.map(p => (
-                <div key={p.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
-                  <div>
-                    <span className="font-medium">{formatCurrency(Number(p.amount))}</span>
-                    {p.notes && <span className="text-muted-foreground ml-2">— {p.notes}</span>}
+              payments.map(p => {
+                const isEditing = editingPaymentId === p.id;
+                if (isEditing) {
+                  return (
+                    <div key={p.id} className="flex items-center gap-2 rounded-md border p-3 text-sm">
+                      <Input type="number" step="0.01" value={editAmount} onChange={e => setEditAmount(e.target.value)} className="h-8 w-28" />
+                      <Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} className="h-8 w-36" />
+                      <Input value={editNotes} onChange={e => setEditNotes(e.target.value)} placeholder="Notas" className="h-8 flex-1" />
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => {
+                        updatePayment.mutate({ id: p.id, amount: Number(editAmount), payment_date: editDate, notes: editNotes.trim() || undefined }, {
+                          onSuccess: () => setEditingPaymentId(null)
+                        });
+                      }}><Save className="h-3 w-3" /></Button>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setEditingPaymentId(null)}><X className="h-3 w-3" /></Button>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={p.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
+                    <div>
+                      <span className="font-medium">{formatCurrency(Number(p.amount))}</span>
+                      {p.notes && <span className="text-muted-foreground ml-2">— {p.notes}</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">
+                        {format(new Date(p.payment_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })}
+                      </span>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                        setEditingPaymentId(p.id);
+                        setEditAmount(String(p.amount));
+                        setEditDate(p.payment_date);
+                        setEditNotes(p.notes || "");
+                      }}><Pencil className="h-3 w-3" /></Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => {
+                        setPaymentToDelete(p.id);
+                        setDeletePaymentOpen(true);
+                      }}><Trash2 className="h-3 w-3" /></Button>
+                    </div>
                   </div>
-                  <span className="text-muted-foreground">
-                    {format(new Date(p.payment_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })}
-                  </span>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
+        <DeleteConfirmDialog
+          open={deletePaymentOpen}
+          onOpenChange={setDeletePaymentOpen}
+          title="Excluir pagamento"
+          description="Deseja excluir este pagamento?"
+          onConfirm={() => { if (paymentToDelete) deletePayment.mutate(paymentToDelete); setDeletePaymentOpen(false); }}
+        />
       </CardContent>
       <LoanEditDialog loan={loan} open={editOpen} onOpenChange={setEditOpen} />
     </Card>

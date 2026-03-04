@@ -240,7 +240,7 @@ const Contas = () => {
     return cat.name.toLowerCase().includes("funcion");
   };
 
-  // Upcoming bills (this week + next week)
+  // Upcoming bills: overdue + due within 14 days
   const upcomingBills = useMemo(() => {
     if (!bills) return [];
     const today = new Date();
@@ -250,10 +250,11 @@ const Contas = () => {
       .filter(b => {
         if (b.status === "paid") return false;
         const dueDate = new Date(b.due_date + "T12:00:00");
-        return dueDate >= today && dueDate <= twoWeeksLater;
+        // Include overdue (past due) AND upcoming (within 14 days)
+        return dueDate <= twoWeeksLater;
       })
       .sort((a, b) => a.due_date.localeCompare(b.due_date))
-      .slice(0, 8);
+      .slice(0, 12);
   }, [bills]);
 
   return (
@@ -288,13 +289,14 @@ const Contas = () => {
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {upcomingBills.map(bill => {
               const dueDate = new Date(bill.due_date + "T12:00:00");
-              const isUrgent = isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
+              const isOverdueBill = isBefore(dueDate, new Date()) && !isToday(dueDate);
+              const isUrgent = isOverdueBill || isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
               return (
                 <div key={bill.id} className={`flex items-center justify-between rounded-md border p-3 text-sm ${isUrgent ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-card'}`}>
                   <div>
                     <p className="font-medium truncate">{bill.name}</p>
                     <p className={`text-xs ${isUrgent ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
-                      {format(dueDate, "dd/MM/yyyy")}
+                      {isOverdueBill ? '⚠️ Vencida ' : ''}{format(dueDate, "dd/MM/yyyy")}
                     </p>
                   </div>
                   <p className="font-semibold text-sm ml-2">{formatCurrency(bill.value)}</p>
