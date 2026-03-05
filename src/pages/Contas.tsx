@@ -240,21 +240,22 @@ const Contas = () => {
     return cat.name.toLowerCase().includes("funcion");
   };
 
-  // Upcoming bills: overdue + due within 14 days
+  // Upcoming bills: from current month start + due within 14 days ahead
   const upcomingBills = useMemo(() => {
     if (!bills) return [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const monthStart = startOfMonth(today);
     const twoWeeksLater = addDays(today, 14);
     return bills
       .filter(b => {
         if (b.status === "paid") return false;
         const dueDate = new Date(b.due_date + "T12:00:00");
-        // Include overdue (past due) AND upcoming (within 14 days)
-        return dueDate <= twoWeeksLater;
+        // Only show bills from current month start onwards, up to 14 days ahead
+        return dueDate >= monthStart && dueDate <= twoWeeksLater;
       })
       .sort((a, b) => a.due_date.localeCompare(b.due_date))
-      .slice(0, 12);
+      .slice(0, 16);
   }, [bills]);
 
   return (

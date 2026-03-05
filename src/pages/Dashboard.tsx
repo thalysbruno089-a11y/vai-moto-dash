@@ -1,12 +1,13 @@
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import { Wallet, TrendingUp, TrendingDown, Bike, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, Bike, RotateCcw, ChevronLeft, ChevronRight, Save, History } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useBills } from "@/hooks/useBills";
+import { useMonthlyClosings, useSaveMonthlyClosing } from "@/hooks/useMonthlyClosings";
 import { useState, useMemo } from "react";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,10 +16,9 @@ import { toast } from "sonner";
 import { format, addDays, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-/** Semana de quinta (4) a quarta (3) */
 const getWeekRange = (refDate: Date = new Date()) => {
   const d = new Date(refDate);
-  const day = d.getDay(); // 0=Dom ... 4=Qui
+  const day = d.getDay();
   const diffToThursday = day >= 4 ? day - 4 : day + 3;
   const start = new Date(d);
   start.setDate(d.getDate() - diffToThursday);
@@ -35,10 +35,14 @@ const fmtShort = (d: Date) => format(d, "dd/MM", { locale: ptBR });
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
 const Dashboard = () => {
   const { data: motoboys, isLoading: loadingMotoboys } = useMotoboys();
   const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
   const { data: bills, isLoading: loadingBills } = useBills();
+  const { data: closings = [] } = useMonthlyClosings();
+  const saveClosing = useSaveMonthlyClosing();
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -46,12 +50,10 @@ const Dashboard = () => {
 
   const isLoading = loadingCashFlow || loadingMotoboys || loadingBills;
 
-  // Current week (always current)
   const week = getWeekRange();
   const weekStartStr = fmtDate(week.start);
   const weekEndStr = fmtDate(week.end);
 
-  // Month navigation
   const selectedMonth = useMemo(() => {
     const d = new Date();
     return monthOffset === 0 ? d : monthOffset > 0 ? addMonths(d, monthOffset) : subMonths(d, Math.abs(monthOffset));
@@ -61,7 +63,7 @@ const Dashboard = () => {
   const monthStartStr = fmtDate(monthStart);
   const monthEndStr = fmtDate(monthEnd);
 
-  // ---- WEEK calculations ----
+  // WEEK
   const weekMotoboyIncome = motoboys
     ?.filter((m) => m.status === "active" && m.payment_status === "paid")
     .reduce((s, m) => s + Number(m.weekly_payment || 0), 0) || 0;
@@ -72,7 +74,6 @@ const Dashboard = () => {
   const weekCfIncome = weekCashFlowEntries.filter((e) => e.type === "revenue").reduce((s, e) => s + Number(e.value), 0);
   const weekCfExpense = weekCashFlowEntries.filter((e) => e.type === "expense").reduce((s, e) => s + Number(e.value), 0);
 
-  // Bills paid this week
   const weekBillsExpense = bills?.filter((b) => {
     if (b.status !== "paid" || !b.paid_at) return false;
     const paidDate = b.paid_at.slice(0, 10);
@@ -83,7 +84,7 @@ const Dashboard = () => {
   const weekExpense = weekCfExpense + weekBillsExpense;
   const weekBalance = weekIncome - weekExpense;
 
-  // ---- MONTH calculations ----
+  // MONTH
   const monthMotoboyIncome = motoboys
     ?.filter((m) => m.status === "active" && m.payment_status === "paid")
     .reduce((s, m) => s + Number(m.weekly_payment || 0), 0) || 0;
@@ -111,23 +112,26 @@ const Dashboard = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
-
       const res = await supabase.functions.invoke("reset-payment-status", {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-
       if (res.error) throw res.error;
-
       queryClient.invalidateQueries({ queryKey: ["motoboys"] });
       queryClient.invalidateQueries({ queryKey: ["cash_flow"] });
       queryClient.invalidateQueries({ queryKey: ["bills"] });
-      toast.success("Semana zerada com sucesso! Pagamentos e valores resetados.");
+      toast.success("Semana zerada com sucesso!");
       setResetDialogOpen(false);
     } catch {
       toast.error("Erro ao zerar semana");
     } finally {
       setIsResetting(false);
     }
+  };
+
+  const handleSaveMonth = () => {
+    const m = selectedMonth.getMonth() + 1;
+    const y = selectedMonth.getFullYear();
+    saveClosing.mutate({ month: m, year: y, income: monthIncome, expense: monthExpense });
   };
 
   return (
@@ -137,13 +141,14 @@ const Dashboard = () => {
           <TabsList>
             <TabsTrigger value="week">📅 Semana Atual</TabsTrigger>
             <TabsTrigger value="month">📆 Mensal</TabsTrigger>
+            <TabsTrigger value="history">📊 Histórico</TabsTrigger>
           </TabsList>
           <Button variant="destructive" size="sm" onClick={() => setResetDialogOpen(true)}>
             <RotateCcw className="h-4 w-4 mr-1" /> Zerar Semana
           </Button>
         </div>
 
-        {/* ===== SEMANA ===== */}
+        {/* SEMANA */}
         <TabsContent value="week" className="space-y-6">
           <div className="rounded-lg bg-muted/50 p-3 text-center">
             <p className="text-sm text-muted-foreground">Período da semana</p>
@@ -151,46 +156,19 @@ const Dashboard = () => {
               Quinta {fmtShort(week.start)} → Quarta {fmtShort(week.end)}
             </p>
           </div>
-
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-            <StatCard
-              title="Entradas da Semana"
-              value={isLoading ? "..." : formatCurrency(weekIncome)}
-              icon={<TrendingUp className="h-6 w-6 text-success" />}
-              variant="success"
-            />
-            <StatCard
-              title="Saídas da Semana"
-              value={isLoading ? "..." : formatCurrency(weekExpense)}
-              icon={<TrendingDown className="h-6 w-6 text-destructive" />}
-              variant="destructive"
-            />
-            <StatCard
-              title="Saldo da Semana"
-              value={isLoading ? "..." : formatCurrency(weekBalance)}
-              icon={<Wallet className="h-6 w-6 text-primary" />}
-              variant={weekBalance >= 0 ? "success" : "destructive"}
-            />
+            <StatCard title="Entradas da Semana" value={isLoading ? "..." : formatCurrency(weekIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
+            <StatCard title="Saídas da Semana" value={isLoading ? "..." : formatCurrency(weekExpense)} icon={<TrendingDown className="h-6 w-6 text-destructive" />} variant="destructive" />
+            <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
           </div>
-
           <div className="grid gap-4 grid-cols-2">
-            <StatCard
-              title="Motoboys Ativos"
-              value={isLoading ? "..." : String(activeMotoboys)}
-              icon={<Bike className="h-6 w-6 text-primary" />}
-            />
-            <StatCard
-              title="Receita Motoboys (Pagos)"
-              value={isLoading ? "..." : formatCurrency(weekMotoboyIncome)}
-              icon={<TrendingUp className="h-6 w-6 text-success" />}
-              variant="success"
-            />
+            <StatCard title="Motoboys Ativos" value={isLoading ? "..." : String(activeMotoboys)} icon={<Bike className="h-6 w-6 text-primary" />} />
+            <StatCard title="Receita Motoboys (Pagos)" value={isLoading ? "..." : formatCurrency(weekMotoboyIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
           </div>
-
           <MotoboyList motoboys={motoboys} isLoading={isLoading} />
         </TabsContent>
 
-        {/* ===== MÊS ===== */}
+        {/* MÊS */}
         <TabsContent value="month" className="space-y-6">
           <div className="flex items-center justify-center gap-3 rounded-lg bg-muted/50 p-3">
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset((p) => p - 1)}>
@@ -211,25 +189,57 @@ const Dashboard = () => {
           </div>
 
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-            <StatCard
-              title="Entradas do Mês"
-              value={isLoading ? "..." : formatCurrency(monthIncome)}
-              icon={<TrendingUp className="h-6 w-6 text-success" />}
-              variant="success"
-            />
-            <StatCard
-              title="Saídas do Mês"
-              value={isLoading ? "..." : formatCurrency(monthExpense)}
-              icon={<TrendingDown className="h-6 w-6 text-destructive" />}
-              variant="destructive"
-            />
-            <StatCard
-              title="Saldo do Mês"
-              value={isLoading ? "..." : formatCurrency(monthBalance)}
-              icon={<Wallet className="h-6 w-6 text-primary" />}
-              variant={monthBalance >= 0 ? "success" : "destructive"}
-            />
+            <StatCard title="Entradas do Mês" value={isLoading ? "..." : formatCurrency(monthIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
+            <StatCard title="Saídas do Mês" value={isLoading ? "..." : formatCurrency(monthExpense)} icon={<TrendingDown className="h-6 w-6 text-destructive" />} variant="destructive" />
+            <StatCard title="Saldo do Mês" value={isLoading ? "..." : formatCurrency(monthBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={monthBalance >= 0 ? "success" : "destructive"} />
           </div>
+
+          <div className="flex justify-center">
+            <Button onClick={handleSaveMonth} disabled={saveClosing.isPending} variant="outline">
+              <Save className="h-4 w-4 mr-2" />
+              {saveClosing.isPending ? "Salvando..." : "Salvar Mês"}
+            </Button>
+          </div>
+        </TabsContent>
+
+        {/* HISTÓRICO */}
+        <TabsContent value="history" className="space-y-6">
+          <div className="rounded-lg bg-muted/50 p-3 text-center">
+            <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+              <History className="h-4 w-4" /> Histórico de Meses Salvos
+            </p>
+          </div>
+          {closings.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">Nenhum mês salvo ainda. Vá na aba "Mensal" e clique em "Salvar Mês".</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {closings.map(c => (
+                <Card key={c.id}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base capitalize">
+                      {MONTH_NAMES[c.month - 1]} {c.year}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Entradas</span>
+                      <span className="text-sm font-semibold text-green-600">{formatCurrency(Number(c.income))}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Saídas</span>
+                      <span className="text-sm font-semibold text-destructive">{formatCurrency(Number(c.expense))}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="text-sm font-medium">Saldo</span>
+                      <span className={`text-sm font-bold ${Number(c.income) - Number(c.expense) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                        {formatCurrency(Number(c.income) - Number(c.expense))}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
