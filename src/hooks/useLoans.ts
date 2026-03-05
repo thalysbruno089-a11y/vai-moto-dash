@@ -22,6 +22,7 @@ export interface LoanPayment {
   company_id: string;
   amount: number;
   payment_date: string;
+  payment_type: string;
   notes: string | null;
   created_at: string;
 }
@@ -85,7 +86,7 @@ export const useCreateLoan = () => {
 export const useCreateLoanPayment = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payment: { loan_id: string; amount: number; payment_date: string; notes?: string }) => {
+    mutationFn: async (payment: { loan_id: string; amount: number; payment_date: string; notes?: string; payment_type: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Não autenticado');
       const { data: profile } = await supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle();
@@ -138,100 +139,53 @@ export const useDeleteLoan = () => {
   });
 };
 
-// Calculate remaining balance and interest info for a loan
-// Payments first cover accrued interest, only the excess reduces the principal
+// Simplified calculation using payment_type
 export const calculateLoanDetails = (loan: Loan, payments: LoanPayment[]) => {
   const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const rate = Number(loan.interest_rate) / 100;
 
-  const parseDate = (d: string) => new Date(d + 'T12:00:00');
+  // Interest payments: only count payments marked as 'interest'
+  const totalInterestPaid = payments
+    .filter(p => p.payment_type === 'interest')
+    .reduce((sum, p) => sum + Number(p.amount), 0);
 
-  const sortedPayments = [...payments].sort(
-    (a, b) => parseDate(a.payment_date).getTime() - parseDate(b.payment_date).getTime()
-  );
+  // Principal payments: only count payments marked as 'principal'
+  const totalPrincipalPaid = payments
+    .filter(p => p.payment_type === 'principal')
+    .reduce((sum, p) => sum + Number(p.amount), 0);
 
+  const remainingBalance = Math.max(0, Number(loan.principal_amount) - totalPrincipalPaid);
+  const monthlyInterest = remainingBalance * rate;
+
+  // Calculate total interest accrued based on months since creation
   const loanStart = new Date(loan.created_at);
-  loanStart.setHours(0, 0, 0, 0);
-  const loanStartMonth = loanStart.getFullYear() * 12 + loanStart.getMonth();
-
   const now = new Date();
-  let lastMonth = now.getFullYear() * 12 + now.getMonth();
-  for (const p of sortedPayments) {
-    const d = parseDate(p.payment_date);
-    const pm = d.getFullYear() * 12 + d.getMonth();
-    if (pm > lastMonth) lastMonth = pm;
-  }
-
-  const totalMonths = lastMonth - loanStartMonth;
-
-  let balance = Number(loan.principal_amount);
-  let totalInterestAccrued = 0;
-  let totalInterestPaid = 0;
-  let totalPrincipalPaid = 0;
-
-  // Payments in creation month: no interest, all goes to principal
-  const creationMonthPayments = sortedPayments.filter(p => {
-    const d = parseDate(p.payment_date);
-    return d.getFullYear() * 12 + d.getMonth() === loanStartMonth;
-  });
-  const creationMonthTotal = creationMonthPayments.reduce((s, p) => s + Number(p.amount), 0);
-  if (creationMonthTotal > 0) {
-    totalPrincipalPaid += creationMonthTotal;
-    balance = Math.max(0, balance - creationMonthTotal);
-  }
-
-  // Track unpaid interest that accumulates across months
-  let unpaidInterest = 0;
-
-  // Process each subsequent month
-  for (let m = 0; m < totalMonths; m++) {
-    const monthInterest = balance * rate;
-    totalInterestAccrued += monthInterest;
-    unpaidInterest += monthInterest;
-
-    const targetMonth = loanStartMonth + m + 1;
-    const monthPayments = sortedPayments.filter(p => {
-      const d = parseDate(p.payment_date);
-      return d.getFullYear() * 12 + d.getMonth() === targetMonth;
-    });
-
-    let monthPaidTotal = monthPayments.reduce((s, p) => s + Number(p.amount), 0);
-
-    // First: pay off accumulated interest
-    if (monthPaidTotal > 0) {
-      const interestPayment = Math.min(monthPaidTotal, unpaidInterest);
-      totalInterestPaid += interestPayment;
-      unpaidInterest -= interestPayment;
-      monthPaidTotal -= interestPayment;
-
-      // Remainder reduces principal
-      if (monthPaidTotal > 0) {
-        totalPrincipalPaid += monthPaidTotal;
-        balance = Math.max(0, balance - monthPaidTotal);
-      }
-    }
-  }
-
-  const monthlyInterest = balance * rate;
+  const monthsSinceCreation = Math.max(0,
+    (now.getFullYear() - loanStart.getFullYear()) * 12 + (now.getMonth() - loanStart.getMonth())
+  );
+  // Approximate total interest (simplified)
+  const totalInterestAccrued = Number(loan.principal_amount) * rate * monthsSinceCreation;
 
   return {
     totalPaid,
-    remainingBalance: balance,
+    remainingBalance,
     monthlyInterest,
     totalInterestAccrued,
     totalInterestPaid,
     totalPrincipalPaid,
-    totalWithInterest: balance + monthlyInterest,
+    totalWithInterest: remainingBalance + monthlyInterest,
   };
 };
 
 export const useUpdateLoanPayment = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, amount, payment_date, notes }: { id: string; amount: number; payment_date: string; notes?: string }) => {
+    mutationFn: async ({ id, amount, payment_date, notes, payment_type }: { id: string; amount: number; payment_date: string; notes?: string; payment_type?: string }) => {
+      const updateData: any = { amount, payment_date, notes: notes || null };
+      if (payment_type) updateData.payment_type = payment_type;
       const { error } = await supabase
         .from('loan_payments')
-        .update({ amount, payment_date, notes: notes || null })
+        .update(updateData)
         .eq('id', id);
       if (error) throw error;
     },

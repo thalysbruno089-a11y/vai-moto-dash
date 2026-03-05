@@ -256,6 +256,7 @@ export type Database = {
           loan_id: string
           notes: string | null
           payment_date: string
+          payment_type: string
         }
         Insert: {
           amount: number
@@ -265,6 +266,7 @@ export type Database = {
           loan_id: string
           notes?: string | null
           payment_date?: string
+          payment_type?: string
         }
         Update: {
           amount?: number
@@ -274,6 +276,7 @@ export type Database = {
           loan_id?: string
           notes?: string | null
           payment_date?: string
+          payment_type?: string
         }
         Relationships: [
           {
@@ -335,6 +338,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "loans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_closings: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          expense: number
+          id: string
+          income: number
+          month: number
+          year: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          expense?: number
+          id?: string
+          income?: number
+          month: number
+          year: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          expense?: number
+          id?: string
+          income?: number
+          month?: number
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_closings_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
