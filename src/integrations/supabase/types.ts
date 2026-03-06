@@ -545,6 +545,41 @@ export type Database = {
           },
         ]
       }
+      motorcycles: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string | null
+          plate: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          name?: string | null
+          plate: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string | null
+          plate?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           client_id: string | null
