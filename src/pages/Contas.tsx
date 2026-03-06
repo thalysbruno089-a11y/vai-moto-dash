@@ -240,7 +240,14 @@ const Contas = () => {
     return cat.name.toLowerCase().includes("funcion");
   };
 
-  // Upcoming bills: from current month start + due within 14 days ahead
+  // Dismissed bills from upcoming panel (session only)
+  const [dismissedBillIds, setDismissedBillIds] = useState<Set<string>>(new Set());
+
+  const handleDismissFromUpcoming = (billId: string) => {
+    setDismissedBillIds(prev => new Set(prev).add(billId));
+  };
+
+  // Upcoming bills: from current month start + due within 14 days ahead, exclude paid & dismissed
   const upcomingBills = useMemo(() => {
     if (!bills) return [];
     const today = new Date();
@@ -250,13 +257,13 @@ const Contas = () => {
     return bills
       .filter(b => {
         if (b.status === "paid") return false;
+        if (dismissedBillIds.has(b.id)) return false;
         const dueDate = new Date(b.due_date + "T12:00:00");
-        // Only show bills from current month start onwards, up to 14 days ahead
         return dueDate >= monthStart && dueDate <= twoWeeksLater;
       })
       .sort((a, b) => a.due_date.localeCompare(b.due_date))
       .slice(0, 16);
-  }, [bills]);
+  }, [bills, dismissedBillIds]);
 
   return (
     <MainLayout title="Contas" subtitle="Gerencie todas as suas despesas por categoria">
