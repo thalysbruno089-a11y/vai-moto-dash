@@ -301,13 +301,24 @@ const Contas = () => {
               const isUrgent = isOverdueBill || isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
               return (
                 <div key={bill.id} className={`flex items-center justify-between rounded-md border p-3 text-sm ${isUrgent ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-card'}`}>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{bill.name}</p>
                     <p className={`text-xs ${isUrgent ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
                       {isOverdueBill ? '⚠️ Vencida ' : ''}{format(dueDate, "dd/MM/yyyy")}
                     </p>
                   </div>
-                  <p className="font-semibold text-sm ml-2">{formatCurrency(bill.value)}</p>
+                  <div className="flex items-center gap-1 ml-2">
+                    <p className="font-semibold text-sm">{formatCurrency(bill.value)}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      title="Remover dos próximos"
+                      onClick={() => handleDismissFromUpcoming(bill.id)}
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               );
             })}
