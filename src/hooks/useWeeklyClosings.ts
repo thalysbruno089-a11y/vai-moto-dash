@@ -16,7 +16,7 @@ export const useWeeklyClosings = () => {
     queryKey: ["weekly_closings"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("weekly_closings")
+        .from("weekly_closings" as any)
         .select("*")
         .order("created_at", { ascending: false });
 
