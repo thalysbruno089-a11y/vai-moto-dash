@@ -52,7 +52,7 @@ export const useSaveWeeklyClosing = () => {
       if (!profile?.company_id) throw new Error("Empresa não encontrada");
 
       const { data, error } = await supabase
-        .from("weekly_closings")
+        .from("weekly_closings" as any)
         .insert({
           company_id: profile.company_id,
           week_start: closing.week_start,
