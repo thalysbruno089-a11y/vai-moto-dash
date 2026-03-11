@@ -8,6 +8,7 @@ import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useBills } from "@/hooks/useBills";
 import { useMonthlyClosings, useSaveMonthlyClosing } from "@/hooks/useMonthlyClosings";
+import { useWeeklyClosings, useSaveWeeklyClosing } from "@/hooks/useWeeklyClosings";
 import { useState, useMemo } from "react";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
