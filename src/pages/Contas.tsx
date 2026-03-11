@@ -46,7 +46,7 @@ import { ContaEntryFormDialog } from "@/components/contas/ContaEntryFormDialog";
 import { ValeDialog } from "@/components/contas/ValeDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import StatCard from "@/components/dashboard/StatCard";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addMonths, addWeeks, addDays, isWithinInterval, isBefore, isAfter, isToday } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addMonths, addWeeks, addDays, subMonths, isWithinInterval, isBefore, isAfter, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
