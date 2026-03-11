@@ -326,7 +326,7 @@ const Contas = () => {
           </h3>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {upcomingBills.map(bill => {
-              const dueDate = new Date(bill.due_date + "T12:00:00");
+              const dueDate = new Date(`${bill.due_date}T12:00:00`);
               const isOverdueBill = isBefore(dueDate, new Date()) && !isToday(dueDate);
               const isUrgent = isOverdueBill || isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
               return (
@@ -352,6 +352,23 @@ const Contas = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {lastMonthBills.length > 0 && (
+        <div className="mb-6 rounded-lg border border-border bg-muted/30 p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">Contas do Mês Passado</h3>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {lastMonthBills.map((bill) => (
+              <div key={bill.id} className="flex items-center justify-between rounded-md border border-border bg-card p-3 text-sm">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{bill.name}</p>
+                  <p className="text-xs text-muted-foreground">Venceu em {format(new Date(`${bill.due_date}T12:00:00`), "dd/MM/yyyy")}</p>
+                </div>
+                <p className="font-semibold text-destructive">{formatCurrency(bill.value)}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}
