@@ -82,14 +82,23 @@ const Dashboard = () => {
     ?.filter((m) => m.status === "active" && m.payment_status === "paid")
     .reduce((s, m) => s + Number(m.weekly_payment || 0), 0) || 0;
 
-  const weekCashFlowEntries = cashFlowEntries?.filter(
-    (e) => e.flow_date >= weekStartStr && e.flow_date <= weekEndStr
-  ) || [];
+  const weekResetAt = latestWeeklyResetAt ? new Date(latestWeeklyResetAt) : null;
+
+  const weekCashFlowEntries = cashFlowEntries?.filter((e) => {
+    const inWeekRange = e.flow_date >= weekStartStr && e.flow_date <= weekEndStr;
+    if (!inWeekRange) return false;
+    if (!weekResetAt) return true;
+    return new Date(e.created_at) > weekResetAt;
+  }) || [];
   const weekCfIncome = weekCashFlowEntries.filter((e) => e.type === "revenue").reduce((s, e) => s + Number(e.value), 0);
   const weekCfExpense = weekCashFlowEntries.filter((e) => e.type === "expense").reduce((s, e) => s + Number(e.value), 0);
 
   const weekBillsExpense = bills?.filter((b) => {
     if (b.status !== "paid" || !b.paid_at) return false;
+
+    const paidAt = new Date(b.paid_at);
+    if (weekResetAt && paidAt <= weekResetAt) return false;
+
     const paidDate = b.paid_at.slice(0, 10);
     return paidDate >= weekStartStr && paidDate <= weekEndStr;
   }).reduce((s, b) => s + Number(b.value), 0) || 0;
