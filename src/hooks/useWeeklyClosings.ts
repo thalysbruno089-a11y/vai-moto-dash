@@ -64,7 +64,7 @@ export const useSaveWeeklyClosing = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return (data as unknown) as WeeklyClosing;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["weekly_closings"] });
