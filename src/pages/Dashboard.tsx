@@ -57,6 +57,17 @@ const Dashboard = () => {
   const weekStartStr = fmtDate(week.start);
   const weekEndStr = fmtDate(week.end);
 
+  const latestWeeklyResetAt = useMemo(() => {
+    const thisWeekClosings = weeklyClosings
+      .filter((closing) => {
+        const createdAt = new Date(closing.created_at);
+        return createdAt >= week.start && createdAt <= week.end;
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return thisWeekClosings[0]?.created_at ?? null;
+  }, [weeklyClosings, week.start, week.end]);
+
   const selectedMonth = useMemo(() => {
     const d = new Date();
     return monthOffset === 0 ? d : monthOffset > 0 ? addMonths(d, monthOffset) : subMonths(d, Math.abs(monthOffset));
