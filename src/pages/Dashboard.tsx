@@ -133,19 +133,31 @@ const Dashboard = () => {
   const handleReset = async () => {
     setIsResetting(true);
     try {
+      await saveWeeklyClosing.mutateAsync({
+        week_start: weekStartStr,
+        week_end: weekEndStr,
+        income: weekIncome,
+        expense: weekExpense,
+      });
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
       const res = await supabase.functions.invoke("reset-payment-status", {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (res.error) throw res.error;
+
       queryClient.invalidateQueries({ queryKey: ["motoboys"] });
       queryClient.invalidateQueries({ queryKey: ["cash_flow"] });
       queryClient.invalidateQueries({ queryKey: ["bills"] });
-      toast.success("Semana zerada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["weekly_closings"] });
+
+      toast.success("Semana zerada e salva no histórico!");
       setResetDialogOpen(false);
-    } catch {
-      toast.error("Erro ao zerar semana");
+    } catch (error) {
+      toast.error("Erro ao zerar semana", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setIsResetting(false);
     }
