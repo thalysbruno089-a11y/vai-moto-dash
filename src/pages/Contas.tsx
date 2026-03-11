@@ -247,23 +247,53 @@ const Contas = () => {
     setDismissedBillIds(prev => new Set(prev).add(billId));
   };
 
-  // Upcoming bills: from current month start + due within 14 days ahead, exclude paid & dismissed
-  const upcomingBills = useMemo(() => {
+  const savedCategoryIds = useMemo(
+    () => new Set(expenseCategories.map(category => category.id)),
+    [expenseCategories]
+  );
+
+  const openBillsFromSavedCategories = useMemo(() => {
     if (!bills) return [];
+
+    return bills.filter((bill) => {
+      if (bill.status === "paid") return false;
+      if (dismissedBillIds.has(bill.id)) return false;
+      if (!bill.category_id) return false;
+      return savedCategoryIds.has(bill.category_id);
+    });
+  }, [bills, dismissedBillIds, savedCategoryIds]);
+
+  // Upcoming bills: current month + next 14 days, only existing category-linked bills
+  const upcomingBills = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const monthStart = startOfMonth(today);
     const twoWeeksLater = addDays(today, 14);
-    return bills
-      .filter(b => {
-        if (b.status === "paid") return false;
-        if (dismissedBillIds.has(b.id)) return false;
-        const dueDate = new Date(b.due_date + "T12:00:00");
+
+    return openBillsFromSavedCategories
+      .filter((bill) => {
+        const dueDate = new Date(`${bill.due_date}T12:00:00`);
         return dueDate >= monthStart && dueDate <= twoWeeksLater;
       })
       .sort((a, b) => a.due_date.localeCompare(b.due_date))
       .slice(0, 16);
-  }, [bills, dismissedBillIds]);
+  }, [openBillsFromSavedCategories]);
+
+  // Last month pending bills in separate section
+  const lastMonthBills = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const previousMonth = subMonths(today, 1);
+    const previousMonthStart = startOfMonth(previousMonth);
+    const previousMonthEnd = endOfMonth(previousMonth);
+
+    return openBillsFromSavedCategories
+      .filter((bill) => {
+        const dueDate = new Date(`${bill.due_date}T12:00:00`);
+        return dueDate >= previousMonthStart && dueDate <= previousMonthEnd;
+      })
+      .sort((a, b) => a.due_date.localeCompare(b.due_date));
+  }, [openBillsFromSavedCategories]);
 
   return (
     <MainLayout title="Contas" subtitle="Gerencie todas as suas despesas por categoria">
