@@ -178,7 +178,12 @@ const Dashboard = () => {
             <TabsTrigger value="month">📆 Mensal</TabsTrigger>
             <TabsTrigger value="history">📊 Histórico</TabsTrigger>
           </TabsList>
-          <Button variant="destructive" size="sm" onClick={() => setResetDialogOpen(true)}>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setResetDialogOpen(true)}
+            disabled={isResetting || saveWeeklyClosing.isPending}
+          >
             <RotateCcw className="h-4 w-4 mr-1" /> Zerar Semana
           </Button>
         </div>
