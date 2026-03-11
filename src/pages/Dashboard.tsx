@@ -132,13 +132,16 @@ const Dashboard = () => {
 
   const handleReset = async () => {
     setIsResetting(true);
+    let createdWeeklyClosingId: string | null = null;
+
     try {
-      await saveWeeklyClosing.mutateAsync({
+      const weeklyClosing = await saveWeeklyClosing.mutateAsync({
         week_start: weekStartStr,
         week_end: weekEndStr,
         income: weekIncome,
         expense: weekExpense,
       });
+      createdWeeklyClosingId = weeklyClosing.id;
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
@@ -155,6 +158,11 @@ const Dashboard = () => {
       toast.success("Semana zerada e salva no histórico!");
       setResetDialogOpen(false);
     } catch (error) {
+      if (createdWeeklyClosingId) {
+        await supabase.from("weekly_closings" as any).delete().eq("id", createdWeeklyClosingId);
+        queryClient.invalidateQueries({ queryKey: ["weekly_closings"] });
+      }
+
       toast.error("Erro ao zerar semana", {
         description: error instanceof Error ? error.message : undefined,
       });
