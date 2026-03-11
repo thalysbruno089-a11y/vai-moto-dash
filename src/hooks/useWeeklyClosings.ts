@@ -21,7 +21,7 @@ export const useWeeklyClosings = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return (data ?? []) as WeeklyClosing[];
+      return ((data ?? []) as unknown) as WeeklyClosing[];
     },
   });
 };
