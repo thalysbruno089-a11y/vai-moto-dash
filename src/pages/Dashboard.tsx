@@ -246,40 +246,89 @@ const Dashboard = () => {
         <TabsContent value="history" className="space-y-6">
           <div className="rounded-lg bg-muted/50 p-3 text-center">
             <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-              <History className="h-4 w-4" /> Histórico de Meses Salvos
+              <History className="h-4 w-4" /> Histórico Semanal e Mensal
             </p>
           </div>
-          {closings.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Nenhum mês salvo ainda. Vá na aba "Mensal" e clique em "Salvar Mês".</p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {closings.map(c => (
-                <Card key={c.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base capitalize">
-                      {MONTH_NAMES[c.month - 1]} {c.year}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Entradas</span>
-                      <span className="text-sm font-semibold text-green-600">{formatCurrency(Number(c.income))}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Saídas</span>
-                      <span className="text-sm font-semibold text-destructive">{formatCurrency(Number(c.expense))}</span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="text-sm font-medium">Saldo</span>
-                      <span className={`text-sm font-bold ${Number(c.income) - Number(c.expense) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                        {formatCurrency(Number(c.income) - Number(c.expense))}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Semanas Zeradas</h3>
+            {weeklyClosings.length === 0 ? (
+              <p className="text-center text-muted-foreground py-6">Nenhuma semana zerada ainda.</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {weeklyClosings.map((closing) => {
+                  const start = new Date(`${closing.week_start}T12:00:00`);
+                  const end = new Date(`${closing.week_end}T12:00:00`);
+                  const balance = Number(closing.income) - Number(closing.expense);
+
+                  return (
+                    <Card key={closing.id}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">
+                          Semana {format(start, "dd/MM", { locale: ptBR })} → {format(end, "dd/MM", { locale: ptBR })}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Entradas</span>
+                          <span className="text-sm font-semibold text-success">{formatCurrency(Number(closing.income))}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Saídas</span>
+                          <span className="text-sm font-semibold text-destructive">{formatCurrency(Number(closing.expense))}</span>
+                        </div>
+                        <div className="flex justify-between border-t pt-2">
+                          <span className="text-sm font-medium">Saldo</span>
+                          <span className={`text-sm font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
+                            {formatCurrency(balance)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Meses Salvos</h3>
+            {closings.length === 0 ? (
+              <p className="text-center text-muted-foreground py-6">Nenhum mês salvo ainda. Vá na aba "Mensal" e clique em "Salvar Mês".</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {closings.map((c) => {
+                  const balance = Number(c.income) - Number(c.expense);
+
+                  return (
+                    <Card key={c.id}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base capitalize">
+                          {MONTH_NAMES[c.month - 1]} {c.year}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Entradas</span>
+                          <span className="text-sm font-semibold text-success">{formatCurrency(Number(c.income))}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Saídas</span>
+                          <span className="text-sm font-semibold text-destructive">{formatCurrency(Number(c.expense))}</span>
+                        </div>
+                        <div className="flex justify-between border-t pt-2">
+                          <span className="text-sm font-medium">Saldo</span>
+                          <span className={`text-sm font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
+                            {formatCurrency(balance)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 
