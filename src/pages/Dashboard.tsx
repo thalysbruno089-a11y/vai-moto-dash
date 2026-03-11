@@ -43,7 +43,9 @@ const Dashboard = () => {
   const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
   const { data: bills, isLoading: loadingBills } = useBills();
   const { data: closings = [] } = useMonthlyClosings();
+  const { data: weeklyClosings = [] } = useWeeklyClosings();
   const saveClosing = useSaveMonthlyClosing();
+  const saveWeeklyClosing = useSaveWeeklyClosing();
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
