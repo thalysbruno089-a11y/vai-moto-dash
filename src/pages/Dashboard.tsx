@@ -8,6 +8,7 @@ import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useBills } from "@/hooks/useBills";
 import { useMonthlyClosings, useSaveMonthlyClosing } from "@/hooks/useMonthlyClosings";
+import { useWeeklyClosings, useSaveWeeklyClosing } from "@/hooks/useWeeklyClosings";
 import { useState, useMemo } from "react";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +43,9 @@ const Dashboard = () => {
   const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
   const { data: bills, isLoading: loadingBills } = useBills();
   const { data: closings = [] } = useMonthlyClosings();
+  const { data: weeklyClosings = [] } = useWeeklyClosings();
   const saveClosing = useSaveMonthlyClosing();
+  const saveWeeklyClosing = useSaveWeeklyClosing();
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -53,6 +56,17 @@ const Dashboard = () => {
   const week = getWeekRange();
   const weekStartStr = fmtDate(week.start);
   const weekEndStr = fmtDate(week.end);
+
+  const latestWeeklyResetAt = useMemo(() => {
+    const thisWeekClosings = weeklyClosings
+      .filter((closing) => {
+        const createdAt = new Date(closing.created_at);
+        return createdAt >= week.start && createdAt <= week.end;
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return thisWeekClosings[0]?.created_at ?? null;
+  }, [weeklyClosings, week.start, week.end]);
 
   const selectedMonth = useMemo(() => {
     const d = new Date();
@@ -68,14 +82,23 @@ const Dashboard = () => {
     ?.filter((m) => m.status === "active" && m.payment_status === "paid")
     .reduce((s, m) => s + Number(m.weekly_payment || 0), 0) || 0;
 
-  const weekCashFlowEntries = cashFlowEntries?.filter(
-    (e) => e.flow_date >= weekStartStr && e.flow_date <= weekEndStr
-  ) || [];
+  const weekResetAt = latestWeeklyResetAt ? new Date(latestWeeklyResetAt) : null;
+
+  const weekCashFlowEntries = cashFlowEntries?.filter((e) => {
+    const inWeekRange = e.flow_date >= weekStartStr && e.flow_date <= weekEndStr;
+    if (!inWeekRange) return false;
+    if (!weekResetAt) return true;
+    return new Date(e.created_at) > weekResetAt;
+  }) || [];
   const weekCfIncome = weekCashFlowEntries.filter((e) => e.type === "revenue").reduce((s, e) => s + Number(e.value), 0);
   const weekCfExpense = weekCashFlowEntries.filter((e) => e.type === "expense").reduce((s, e) => s + Number(e.value), 0);
 
   const weekBillsExpense = bills?.filter((b) => {
     if (b.status !== "paid" || !b.paid_at) return false;
+
+    const paidAt = new Date(b.paid_at);
+    if (weekResetAt && paidAt <= weekResetAt) return false;
+
     const paidDate = b.paid_at.slice(0, 10);
     return paidDate >= weekStartStr && paidDate <= weekEndStr;
   }).reduce((s, b) => s + Number(b.value), 0) || 0;
@@ -109,20 +132,40 @@ const Dashboard = () => {
 
   const handleReset = async () => {
     setIsResetting(true);
+    let createdWeeklyClosingId: string | null = null;
+
     try {
+      const weeklyClosing = await saveWeeklyClosing.mutateAsync({
+        week_start: weekStartStr,
+        week_end: weekEndStr,
+        income: weekIncome,
+        expense: weekExpense,
+      });
+      createdWeeklyClosingId = weeklyClosing.id;
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
       const res = await supabase.functions.invoke("reset-payment-status", {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (res.error) throw res.error;
+
       queryClient.invalidateQueries({ queryKey: ["motoboys"] });
       queryClient.invalidateQueries({ queryKey: ["cash_flow"] });
       queryClient.invalidateQueries({ queryKey: ["bills"] });
-      toast.success("Semana zerada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["weekly_closings"] });
+
+      toast.success("Semana zerada e salva no histórico!");
       setResetDialogOpen(false);
-    } catch {
-      toast.error("Erro ao zerar semana");
+    } catch (error) {
+      if (createdWeeklyClosingId) {
+        await supabase.from("weekly_closings" as any).delete().eq("id", createdWeeklyClosingId);
+        queryClient.invalidateQueries({ queryKey: ["weekly_closings"] });
+      }
+
+      toast.error("Erro ao zerar semana", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setIsResetting(false);
     }
@@ -143,7 +186,12 @@ const Dashboard = () => {
             <TabsTrigger value="month">📆 Mensal</TabsTrigger>
             <TabsTrigger value="history">📊 Histórico</TabsTrigger>
           </TabsList>
-          <Button variant="destructive" size="sm" onClick={() => setResetDialogOpen(true)}>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setResetDialogOpen(true)}
+            disabled={isResetting || saveWeeklyClosing.isPending}
+          >
             <RotateCcw className="h-4 w-4 mr-1" /> Zerar Semana
           </Button>
         </div>
@@ -206,40 +254,89 @@ const Dashboard = () => {
         <TabsContent value="history" className="space-y-6">
           <div className="rounded-lg bg-muted/50 p-3 text-center">
             <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-              <History className="h-4 w-4" /> Histórico de Meses Salvos
+              <History className="h-4 w-4" /> Histórico Semanal e Mensal
             </p>
           </div>
-          {closings.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Nenhum mês salvo ainda. Vá na aba "Mensal" e clique em "Salvar Mês".</p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {closings.map(c => (
-                <Card key={c.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base capitalize">
-                      {MONTH_NAMES[c.month - 1]} {c.year}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Entradas</span>
-                      <span className="text-sm font-semibold text-green-600">{formatCurrency(Number(c.income))}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Saídas</span>
-                      <span className="text-sm font-semibold text-destructive">{formatCurrency(Number(c.expense))}</span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="text-sm font-medium">Saldo</span>
-                      <span className={`text-sm font-bold ${Number(c.income) - Number(c.expense) >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                        {formatCurrency(Number(c.income) - Number(c.expense))}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Semanas Zeradas</h3>
+            {weeklyClosings.length === 0 ? (
+              <p className="text-center text-muted-foreground py-6">Nenhuma semana zerada ainda.</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {weeklyClosings.map((closing) => {
+                  const start = new Date(`${closing.week_start}T12:00:00`);
+                  const end = new Date(`${closing.week_end}T12:00:00`);
+                  const balance = Number(closing.income) - Number(closing.expense);
+
+                  return (
+                    <Card key={closing.id}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">
+                          Semana {format(start, "dd/MM", { locale: ptBR })} → {format(end, "dd/MM", { locale: ptBR })}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Entradas</span>
+                          <span className="text-sm font-semibold text-success">{formatCurrency(Number(closing.income))}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Saídas</span>
+                          <span className="text-sm font-semibold text-destructive">{formatCurrency(Number(closing.expense))}</span>
+                        </div>
+                        <div className="flex justify-between border-t pt-2">
+                          <span className="text-sm font-medium">Saldo</span>
+                          <span className={`text-sm font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
+                            {formatCurrency(balance)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground">Meses Salvos</h3>
+            {closings.length === 0 ? (
+              <p className="text-center text-muted-foreground py-6">Nenhum mês salvo ainda. Vá na aba "Mensal" e clique em "Salvar Mês".</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {closings.map((c) => {
+                  const balance = Number(c.income) - Number(c.expense);
+
+                  return (
+                    <Card key={c.id}>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base capitalize">
+                          {MONTH_NAMES[c.month - 1]} {c.year}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Entradas</span>
+                          <span className="text-sm font-semibold text-success">{formatCurrency(Number(c.income))}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Saídas</span>
+                          <span className="text-sm font-semibold text-destructive">{formatCurrency(Number(c.expense))}</span>
+                        </div>
+                        <div className="flex justify-between border-t pt-2">
+                          <span className="text-sm font-medium">Saldo</span>
+                          <span className={`text-sm font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>
+                            {formatCurrency(balance)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
 

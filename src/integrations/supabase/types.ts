@@ -794,6 +794,44 @@ export type Database = {
           },
         ]
       }
+      weekly_closings: {
+        Row: {
+          company_id: string
+          created_at: string
+          expense: number
+          id: string
+          income: number
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          expense?: number
+          id?: string
+          income?: number
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          expense?: number
+          id?: string
+          income?: number
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_closings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
