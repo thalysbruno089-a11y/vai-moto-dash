@@ -277,10 +277,13 @@ const Dashboard = () => {
 
                   return (
                     <Card key={closing.id}>
-                      <CardHeader className="pb-2">
+                      <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-base">
                           Semana {format(start, "dd/MM", { locale: ptBR })} → {format(end, "dd/MM", { locale: ptBR })}
                         </CardTitle>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setDeleteHistoryId(closing.id); setDeleteHistoryType('weekly'); setDeleteHistoryDialogOpen(true); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <div className="flex justify-between">
