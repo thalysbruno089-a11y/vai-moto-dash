@@ -35,7 +35,7 @@ export const useLoans = (type: 'lent' | 'borrowed') => {
         .from('loans')
         .select('*')
         .eq('type', type)
-        .order('created_at', { ascending: true });
+        .order('due_date', { ascending: false, nullsFirst: false });
       if (error) throw error;
       return data as Loan[];
     },
