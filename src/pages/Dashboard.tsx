@@ -46,9 +46,14 @@ const Dashboard = () => {
   const { data: weeklyClosings = [] } = useWeeklyClosings();
   const saveClosing = useSaveMonthlyClosing();
   const saveWeeklyClosing = useSaveWeeklyClosing();
+  const deleteWeeklyClosing = useDeleteWeeklyClosing();
+  const deleteMonthlyClosing = useDeleteMonthlyClosing();
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [deleteHistoryId, setDeleteHistoryId] = useState<string | null>(null);
+  const [deleteHistoryType, setDeleteHistoryType] = useState<'weekly' | 'monthly'>('weekly');
+  const [deleteHistoryDialogOpen, setDeleteHistoryDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const isLoading = loadingCashFlow || loadingMotoboys || loadingBills;
