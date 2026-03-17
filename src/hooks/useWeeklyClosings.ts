@@ -71,3 +71,16 @@ export const useSaveWeeklyClosing = () => {
     },
   });
 };
+
+export const useDeleteWeeklyClosing = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("weekly_closings" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["weekly_closings"] });
+    },
+  });
+};

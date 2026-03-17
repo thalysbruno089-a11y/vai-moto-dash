@@ -54,3 +54,18 @@ export const useSaveMonthlyClosing = () => {
     onError: (e) => toast.error('Erro ao salvar', { description: e.message }),
   });
 };
+
+export const useDeleteMonthlyClosing = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('monthly_closings').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['monthly_closings'] });
+      toast.success('Registro excluído!');
+    },
+    onError: (e) => toast.error('Erro ao excluir', { description: e.message }),
+  });
+};
