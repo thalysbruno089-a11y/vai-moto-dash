@@ -22,7 +22,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Search,
@@ -46,14 +46,15 @@ import { ContaEntryFormDialog } from "@/components/contas/ContaEntryFormDialog";
 import { ValeDialog } from "@/components/contas/ValeDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import StatCard from "@/components/dashboard/StatCard";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addMonths, addWeeks, addDays, subMonths, isWithinInterval, isBefore, isAfter, isToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, addDays, subMonths, isWithinInterval, isBefore, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
 const Contas = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [period, setPeriod] = useState<"week" | "month">("week");
+  const [period, setPeriod] = useState<"month" | "week">("month");
   const [offset, setOffset] = useState(0);
+  const [activeGroup, setActiveGroup] = useState<"carlos" | "central">("carlos");
 
   // Category dialogs
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
@@ -67,6 +68,10 @@ const Contas = () => {
   const [entryCategoryId, setEntryCategoryId] = useState<string | null>(null);
   const [deleteEntryDialogOpen, setDeleteEntryDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
+
+  // Dismiss bill from upcoming (with confirmation)
+  const [dismissBillDialogOpen, setDismissBillDialogOpen] = useState(false);
+  const [billToDismiss, setBillToDismiss] = useState<string | null>(null);
 
   // Vale dialog
   const [valeDialogOpen, setValeDialogOpen] = useState(false);
@@ -114,30 +119,32 @@ const Contas = () => {
     return format(currentRange.start, "MMMM yyyy", { locale: ptBR });
   }, [period, currentRange]);
 
-  // Filter categories (expense only)
-  const expenseCategories = useMemo(() => 
-    (categories || []).filter(c => c.type === "expense"), 
+  // Filter categories (expense only) by active group
+  const expenseCategories = useMemo(() =>
+    (categories || []).filter(c => c.type === "expense"),
     [categories]
   );
 
-  const filteredCategories = useMemo(() => 
-    expenseCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())),
-    [expenseCategories, searchTerm]
+  const groupCategories = useMemo(() =>
+    expenseCategories.filter(c => (c as any).group_name === activeGroup),
+    [expenseCategories, activeGroup]
+  );
+
+  const filteredCategories = useMemo(() =>
+    groupCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())),
+    [groupCategories, searchTerm]
   );
 
   // Get entries for a category within current period
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
       if (b.category_id !== categoryId) return false;
-      // Fixed bills always show
       if (b.is_fixed) return true;
-      // Non-fixed: check if due_date is within period
       const dueDate = new Date(b.due_date + "T12:00:00");
       return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
     });
   };
 
-  // Get total for a category (only paid items in period)
   const getCategoryPaidTotal = (categoryId: string) => {
     const entries = getEntriesForCategory(categoryId);
     return entries
@@ -152,14 +159,14 @@ const Contas = () => {
       .reduce((acc, e) => acc + Number(e.value), 0);
   };
 
-  const totalPaid = useMemo(() => 
-    expenseCategories.reduce((acc, cat) => acc + getCategoryPaidTotal(cat.id), 0),
-    [expenseCategories, bills, currentRange]
+  const totalPaid = useMemo(() =>
+    groupCategories.reduce((acc, cat) => acc + getCategoryPaidTotal(cat.id), 0),
+    [groupCategories, bills, currentRange]
   );
 
-  const totalPending = useMemo(() => 
-    expenseCategories.reduce((acc, cat) => acc + getCategoryPendingTotal(cat.id), 0),
-    [expenseCategories, bills, currentRange]
+  const totalPending = useMemo(() =>
+    groupCategories.reduce((acc, cat) => acc + getCategoryPendingTotal(cat.id), 0),
+    [groupCategories, bills, currentRange]
   );
 
   // Handlers
@@ -211,8 +218,21 @@ const Contas = () => {
     }
   };
 
+  // X button on upcoming: open confirmation then actually delete
+  const handleDismissFromUpcoming = (billId: string) => {
+    setBillToDismiss(billId);
+    setDismissBillDialogOpen(true);
+  };
+
+  const handleDismissBillConfirm = async () => {
+    if (billToDismiss) {
+      await deleteBill.mutateAsync(billToDismiss);
+      setDismissBillDialogOpen(false);
+      setBillToDismiss(null);
+    }
+  };
+
   const handleMarkPaid = async (entry: Bill) => {
-    // Check for vale on employee entries
     if (entry.vale_amount && entry.vale_amount > 0) {
       toast.warning(
         `⚠️ ${entry.name} possui vale de ${formatCurrency(entry.vale_amount)} este mês! O valor líquido será ${formatCurrency(entry.value - entry.vale_amount)}.`,
@@ -235,16 +255,8 @@ const Contas = () => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
   };
 
-  // Check if a category is "Funcionários" type
   const isFuncionariosCategory = (cat: Category) => {
     return cat.name.toLowerCase().includes("funcion");
-  };
-
-  // Dismissed bills from upcoming panel (session only)
-  const [dismissedBillIds, setDismissedBillIds] = useState<Set<string>>(new Set());
-
-  const handleDismissFromUpcoming = (billId: string) => {
-    setDismissedBillIds(prev => new Set(prev).add(billId));
   };
 
   const savedCategoryIds = useMemo(
@@ -254,54 +266,130 @@ const Contas = () => {
 
   const openBillsFromSavedCategories = useMemo(() => {
     if (!bills) return [];
-
     return bills.filter((bill) => {
       if (bill.status === "paid") return false;
-      if (dismissedBillIds.has(bill.id)) return false;
       if (!bill.category_id) return false;
       return savedCategoryIds.has(bill.category_id);
     });
-  }, [bills, dismissedBillIds, savedCategoryIds]);
+  }, [bills, savedCategoryIds]);
 
-  // Upcoming bills: current month + next 14 days, only existing category-linked bills
+  // Overdue bills (past due, any month) - shown highlighted at top
+  const overdueBills = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return openBillsFromSavedCategories
+      .filter((bill) => {
+        const dueDate = new Date(`${bill.due_date}T12:00:00`);
+        return isBefore(dueDate, today) && !isToday(dueDate);
+      })
+      .sort((a, b) => a.due_date.localeCompare(b.due_date));
+  }, [openBillsFromSavedCategories]);
+
+  // Upcoming bills: current month + next 14 days, exclude overdue
   const upcomingBills = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const monthStart = startOfMonth(today);
     const twoWeeksLater = addDays(today, 14);
 
     return openBillsFromSavedCategories
       .filter((bill) => {
         const dueDate = new Date(`${bill.due_date}T12:00:00`);
-        return dueDate >= monthStart && dueDate <= twoWeeksLater;
+        return dueDate >= today && dueDate <= twoWeeksLater;
       })
       .sort((a, b) => a.due_date.localeCompare(b.due_date))
       .slice(0, 16);
   }, [openBillsFromSavedCategories]);
 
-  // Last month pending bills in separate section
-  const lastMonthBills = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const previousMonth = subMonths(today, 1);
-    const previousMonthStart = startOfMonth(previousMonth);
-    const previousMonthEnd = endOfMonth(previousMonth);
-
-    return openBillsFromSavedCategories
-      .filter((bill) => {
-        const dueDate = new Date(`${bill.due_date}T12:00:00`);
-        return dueDate >= previousMonthStart && dueDate <= previousMonthEnd;
-      })
-      .sort((a, b) => a.due_date.localeCompare(b.due_date));
-  }, [openBillsFromSavedCategories]);
-
   return (
     <MainLayout title="Contas" subtitle="Gerencie todas as suas despesas por categoria">
+      {/* Overdue Bills - Always on top, highlighted */}
+      {overdueBills.length > 0 && (
+        <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+          <h3 className="text-sm font-semibold text-destructive mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            ⚠️ Contas Atrasadas ({overdueBills.length})
+          </h3>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {overdueBills.map(bill => {
+              const dueDate = new Date(`${bill.due_date}T12:00:00`);
+              return (
+                <div key={bill.id} className="flex items-center justify-between rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{bill.name}</p>
+                    <p className="text-xs text-destructive font-semibold">
+                      Venceu {format(dueDate, "dd/MM/yyyy")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 ml-2">
+                    <p className="font-semibold text-sm text-destructive">{formatCurrency(bill.value)}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      title="Apagar conta"
+                      onClick={() => handleDismissFromUpcoming(bill.id)}
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming Bills */}
+      {upcomingBills.length > 0 && (
+        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+          <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Próximas Contas (14 dias)
+          </h3>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {upcomingBills.map(bill => {
+              const dueDate = new Date(`${bill.due_date}T12:00:00`);
+              const isUrgent = isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
+              return (
+                <div key={bill.id} className={`flex items-center justify-between rounded-md border p-3 text-sm ${isUrgent ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-card'}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{bill.name}</p>
+                    <p className={`text-xs ${isUrgent ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
+                      {format(dueDate, "dd/MM/yyyy")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 ml-2">
+                    <p className="font-semibold text-sm">{formatCurrency(bill.value)}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      title="Apagar conta"
+                      onClick={() => handleDismissFromUpcoming(bill.id)}
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* CARLOS / CENTRAL Tabs */}
+      <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central")} className="mb-4">
+        <TabsList className="w-full">
+          <TabsTrigger value="carlos" className="flex-1 text-base font-bold">👤 CARLOS</TabsTrigger>
+          <TabsTrigger value="central" className="flex-1 text-base font-bold">🏢 CENTRAL</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Stats */}
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3 mb-6">
         <StatCard
           title="Total de Categorias"
-          value={String(expenseCategories.length)}
+          value={String(groupCategories.length)}
           icon={<Tags className="h-6 w-6 text-primary" />}
         />
         <StatCard
@@ -317,69 +405,13 @@ const Contas = () => {
         />
       </div>
 
-      {/* Upcoming Bills Highlight */}
-      {upcomingBills.length > 0 && (
-        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
-          <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Próximas Contas (14 dias)
-          </h3>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {upcomingBills.map(bill => {
-              const dueDate = new Date(`${bill.due_date}T12:00:00`);
-              const isOverdueBill = isBefore(dueDate, new Date()) && !isToday(dueDate);
-              const isUrgent = isOverdueBill || isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
-              return (
-                <div key={bill.id} className={`flex items-center justify-between rounded-md border p-3 text-sm ${isUrgent ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-card'}`}>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{bill.name}</p>
-                    <p className={`text-xs ${isUrgent ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
-                      {isOverdueBill ? '⚠️ Vencida ' : ''}{format(dueDate, "dd/MM/yyyy")}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 ml-2">
-                    <p className="font-semibold text-sm">{formatCurrency(bill.value)}</p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      title="Remover dos próximos"
-                      onClick={() => handleDismissFromUpcoming(bill.id)}
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {lastMonthBills.length > 0 && (
-        <div className="mb-6 rounded-lg border border-border bg-muted/30 p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-3">Contas do Mês Passado</h3>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {lastMonthBills.map((bill) => (
-              <div key={bill.id} className="flex items-center justify-between rounded-md border border-border bg-card p-3 text-sm">
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{bill.name}</p>
-                  <p className="text-xs text-muted-foreground">Venceu em {format(new Date(`${bill.due_date}T12:00:00`), "dd/MM/yyyy")}</p>
-                </div>
-                <p className="font-semibold text-destructive">{formatCurrency(bill.value)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Period Filter */}
+      {/* Period Filter - MÊS first, then SEMANA */}
       <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <Tabs value={period} onValueChange={(v) => { setPeriod(v as "week" | "month"); setOffset(0); }}>
+          <Tabs value={period} onValueChange={(v) => { setPeriod(v as "month" | "week"); setOffset(0); }}>
             <TabsList>
-              <TabsTrigger value="week">Semana</TabsTrigger>
               <TabsTrigger value="month">Mês</TabsTrigger>
+              <TabsTrigger value="week">Semana</TabsTrigger>
             </TabsList>
           </Tabs>
           <div className="flex items-center gap-1">
@@ -417,8 +449,8 @@ const Contas = () => {
         </div>
       ) : filteredCategories.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          {expenseCategories.length === 0
-            ? "Nenhuma categoria cadastrada. Crie sua primeira categoria!"
+          {groupCategories.length === 0
+            ? `Nenhuma categoria em ${activeGroup === 'carlos' ? 'CARLOS' : 'CENTRAL'}. Crie sua primeira categoria!`
             : "Nenhuma categoria encontrada."}
         </div>
       ) : (
@@ -611,6 +643,15 @@ const Contas = () => {
         onConfirm={handleDeleteEntryConfirm}
         title="Excluir Item"
         description="Tem certeza que deseja excluir este item?"
+        isLoading={deleteBill.isPending}
+      />
+
+      <DeleteConfirmDialog
+        open={dismissBillDialogOpen}
+        onOpenChange={setDismissBillDialogOpen}
+        onConfirm={handleDismissBillConfirm}
+        title="Apagar Conta"
+        description="Tem certeza que deseja apagar esta conta? Essa ação não pode ser desfeita."
         isLoading={deleteBill.isPending}
       />
     </MainLayout>
