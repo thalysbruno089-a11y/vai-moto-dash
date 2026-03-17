@@ -360,6 +360,21 @@ const Dashboard = () => {
         description="Isso vai redefinir todos os pagamentos dos motoboys para 'Não Pago'. O novo ciclo começa na próxima quinta-feira. Deseja continuar?"
         isLoading={isResetting}
       />
+      <DeleteConfirmDialog
+        open={deleteHistoryDialogOpen}
+        onOpenChange={setDeleteHistoryDialogOpen}
+        onConfirm={() => {
+          if (!deleteHistoryId) return;
+          if (deleteHistoryType === 'weekly') {
+            deleteWeeklyClosing.mutate(deleteHistoryId, { onSuccess: () => { setDeleteHistoryDialogOpen(false); toast.success('Registro excluído!'); } });
+          } else {
+            deleteMonthlyClosing.mutate(deleteHistoryId, { onSuccess: () => setDeleteHistoryDialogOpen(false) });
+          }
+        }}
+        title="Excluir registro"
+        description="Tem certeza que deseja excluir este registro do histórico? Esta ação não pode ser desfeita."
+        isLoading={deleteWeeklyClosing.isPending || deleteMonthlyClosing.isPending}
+      />
     </MainLayout>
   );
 };
