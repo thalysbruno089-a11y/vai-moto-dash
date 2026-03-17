@@ -154,6 +154,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          group_name: string
           id: string
           name: string
           type: Database["public"]["Enums"]["flow_type"]
@@ -162,6 +163,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string
+          group_name?: string
           id?: string
           name: string
           type: Database["public"]["Enums"]["flow_type"]
@@ -170,6 +172,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string
+          group_name?: string
           id?: string
           name?: string
           type?: Database["public"]["Enums"]["flow_type"]
