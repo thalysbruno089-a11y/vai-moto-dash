@@ -1,14 +1,14 @@
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import { Wallet, TrendingUp, TrendingDown, Bike, RotateCcw, ChevronLeft, ChevronRight, Save, History } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, Bike, RotateCcw, ChevronLeft, ChevronRight, Save, History, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useBills } from "@/hooks/useBills";
-import { useMonthlyClosings, useSaveMonthlyClosing } from "@/hooks/useMonthlyClosings";
-import { useWeeklyClosings, useSaveWeeklyClosing } from "@/hooks/useWeeklyClosings";
+import { useMonthlyClosings, useSaveMonthlyClosing, useDeleteMonthlyClosing } from "@/hooks/useMonthlyClosings";
+import { useWeeklyClosings, useSaveWeeklyClosing, useDeleteWeeklyClosing } from "@/hooks/useWeeklyClosings";
 import { useState, useMemo } from "react";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,9 +46,14 @@ const Dashboard = () => {
   const { data: weeklyClosings = [] } = useWeeklyClosings();
   const saveClosing = useSaveMonthlyClosing();
   const saveWeeklyClosing = useSaveWeeklyClosing();
+  const deleteWeeklyClosing = useDeleteWeeklyClosing();
+  const deleteMonthlyClosing = useDeleteMonthlyClosing();
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [deleteHistoryId, setDeleteHistoryId] = useState<string | null>(null);
+  const [deleteHistoryType, setDeleteHistoryType] = useState<'weekly' | 'monthly'>('weekly');
+  const [deleteHistoryDialogOpen, setDeleteHistoryDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const isLoading = loadingCashFlow || loadingMotoboys || loadingBills;
@@ -272,10 +277,13 @@ const Dashboard = () => {
 
                   return (
                     <Card key={closing.id}>
-                      <CardHeader className="pb-2">
+                      <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-base">
                           Semana {format(start, "dd/MM", { locale: ptBR })} → {format(end, "dd/MM", { locale: ptBR })}
                         </CardTitle>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setDeleteHistoryId(closing.id); setDeleteHistoryType('weekly'); setDeleteHistoryDialogOpen(true); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <div className="flex justify-between">
@@ -311,10 +319,13 @@ const Dashboard = () => {
 
                   return (
                     <Card key={c.id}>
-                      <CardHeader className="pb-2">
+                      <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-base capitalize">
                           {MONTH_NAMES[c.month - 1]} {c.year}
                         </CardTitle>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setDeleteHistoryId(c.id); setDeleteHistoryType('monthly'); setDeleteHistoryDialogOpen(true); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <div className="flex justify-between">
@@ -348,6 +359,21 @@ const Dashboard = () => {
         title="Zerar Semana"
         description="Isso vai redefinir todos os pagamentos dos motoboys para 'Não Pago'. O novo ciclo começa na próxima quinta-feira. Deseja continuar?"
         isLoading={isResetting}
+      />
+      <DeleteConfirmDialog
+        open={deleteHistoryDialogOpen}
+        onOpenChange={setDeleteHistoryDialogOpen}
+        onConfirm={() => {
+          if (!deleteHistoryId) return;
+          if (deleteHistoryType === 'weekly') {
+            deleteWeeklyClosing.mutate(deleteHistoryId, { onSuccess: () => { setDeleteHistoryDialogOpen(false); toast.success('Registro excluído!'); } });
+          } else {
+            deleteMonthlyClosing.mutate(deleteHistoryId, { onSuccess: () => setDeleteHistoryDialogOpen(false) });
+          }
+        }}
+        title="Excluir registro"
+        description="Tem certeza que deseja excluir este registro do histórico? Esta ação não pode ser desfeita."
+        isLoading={deleteWeeklyClosing.isPending || deleteMonthlyClosing.isPending}
       />
     </MainLayout>
   );
