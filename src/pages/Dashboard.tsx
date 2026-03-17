@@ -319,10 +319,13 @@ const Dashboard = () => {
 
                   return (
                     <Card key={c.id}>
-                      <CardHeader className="pb-2">
+                      <CardHeader className="pb-2 flex flex-row items-center justify-between">
                         <CardTitle className="text-base capitalize">
                           {MONTH_NAMES[c.month - 1]} {c.year}
                         </CardTitle>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => { setDeleteHistoryId(c.id); setDeleteHistoryType('monthly'); setDeleteHistoryDialogOpen(true); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <div className="flex justify-between">
