@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
-import { useBills } from "@/hooks/useBills";
+
 import { useMonthlyClosings, useSaveMonthlyClosing, useDeleteMonthlyClosing } from "@/hooks/useMonthlyClosings";
 import { useWeeklyClosings, useSaveWeeklyClosing, useDeleteWeeklyClosing } from "@/hooks/useWeeklyClosings";
 import { useState, useMemo } from "react";
@@ -41,7 +41,7 @@ const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
 const Dashboard = () => {
   const { data: motoboys, isLoading: loadingMotoboys } = useMotoboys();
   const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
-  const { data: bills, isLoading: loadingBills } = useBills();
+  
   const { data: closings = [] } = useMonthlyClosings();
   const { data: weeklyClosings = [] } = useWeeklyClosings();
   const saveClosing = useSaveMonthlyClosing();
@@ -56,7 +56,7 @@ const Dashboard = () => {
   const [deleteHistoryDialogOpen, setDeleteHistoryDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const isLoading = loadingCashFlow || loadingMotoboys || loadingBills;
+  const isLoading = loadingCashFlow || loadingMotoboys;
 
   const week = getWeekRange();
   const weekStartStr = fmtDate(week.start);
@@ -98,18 +98,8 @@ const Dashboard = () => {
   const weekCfIncome = weekCashFlowEntries.filter((e) => e.type === "revenue").reduce((s, e) => s + Number(e.value), 0);
   const weekCfExpense = weekCashFlowEntries.filter((e) => e.type === "expense").reduce((s, e) => s + Number(e.value), 0);
 
-  const weekBillsExpense = bills?.filter((b) => {
-    if (b.status !== "paid" || !b.paid_at) return false;
-
-    const paidAt = new Date(b.paid_at);
-    if (weekResetAt && paidAt <= weekResetAt) return false;
-
-    const paidDate = b.paid_at.slice(0, 10);
-    return paidDate >= weekStartStr && paidDate <= weekEndStr;
-  }).reduce((s, b) => s + Number(b.value), 0) || 0;
-
   const weekIncome = weekMotoboyIncome + weekCfIncome;
-  const weekExpense = weekCfExpense + weekBillsExpense;
+  const weekExpense = weekCfExpense;
   const weekBalance = weekIncome - weekExpense;
 
   // MONTH
@@ -123,14 +113,8 @@ const Dashboard = () => {
   const monthCfIncome = monthCashFlowEntries.filter((e) => e.type === "revenue").reduce((s, e) => s + Number(e.value), 0);
   const monthCfExpense = monthCashFlowEntries.filter((e) => e.type === "expense").reduce((s, e) => s + Number(e.value), 0);
 
-  const monthBillsExpense = bills?.filter((b) => {
-    if (b.status !== "paid" || !b.paid_at) return false;
-    const paidDate = b.paid_at.slice(0, 10);
-    return paidDate >= monthStartStr && paidDate <= monthEndStr;
-  }).reduce((s, b) => s + Number(b.value), 0) || 0;
-
   const monthIncome = monthMotoboyIncome + monthCfIncome;
-  const monthExpense = monthCfExpense + monthBillsExpense;
+  const monthExpense = monthCfExpense;
   const monthBalance = monthIncome - monthExpense;
 
   const activeMotoboys = motoboys?.filter((m) => m.status === "active").length || 0;
