@@ -41,7 +41,7 @@ const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
 const Dashboard = () => {
   const { data: motoboys, isLoading: loadingMotoboys } = useMotoboys();
   const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
-  const { data: bills, isLoading: loadingBills } = useBills();
+  
   const { data: closings = [] } = useMonthlyClosings();
   const { data: weeklyClosings = [] } = useWeeklyClosings();
   const saveClosing = useSaveMonthlyClosing();
