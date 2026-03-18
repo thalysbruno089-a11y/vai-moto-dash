@@ -113,14 +113,8 @@ const Dashboard = () => {
   const monthCfIncome = monthCashFlowEntries.filter((e) => e.type === "revenue").reduce((s, e) => s + Number(e.value), 0);
   const monthCfExpense = monthCashFlowEntries.filter((e) => e.type === "expense").reduce((s, e) => s + Number(e.value), 0);
 
-  const monthBillsExpense = bills?.filter((b) => {
-    if (b.status !== "paid" || !b.paid_at) return false;
-    const paidDate = b.paid_at.slice(0, 10);
-    return paidDate >= monthStartStr && paidDate <= monthEndStr;
-  }).reduce((s, b) => s + Number(b.value), 0) || 0;
-
   const monthIncome = monthMotoboyIncome + monthCfIncome;
-  const monthExpense = monthCfExpense + monthBillsExpense;
+  const monthExpense = monthCfExpense;
   const monthBalance = monthIncome - monthExpense;
 
   const activeMotoboys = motoboys?.filter((m) => m.status === "active").length || 0;
