@@ -56,7 +56,7 @@ const Dashboard = () => {
   const [deleteHistoryDialogOpen, setDeleteHistoryDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const isLoading = loadingCashFlow || loadingMotoboys || loadingBills;
+  const isLoading = loadingCashFlow || loadingMotoboys;
 
   const week = getWeekRange();
   const weekStartStr = fmtDate(week.start);
