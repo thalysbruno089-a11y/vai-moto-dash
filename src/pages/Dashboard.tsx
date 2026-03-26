@@ -124,11 +124,40 @@ const Dashboard = () => {
     let createdWeeklyClosingId: string | null = null;
 
     try {
+      // Fetch fresh motoboy data to ensure we capture paid income accurately
+      const { data: freshMotoboys } = await supabase
+        .from("motoboys")
+        .select("*")
+        .eq("status", "active")
+        .eq("payment_status", "paid");
+
+      const freshMotoboyIncome = (freshMotoboys || []).reduce(
+        (s, m) => s + Number(m.weekly_payment || 0), 0
+      );
+
+      // Fetch fresh cash flow for this week
+      const { data: freshCashFlow } = await supabase
+        .from("cash_flow")
+        .select("*")
+        .gte("flow_date", weekStartStr)
+        .lte("flow_date", weekEndStr);
+
+      const filteredCf = (freshCashFlow || []).filter((e) => {
+        if (!weekResetAt) return true;
+        return new Date(e.created_at) > weekResetAt;
+      });
+
+      const freshCfIncome = filteredCf.filter((e) => e.type === "revenue").reduce((s, e) => s + Number(e.value), 0);
+      const freshCfExpense = filteredCf.filter((e) => e.type === "expense").reduce((s, e) => s + Number(e.value), 0);
+
+      const totalIncome = freshMotoboyIncome + freshCfIncome;
+      const totalExpense = freshCfExpense;
+
       const weeklyClosing = await saveWeeklyClosing.mutateAsync({
         week_start: weekStartStr,
         week_end: weekEndStr,
-        income: weekIncome,
-        expense: weekExpense,
+        income: totalIncome,
+        expense: totalExpense,
       });
       createdWeeklyClosingId = weeklyClosing.id;
 
