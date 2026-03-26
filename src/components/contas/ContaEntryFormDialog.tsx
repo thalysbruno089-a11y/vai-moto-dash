@@ -20,6 +20,8 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
   const [description, setDescription] = useState("");
   const [isFixed, setIsFixed] = useState(false);
   const [dueDate, setDueDate] = useState("");
+  const [isInstallment, setIsInstallment] = useState(false);
+  const [installmentCount, setInstallmentCount] = useState("2");
 
   const createBill = useCreateBill();
   const updateBill = useUpdateBill();
@@ -33,11 +35,15 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
       setDescription(entry.description || "");
       setIsFixed(entry.is_fixed);
       setDueDate(entry.due_date);
+      setIsInstallment(false);
+      setInstallmentCount("2");
     } else {
       setName("");
       setValue("");
       setDescription("");
       setIsFixed(false);
+      setIsInstallment(false);
+      setInstallmentCount("2");
       const today = new Date();
       setDueDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`);
     }
@@ -55,6 +61,29 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
           is_fixed: isFixed,
           due_date: dueDate,
         });
+      } else if (isInstallment && !isFixed) {
+        const count = parseInt(installmentCount);
+        const baseDate = new Date(`${dueDate}T12:00:00`);
+        const parsedValue = parseFloat(value);
+
+        for (let i = 0; i < count; i++) {
+          const installDate = new Date(baseDate);
+          installDate.setMonth(installDate.getMonth() + i);
+          const dateStr = `${installDate.getFullYear()}-${String(installDate.getMonth() + 1).padStart(2, "0")}-${String(installDate.getDate()).padStart(2, "0")}`;
+
+          await createBill.mutateAsync({
+            name: `${name} (${i + 1}/${count})`,
+            value: parsedValue,
+            description: description || null,
+            is_fixed: false,
+            due_date: dateStr,
+            status: "pending",
+            category_id: categoryId || null,
+            parent_bill_id: null,
+            installment_number: i + 1,
+            total_installments: count,
+          });
+        }
       } else {
         await createBill.mutateAsync({
           name,
@@ -101,9 +130,35 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
             <Input id="entry-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Opcional" />
           </div>
           <div className="flex items-center gap-3">
-            <Switch id="entry-fixed" checked={isFixed} onCheckedChange={setIsFixed} />
+            <Switch id="entry-fixed" checked={isFixed} onCheckedChange={(checked) => { setIsFixed(checked); if (checked) setIsInstallment(false); }} />
             <Label htmlFor="entry-fixed">Conta Fixa (repete todo mês)</Label>
           </div>
+          {!isEditing && !isFixed && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Switch id="entry-installment" checked={isInstallment} onCheckedChange={setIsInstallment} />
+                <Label htmlFor="entry-installment">Parcelar</Label>
+              </div>
+              {isInstallment && (
+                <div className="space-y-2">
+                  <Label htmlFor="entry-installment-count">Número de parcelas</Label>
+                  <Input
+                    id="entry-installment-count"
+                    type="number"
+                    min="2"
+                    max="60"
+                    value={installmentCount}
+                    onChange={(e) => setInstallmentCount(e.target.value)}
+                  />
+                  {value && parseInt(installmentCount) >= 2 && (
+                    <p className="text-xs text-muted-foreground">
+                      {parseInt(installmentCount)}x de R$ {parseFloat(value).toFixed(2)} — Total: R$ {(parseFloat(value) * parseInt(installmentCount)).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" disabled={isLoading || !name || !value}>
