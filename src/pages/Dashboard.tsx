@@ -174,7 +174,6 @@ const Dashboard = () => {
             <TabsTrigger value="week">📅 Semana Atual</TabsTrigger>
             <TabsTrigger value="month">📆 Mensal</TabsTrigger>
             <TabsTrigger value="history">📊 Histórico</TabsTrigger>
-            <TabsTrigger value="history">📊 Histórico</TabsTrigger>
           </TabsList>
           <Button
             variant="destructive"
