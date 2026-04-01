@@ -508,41 +508,7 @@ const Contas = () => {
           </div>
         )}
 
-        {/* Upcoming Bills */}
-        {upcomingBillsGrouped.length > 0 && (
-          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-foreground">Próximas Contas</h3>
-            </div>
-            <div className="space-y-2">
-              {upcomingBillsGrouped.map((group, idx) => {
-                const dueDate = new Date(`${group.dueDate}T12:00:00`);
-                const isUrgent = isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
-                const baseName = group.bills[0].name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
-                return (
-                  <div key={idx} className={cn(
-                    "flex items-center justify-between rounded-lg p-3 transition-colors",
-                    isUrgent ? "bg-destructive/5" : "bg-muted/30"
-                  )}>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {baseName}
-                        {group.bills.length > 1 && (
-                          <span className="text-xs text-muted-foreground ml-1">({group.bills.length} contas)</span>
-                        )}
-                      </p>
-                      <p className={cn("text-xs", isUrgent ? "text-destructive font-medium" : "text-muted-foreground")}>
-                        {format(dueDate, "dd/MM/yyyy")}
-                      </p>
-                    </div>
-                    <p className="text-sm font-semibold ml-2">{formatCurrency(group.totalValue)}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {/* Upcoming Bills section removed */}
 
         {/* Category List */}
         {isLoading ? (
