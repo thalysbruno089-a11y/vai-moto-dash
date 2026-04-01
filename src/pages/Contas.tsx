@@ -257,34 +257,7 @@ const Contas = () => {
     return { bg: "bg-amber-500/10", text: "text-amber-600", border: "border-amber-500/20" };
   };
 
-  // Upcoming bills grouped
-  const upcomingBillsGrouped = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const twoWeeksLater = addDays(today, 14);
-
-    const upcoming = openBillsFromSavedCategories
-      .filter(b => {
-        const dueDate = new Date(`${b.due_date}T12:00:00`);
-        return dueDate >= today && dueDate <= twoWeeksLater;
-      })
-      .sort((a, b) => a.due_date.localeCompare(b.due_date));
-
-    const groups = new Map<string, { bills: Bill[]; totalValue: number; dueDate: string }>();
-    upcoming.forEach(bill => {
-      const baseName = bill.name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
-      const key = `${baseName}_${bill.due_date}`;
-      if (!groups.has(key)) {
-        groups.set(key, { bills: [bill], totalValue: bill.value, dueDate: bill.due_date });
-      } else {
-        const g = groups.get(key)!;
-        g.bills.push(bill);
-        g.totalValue += bill.value;
-      }
-    });
-
-    return Array.from(groups.values()).slice(0, 10);
-  }, [openBillsFromSavedCategories]);
+  // Removed "Próximas Contas" - only overdue bills shown now
 
   // Toggle category expansion
   const toggleCategory = (id: string) => {
