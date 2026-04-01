@@ -191,6 +191,21 @@ const Contas = () => {
     [groupCategories, searchTerm]
   );
 
+  // Helper: check if a fixed bill was paid in a previous month and should reset to pending
+  const isFixedBillPendingThisMonth = (bill: Bill): boolean => {
+    if (!bill.is_fixed || bill.status !== "paid" || !bill.paid_at) return false;
+    const paidDate = new Date(bill.paid_at);
+    const now = new Date();
+    // If paid in a previous month, treat as pending
+    return paidDate.getMonth() !== now.getMonth() || paidDate.getFullYear() !== now.getFullYear();
+  };
+
+  // Get effective status: fixed bills paid in previous months show as "pending"
+  const getEffectiveStatus = (bill: Bill): string => {
+    if (isFixedBillPendingThisMonth(bill)) return "pending";
+    return bill.status;
+  };
+
   // Entries for category - fixed bills always show in current period
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
@@ -204,13 +219,13 @@ const Contas = () => {
 
   const getCategoryPaidTotal = (categoryId: string) => {
     return getEntriesForCategory(categoryId)
-      .filter(e => e.status === "paid")
+      .filter(e => getEffectiveStatus(e) === "paid")
       .reduce((acc, e) => acc + Number(e.value) - Number(e.vale_amount || 0), 0);
   };
 
   const getCategoryPendingTotal = (categoryId: string) => {
     return getEntriesForCategory(categoryId)
-      .filter(e => e.status !== "paid")
+      .filter(e => getEffectiveStatus(e) !== "paid")
       .reduce((acc, e) => acc + Number(e.value), 0);
   };
 
@@ -236,10 +251,10 @@ const Contas = () => {
 
   const openBillsFromSavedCategories = useMemo(() => {
     if (!bills) return [];
-    return bills.filter(b => b.status !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
+    return bills.filter(b => getEffectiveStatus(b) !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
   }, [bills, savedCategoryIds]);
 
-  // Overdue bills - only last 30 days, filtered by active group
+  // Overdue bills - last 30 days, filtered by active group (includes fixed bills with stale paid status)
   const overdueBills = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -247,12 +262,13 @@ const Contas = () => {
     const groupCatIds = new Set(groupCategories.map(c => c.id));
     return (bills || [])
       .filter(b => {
-        if (b.status === "paid") return false;
+        const effectiveStatus = getEffectiveStatus(b);
+        if (effectiveStatus === "paid") return false;
         if (!b.category_id || !groupCatIds.has(b.category_id)) return false;
         const dueDate = new Date(`${b.due_date}T12:00:00`);
         return isBefore(dueDate, today) && !isToday(dueDate) && dueDate >= thirtyDaysAgo;
       })
-      .sort((a, b) => a.due_date.localeCompare(b.due_date)); // oldest first (most urgent)
+      .sort((a, b) => a.due_date.localeCompare(b.due_date));
   }, [bills, groupCategories]);
 
   // Get urgency level for progressive styling
@@ -595,8 +611,9 @@ const Contas = () => {
                           <div className="space-y-1">
                             {entries.map((entry) => {
                               const dueDate = new Date(entry.due_date + "T12:00:00");
-                              const isOverdue = entry.status !== "paid" && isBefore(dueDate, new Date()) && !isToday(dueDate);
-                              const isPaid = entry.status === "paid";
+                              const effectiveStatus = getEffectiveStatus(entry);
+                              const isOverdue = effectiveStatus !== "paid" && isBefore(dueDate, new Date()) && !isToday(dueDate);
+                              const isPaid = effectiveStatus === "paid";
                               return (
                                 <div key={entry.id} className={cn(
                                   "flex items-center justify-between rounded-lg p-3 transition-colors",
