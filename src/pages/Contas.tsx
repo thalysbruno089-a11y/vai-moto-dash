@@ -251,7 +251,7 @@ const Contas = () => {
 
   const openBillsFromSavedCategories = useMemo(() => {
     if (!bills) return [];
-    return bills.filter(b => b.status !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
+    return bills.filter(b => getEffectiveStatus(b) !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
   }, [bills, savedCategoryIds]);
 
   // Overdue bills - last 30 days, filtered by active group (includes fixed bills with stale paid status)
