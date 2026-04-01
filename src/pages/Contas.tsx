@@ -3,6 +3,8 @@ import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +51,8 @@ import {
   Pill,
   Globe,
   Briefcase,
+  CalendarIcon,
+  Filter,
 } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
 import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from "@/hooks/useBills";
@@ -56,7 +60,7 @@ import { CategoryFormDialog } from "@/components/categories/CategoryFormDialog";
 import { ContaEntryFormDialog } from "@/components/contas/ContaEntryFormDialog";
 import { ValeDialog } from "@/components/contas/ValeDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
-import { format, startOfMonth, endOfMonth, addMonths, addDays, isWithinInterval, isBefore, isToday, differenceInDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, addDays, isWithinInterval, isBefore, isToday, differenceInDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -88,10 +92,15 @@ const getCategoryIcon = (name: string) => {
 
 const Contas = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [period, setPeriod] = useState<"month" | "week">("month");
+  const [period, setPeriod] = useState<"month" | "week" | "custom">("month");
   const [offset, setOffset] = useState(0);
   const [activeGroup, setActiveGroup] = useState<"carlos" | "central">("carlos");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  // Custom date range
+  const [customStart, setCustomStart] = useState<Date | undefined>(undefined);
+  const [customEnd, setCustomEnd] = useState<Date | undefined>(undefined);
+  const [showCustomFilter, setShowCustomFilter] = useState(false);
 
   // Category dialogs
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
@@ -138,6 +147,13 @@ const Contas = () => {
   };
 
   const currentRange = useMemo(() => {
+    if (period === "custom" && customStart && customEnd) {
+      const s = new Date(customStart);
+      s.setHours(0, 0, 0, 0);
+      const e = new Date(customEnd);
+      e.setHours(23, 59, 59, 999);
+      return { start: s, end: e };
+    }
     const now = new Date();
     if (period === "week") {
       const base = new Date(now);
@@ -147,14 +163,17 @@ const Contas = () => {
       const base = addMonths(now, offset);
       return { start: startOfMonth(base), end: endOfMonth(base) };
     }
-  }, [period, offset]);
+  }, [period, offset, customStart, customEnd]);
 
   const periodLabel = useMemo(() => {
+    if (period === "custom" && customStart && customEnd) {
+      return `${format(customStart, "dd/MM")} - ${format(customEnd, "dd/MM")}`;
+    }
     if (period === "week") {
       return `${format(currentRange.start, "dd")} - ${format(currentRange.end, "dd MMM", { locale: ptBR })}`;
     }
     return format(currentRange.start, "MMMM yyyy", { locale: ptBR });
-  }, [period, currentRange]);
+  }, [period, currentRange, customStart, customEnd]);
 
   // Filter categories
   const expenseCategories = useMemo(() =>
@@ -219,17 +238,25 @@ const Contas = () => {
     return bills.filter(b => b.status !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
   }, [bills, savedCategoryIds]);
 
-  // Overdue bills
+  // Overdue bills - only last 30 days
   const overdueBills = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const thirtyDaysAgo = subDays(today, 30);
     return openBillsFromSavedCategories
       .filter(b => {
         const dueDate = new Date(`${b.due_date}T12:00:00`);
-        return isBefore(dueDate, today) && !isToday(dueDate);
+        return isBefore(dueDate, today) && !isToday(dueDate) && dueDate >= thirtyDaysAgo;
       })
-      .sort((a, b) => a.due_date.localeCompare(b.due_date));
+      .sort((a, b) => b.due_date.localeCompare(a.due_date)); // most recent first
   }, [openBillsFromSavedCategories]);
+
+  // Get urgency level for progressive styling
+  const getUrgencyLevel = (daysLate: number): { bg: string; text: string; border: string } => {
+    if (daysLate >= 15) return { bg: "bg-destructive/15", text: "text-destructive", border: "border-destructive/40" };
+    if (daysLate >= 7) return { bg: "bg-destructive/10", text: "text-destructive", border: "border-destructive/25" };
+    return { bg: "bg-amber-500/10", text: "text-amber-600", border: "border-amber-500/20" };
+  };
 
   // Upcoming bills grouped
   const upcomingBillsGrouped = useMemo(() => {
@@ -244,7 +271,6 @@ const Contas = () => {
       })
       .sort((a, b) => a.due_date.localeCompare(b.due_date));
 
-    // Group by base name (remove "(1/3)" etc)
     const groups = new Map<string, { bills: Bill[]; totalValue: number; dueDate: string }>();
     upcoming.forEach(bill => {
       const baseName = bill.name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
@@ -297,6 +323,21 @@ const Contas = () => {
   const handleMarkUnpaid = async (entry: Bill) => { await updateBill.mutateAsync({ id: entry.id, status: "pending", paid_at: null }); };
   const handleOpenVale = (entry: Bill) => { setValeEntry(entry); setValeDialogOpen(true); };
 
+  const handleApplyCustomRange = () => {
+    if (customStart && customEnd) {
+      setPeriod("custom");
+      setShowCustomFilter(false);
+    }
+  };
+
+  const handleClearCustomRange = () => {
+    setPeriod("month");
+    setCustomStart(undefined);
+    setCustomEnd(undefined);
+    setOffset(0);
+    setShowCustomFilter(false);
+  };
+
   const formatCurrency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
   const isFuncionariosCategory = (cat: Category) => cat.name.toLowerCase().includes("funcion");
@@ -308,7 +349,7 @@ const Contas = () => {
         {/* Financial Summary Header */}
         <div className="rounded-xl bg-card border border-border p-5">
           <div className="text-center mb-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo do mês</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo do período</p>
             <p className={cn("text-3xl font-bold tracking-tight", totalPending > 0 ? "text-destructive" : "text-foreground")}>
               {formatCurrency(totalPaid + totalPending)}
             </p>
@@ -335,24 +376,102 @@ const Contas = () => {
         </Tabs>
 
         {/* Period Filter */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Tabs value={period} onValueChange={(v) => { setPeriod(v as "month" | "week"); setOffset(0); }}>
-              <TabsList className="h-8">
-                <TabsTrigger value="month" className="text-xs px-3 h-7">Mês</TabsTrigger>
-                <TabsTrigger value="week" className="text-xs px-3 h-7">Semana</TabsTrigger>
-              </TabsList>
-            </Tabs>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Tabs value={period === "custom" ? "custom" : period} onValueChange={(v) => {
+                if (v === "custom") {
+                  setShowCustomFilter(true);
+                } else {
+                  setPeriod(v as "month" | "week");
+                  setOffset(0);
+                  setCustomStart(undefined);
+                  setCustomEnd(undefined);
+                }
+              }}>
+                <TabsList className="h-8">
+                  <TabsTrigger value="month" className="text-xs px-3 h-7">Mês</TabsTrigger>
+                  <TabsTrigger value="week" className="text-xs px-3 h-7">Semana</TabsTrigger>
+                  <TabsTrigger value="custom" className="text-xs px-3 h-7">
+                    <Filter className="h-3 w-3 mr-1" />
+                    Período
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            {period !== "custom" && (
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOffset(o => o - 1)}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium min-w-[120px] text-center capitalize">{periodLabel}</span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOffset(o => o + 1)}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            {period === "custom" && (
+              <span className="text-sm font-medium text-primary">{periodLabel}</span>
+            )}
           </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOffset(o => o - 1)}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium min-w-[120px] text-center capitalize">{periodLabel}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOffset(o => o + 1)}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+
+          {/* Custom Date Range Picker */}
+          {(showCustomFilter || period === "custom") && (
+            <div className="rounded-lg border border-border bg-card p-3 space-y-3">
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <p className="text-[11px] text-muted-foreground font-medium">Data início</p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start text-left h-8 text-xs">
+                        <CalendarIcon className="h-3 w-3 mr-1.5" />
+                        {customStart ? format(customStart, "dd/MM/yyyy") : "Selecionar"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={customStart}
+                        onSelect={setCustomStart}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-[11px] text-muted-foreground font-medium">Data fim</p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full justify-start text-left h-8 text-xs">
+                        <CalendarIcon className="h-3 w-3 mr-1.5" />
+                        {customEnd ? format(customEnd, "dd/MM/yyyy") : "Selecionar"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={customEnd}
+                        onSelect={setCustomEnd}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleApplyCustomRange} disabled={!customStart || !customEnd}>
+                  Aplicar Filtro
+                </Button>
+                {period === "custom" && (
+                  <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleClearCustomRange}>
+                    Limpar
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Search */}
@@ -366,7 +485,7 @@ const Contas = () => {
           />
         </div>
 
-        {/* Overdue Bills */}
+        {/* Overdue Bills - last 30 days only */}
         {overdueBills.length > 0 && (
           <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 space-y-3">
             <div className="flex items-center gap-2">
@@ -378,14 +497,20 @@ const Contas = () => {
               {overdueBills.map(bill => {
                 const dueDate = new Date(`${bill.due_date}T12:00:00`);
                 const daysLate = differenceInDays(new Date(), dueDate);
+                const urgency = getUrgencyLevel(daysLate);
                 return (
-                  <div key={bill.id} className="flex items-center justify-between rounded-lg bg-background/80 p-3">
+                  <div key={bill.id} className={cn(
+                    "flex items-center justify-between rounded-lg p-3 border",
+                    urgency.bg, urgency.border
+                  )}>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{bill.name}</p>
-                      <p className="text-xs text-destructive">{daysLate} {daysLate === 1 ? 'dia' : 'dias'} atrasado</p>
+                      <p className={cn("text-xs font-medium", urgency.text)}>
+                        {daysLate} {daysLate === 1 ? 'dia' : 'dias'} atrasado
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 ml-2">
-                      <p className="text-sm font-bold text-destructive">{formatCurrency(bill.value)}</p>
+                      <p className={cn("text-sm font-bold", urgency.text)}>{formatCurrency(bill.value)}</p>
                       <Button
                         variant="ghost"
                         size="sm"
