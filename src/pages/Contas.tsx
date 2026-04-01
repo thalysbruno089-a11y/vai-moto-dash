@@ -2,14 +2,7 @@ import { useState, useMemo } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,12 +10,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Search,
@@ -31,30 +23,75 @@ import {
   Trash2,
   Loader2,
   Plus,
-  Tags,
-  TrendingDown,
   CheckCircle2,
   XCircle,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Clock,
+  Fuel,
+  Wallet,
+  CreditCard,
+  Zap,
+  ShoppingCart,
+  Home,
+  Car,
+  Heart,
+  Dumbbell,
+  User,
+  Building2,
+  Megaphone,
+  Smartphone,
+  Package,
+  HandCoins,
+  Droplets,
+  Pill,
+  Globe,
+  Briefcase,
 } from "lucide-react";
-import { useCategories, useCreateCategory, useDeleteCategory, Category } from "@/hooks/useCategories";
-import { useBills, useCreateBill, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from "@/hooks/useBills";
+import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
+import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from "@/hooks/useBills";
 import { CategoryFormDialog } from "@/components/categories/CategoryFormDialog";
 import { ContaEntryFormDialog } from "@/components/contas/ContaEntryFormDialog";
 import { ValeDialog } from "@/components/contas/ValeDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
-import StatCard from "@/components/dashboard/StatCard";
-import { format, startOfMonth, endOfMonth, addMonths, addDays, subMonths, isWithinInterval, isBefore, isToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, addDays, isWithinInterval, isBefore, isToday, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+// Icon mapping for categories
+const getCategoryIcon = (name: string) => {
+  const lower = name.toLowerCase();
+  if (lower.includes("gasolina") || lower.includes("combustível")) return Fuel;
+  if (lower.includes("aluguel")) return Home;
+  if (lower.includes("energia")) return Zap;
+  if (lower.includes("água")) return Droplets;
+  if (lower.includes("mercado")) return ShoppingCart;
+  if (lower.includes("cartão")) return CreditCard;
+  if (lower.includes("carro")) return Car;
+  if (lower.includes("farmácia") || lower.includes("farmacia")) return Pill;
+  if (lower.includes("esporte")) return Dumbbell;
+  if (lower.includes("rolê") || lower.includes("role")) return Heart;
+  if (lower.includes("agiota")) return HandCoins;
+  if (lower.includes("contabilidade")) return Briefcase;
+  if (lower.includes("marketing")) return Megaphone;
+  if (lower.includes("internet") || lower.includes("celular")) return Smartphone;
+  if (lower.includes("itens") || lower.includes("central")) return Package;
+  if (lower.includes("doaç")) return Heart;
+  if (lower.includes("auxílio") || lower.includes("acidente")) return Globe;
+  if (lower.includes("clic") || lower.includes("disk")) return Building2;
+  if (lower.includes("tobias") || lower.includes("funcion")) return User;
+  return Wallet;
+};
 
 const Contas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [period, setPeriod] = useState<"month" | "week">("month");
   const [offset, setOffset] = useState(0);
   const [activeGroup, setActiveGroup] = useState<"carlos" | "central">("carlos");
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Category dialogs
   const [categoryFormOpen, setCategoryFormOpen] = useState(false);
@@ -69,7 +106,7 @@ const Contas = () => {
   const [deleteEntryDialogOpen, setDeleteEntryDialogOpen] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
 
-  // Dismiss bill from upcoming (with confirmation)
+  // Dismiss bill
   const [dismissBillDialogOpen, setDismissBillDialogOpen] = useState(false);
   const [billToDismiss, setBillToDismiss] = useState<string | null>(null);
 
@@ -86,7 +123,7 @@ const Contas = () => {
 
   const isLoading = loadingCategories || loadingBills;
 
-  // Period calculations (Thursday-based week)
+  // Period calculations
   const getWeekRange = (refDate: Date) => {
     const d = new Date(refDate);
     const day = d.getDay();
@@ -114,12 +151,12 @@ const Contas = () => {
 
   const periodLabel = useMemo(() => {
     if (period === "week") {
-      return `${format(currentRange.start, "dd/MM")} - ${format(currentRange.end, "dd/MM/yyyy")}`;
+      return `${format(currentRange.start, "dd")} - ${format(currentRange.end, "dd MMM", { locale: ptBR })}`;
     }
     return format(currentRange.start, "MMMM yyyy", { locale: ptBR });
   }, [period, currentRange]);
 
-  // Filter categories (expense only) by active group
+  // Filter categories
   const expenseCategories = useMemo(() =>
     (categories || []).filter(c => c.type === "expense"),
     [categories]
@@ -135,7 +172,7 @@ const Contas = () => {
     [groupCategories, searchTerm]
   );
 
-  // Get entries for a category within current period
+  // Entries for category
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
       if (b.category_id !== categoryId) return false;
@@ -146,16 +183,19 @@ const Contas = () => {
   };
 
   const getCategoryPaidTotal = (categoryId: string) => {
-    const entries = getEntriesForCategory(categoryId);
-    return entries
+    return getEntriesForCategory(categoryId)
       .filter(e => e.status === "paid")
       .reduce((acc, e) => acc + Number(e.value) - Number(e.vale_amount || 0), 0);
   };
 
   const getCategoryPendingTotal = (categoryId: string) => {
-    const entries = getEntriesForCategory(categoryId);
-    return entries
+    return getEntriesForCategory(categoryId)
       .filter(e => e.status !== "paid")
+      .reduce((acc, e) => acc + Number(e.value), 0);
+  };
+
+  const getCategoryTotal = (categoryId: string) => {
+    return getEntriesForCategory(categoryId)
       .reduce((acc, e) => acc + Number(e.value), 0);
   };
 
@@ -169,491 +209,411 @@ const Contas = () => {
     [groupCategories, bills, currentRange]
   );
 
-  // Handlers
-  const handleCreateCategory = () => {
-    setSelectedCategory(null);
-    setCategoryFormOpen(true);
-  };
-
-  const handleEditCategory = (cat: Category) => {
-    setSelectedCategory(cat);
-    setCategoryFormOpen(true);
-  };
-
-  const handleDeleteCategoryClick = (id: string) => {
-    setCategoryToDelete(id);
-    setDeleteCategoryDialogOpen(true);
-  };
-
-  const handleDeleteCategoryConfirm = async () => {
-    if (categoryToDelete) {
-      await deleteCategory.mutateAsync(categoryToDelete);
-      setDeleteCategoryDialogOpen(false);
-      setCategoryToDelete(null);
-    }
-  };
-
-  const handleCreateEntry = (categoryId: string) => {
-    setSelectedEntry(null);
-    setEntryCategoryId(categoryId);
-    setEntryFormOpen(true);
-  };
-
-  const handleEditEntry = (entry: Bill) => {
-    setSelectedEntry(entry);
-    setEntryCategoryId(entry.category_id);
-    setEntryFormOpen(true);
-  };
-
-  const handleDeleteEntryClick = (id: string) => {
-    setEntryToDelete(id);
-    setDeleteEntryDialogOpen(true);
-  };
-
-  const handleDeleteEntryConfirm = async () => {
-    if (entryToDelete) {
-      await deleteBill.mutateAsync(entryToDelete);
-      setDeleteEntryDialogOpen(false);
-      setEntryToDelete(null);
-    }
-  };
-
-  // X button on upcoming: open confirmation then actually delete
-  const handleDismissFromUpcoming = (billId: string) => {
-    setBillToDismiss(billId);
-    setDismissBillDialogOpen(true);
-  };
-
-  const handleDismissBillConfirm = async () => {
-    if (billToDismiss) {
-      await deleteBill.mutateAsync(billToDismiss);
-      setDismissBillDialogOpen(false);
-      setBillToDismiss(null);
-    }
-  };
-
-  const handleMarkPaid = async (entry: Bill) => {
-    if (entry.vale_amount && entry.vale_amount > 0) {
-      toast.warning(
-        `⚠️ ${entry.name} possui vale de ${formatCurrency(entry.vale_amount)} este mês! O valor líquido será ${formatCurrency(entry.value - entry.vale_amount)}.`,
-        { duration: 6000 }
-      );
-    }
-    await markAsPaid.mutateAsync(entry);
-  };
-
-  const handleMarkUnpaid = async (entry: Bill) => {
-    await updateBill.mutateAsync({ id: entry.id, status: "pending", paid_at: null });
-  };
-
-  const handleOpenVale = (entry: Bill) => {
-    setValeEntry(entry);
-    setValeDialogOpen(true);
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-  };
-
-  const isFuncionariosCategory = (cat: Category) => {
-    return cat.name.toLowerCase().includes("funcion");
-  };
-
   const savedCategoryIds = useMemo(
-    () => new Set(expenseCategories.map(category => category.id)),
+    () => new Set(expenseCategories.map(c => c.id)),
     [expenseCategories]
   );
 
   const openBillsFromSavedCategories = useMemo(() => {
     if (!bills) return [];
-    return bills.filter((bill) => {
-      if (bill.status === "paid") return false;
-      if (!bill.category_id) return false;
-      return savedCategoryIds.has(bill.category_id);
-    });
+    return bills.filter(b => b.status !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
   }, [bills, savedCategoryIds]);
 
-  // Overdue bills (past due, any month) - shown highlighted at top
+  // Overdue bills
   const overdueBills = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return openBillsFromSavedCategories
-      .filter((bill) => {
-        const dueDate = new Date(`${bill.due_date}T12:00:00`);
+      .filter(b => {
+        const dueDate = new Date(`${b.due_date}T12:00:00`);
         return isBefore(dueDate, today) && !isToday(dueDate);
       })
       .sort((a, b) => a.due_date.localeCompare(b.due_date));
   }, [openBillsFromSavedCategories]);
 
-  // Upcoming bills: current month + next 14 days, exclude overdue
-  const upcomingBills = useMemo(() => {
+  // Upcoming bills grouped
+  const upcomingBillsGrouped = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const twoWeeksLater = addDays(today, 14);
 
-    return openBillsFromSavedCategories
-      .filter((bill) => {
-        const dueDate = new Date(`${bill.due_date}T12:00:00`);
+    const upcoming = openBillsFromSavedCategories
+      .filter(b => {
+        const dueDate = new Date(`${b.due_date}T12:00:00`);
         return dueDate >= today && dueDate <= twoWeeksLater;
       })
-      .sort((a, b) => a.due_date.localeCompare(b.due_date))
-      .slice(0, 16);
+      .sort((a, b) => a.due_date.localeCompare(b.due_date));
+
+    // Group by base name (remove "(1/3)" etc)
+    const groups = new Map<string, { bills: Bill[]; totalValue: number; dueDate: string }>();
+    upcoming.forEach(bill => {
+      const baseName = bill.name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
+      const key = `${baseName}_${bill.due_date}`;
+      if (!groups.has(key)) {
+        groups.set(key, { bills: [bill], totalValue: bill.value, dueDate: bill.due_date });
+      } else {
+        const g = groups.get(key)!;
+        g.bills.push(bill);
+        g.totalValue += bill.value;
+      }
+    });
+
+    return Array.from(groups.values()).slice(0, 10);
   }, [openBillsFromSavedCategories]);
 
+  // Toggle category expansion
+  const toggleCategory = (id: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Handlers
+  const handleCreateCategory = () => { setSelectedCategory(null); setCategoryFormOpen(true); };
+  const handleEditCategory = (cat: Category) => { setSelectedCategory(cat); setCategoryFormOpen(true); };
+  const handleDeleteCategoryClick = (id: string) => { setCategoryToDelete(id); setDeleteCategoryDialogOpen(true); };
+  const handleDeleteCategoryConfirm = async () => {
+    if (categoryToDelete) { await deleteCategory.mutateAsync(categoryToDelete); setDeleteCategoryDialogOpen(false); setCategoryToDelete(null); }
+  };
+  const handleCreateEntry = (categoryId: string) => { setSelectedEntry(null); setEntryCategoryId(categoryId); setEntryFormOpen(true); };
+  const handleEditEntry = (entry: Bill) => { setSelectedEntry(entry); setEntryCategoryId(entry.category_id); setEntryFormOpen(true); };
+  const handleDeleteEntryClick = (id: string) => { setEntryToDelete(id); setDeleteEntryDialogOpen(true); };
+  const handleDeleteEntryConfirm = async () => {
+    if (entryToDelete) { await deleteBill.mutateAsync(entryToDelete); setDeleteEntryDialogOpen(false); setEntryToDelete(null); }
+  };
+  const handleDismissFromUpcoming = (billId: string) => { setBillToDismiss(billId); setDismissBillDialogOpen(true); };
+  const handleDismissBillConfirm = async () => {
+    if (billToDismiss) { await deleteBill.mutateAsync(billToDismiss); setDismissBillDialogOpen(false); setBillToDismiss(null); }
+  };
+  const handleMarkPaid = async (entry: Bill) => {
+    if (entry.vale_amount && entry.vale_amount > 0) {
+      toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(entry.vale_amount)}. Valor líquido: ${formatCurrency(entry.value - entry.vale_amount)}.`, { duration: 6000 });
+    }
+    await markAsPaid.mutateAsync(entry);
+  };
+  const handleMarkUnpaid = async (entry: Bill) => { await updateBill.mutateAsync({ id: entry.id, status: "pending", paid_at: null }); };
+  const handleOpenVale = (entry: Bill) => { setValeEntry(entry); setValeDialogOpen(true); };
+
+  const formatCurrency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
+  const isFuncionariosCategory = (cat: Category) => cat.name.toLowerCase().includes("funcion");
+
   return (
-    <MainLayout title="Contas" subtitle="Gerencie todas as suas despesas por categoria">
-      {/* Overdue Bills - Always on top, highlighted */}
-      {overdueBills.length > 0 && (
-        <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
-          <h3 className="text-sm font-semibold text-destructive mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            ⚠️ Contas Atrasadas ({overdueBills.length})
-          </h3>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {overdueBills.map(bill => {
-              const dueDate = new Date(`${bill.due_date}T12:00:00`);
-              return (
-                <div key={bill.id} className="flex items-center justify-between rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{bill.name}</p>
-                    <p className="text-xs text-destructive font-semibold">
-                      Venceu {format(dueDate, "dd/MM/yyyy")}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 ml-2">
-                    <p className="font-semibold text-sm text-destructive">{formatCurrency(bill.value)}</p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      title="Apagar conta"
-                      onClick={() => handleDismissFromUpcoming(bill.id)}
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+    <MainLayout title="Contas" subtitle="">
+      <div className="max-w-2xl mx-auto pb-24 space-y-5">
+
+        {/* Financial Summary Header */}
+        <div className="rounded-xl bg-card border border-border p-5">
+          <div className="text-center mb-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo do mês</p>
+            <p className={cn("text-3xl font-bold tracking-tight", totalPending > 0 ? "text-destructive" : "text-foreground")}>
+              {formatCurrency(totalPaid + totalPending)}
+            </p>
+          </div>
+          <div className="flex justify-center gap-8">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-0.5">Pago</p>
+              <p className="text-lg font-semibold text-emerald-500">{formatCurrency(totalPaid)}</p>
+            </div>
+            <div className="w-px bg-border" />
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-0.5">Pendente</p>
+              <p className="text-lg font-semibold text-destructive">{formatCurrency(totalPending)}</p>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Upcoming Bills */}
-      {upcomingBills.length > 0 && (
-        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
-          <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Próximas Contas (14 dias)
-          </h3>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {upcomingBills.map(bill => {
-              const dueDate = new Date(`${bill.due_date}T12:00:00`);
-              const isUrgent = isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
-              return (
-                <div key={bill.id} className={`flex items-center justify-between rounded-md border p-3 text-sm ${isUrgent ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-card'}`}>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{bill.name}</p>
-                    <p className={`text-xs ${isUrgent ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
-                      {format(dueDate, "dd/MM/yyyy")}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 ml-2">
-                    <p className="font-semibold text-sm">{formatCurrency(bill.value)}</p>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                      title="Apagar conta"
-                      onClick={() => handleDismissFromUpcoming(bill.id)}
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+        {/* Group Tabs */}
+        <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central")}>
+          <TabsList className="w-full h-10">
+            <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm">Carlos</TabsTrigger>
+            <TabsTrigger value="central" className="flex-1 font-semibold text-sm">Central</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Period Filter */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Tabs value={period} onValueChange={(v) => { setPeriod(v as "month" | "week"); setOffset(0); }}>
+              <TabsList className="h-8">
+                <TabsTrigger value="month" className="text-xs px-3 h-7">Mês</TabsTrigger>
+                <TabsTrigger value="week" className="text-xs px-3 h-7">Semana</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
-        </div>
-      )}
-
-      {/* CARLOS / CENTRAL Tabs */}
-      <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central")} className="mb-4">
-        <TabsList className="w-full">
-          <TabsTrigger value="carlos" className="flex-1 text-base font-bold">👤 CARLOS</TabsTrigger>
-          <TabsTrigger value="central" className="flex-1 text-base font-bold">🏢 CENTRAL</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {/* Stats */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3 mb-6">
-        <StatCard
-          title="Total de Categorias"
-          value={String(groupCategories.length)}
-          icon={<Tags className="h-6 w-6 text-primary" />}
-        />
-        <StatCard
-          title="Total Pago"
-          value={formatCurrency(totalPaid)}
-          icon={<CheckCircle2 className="h-6 w-6 text-emerald-500" />}
-        />
-        <StatCard
-          title="Total Pendente"
-          value={formatCurrency(totalPending)}
-          icon={<XCircle className="h-6 w-6 text-destructive" />}
-          variant="destructive"
-        />
-      </div>
-
-      {/* Period Filter - MÊS first, then SEMANA */}
-      <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Tabs value={period} onValueChange={(v) => { setPeriod(v as "month" | "week"); setOffset(0); }}>
-            <TabsList>
-              <TabsTrigger value="month">Mês</TabsTrigger>
-              <TabsTrigger value="week">Semana</TabsTrigger>
-            </TabsList>
-          </Tabs>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setOffset(o => o - 1)}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOffset(o => o - 1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium min-w-[160px] text-center capitalize">{periodLabel}</span>
-            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setOffset(o => o + 1)}>
+            <span className="text-sm font-medium min-w-[120px] text-center capitalize">{periodLabel}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOffset(o => o + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <div className="relative flex-1 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Buscar categoria..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Button onClick={handleCreateCategory}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Categoria
-          </Button>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar categoria..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 h-9 bg-card"
+          />
         </div>
-      </div>
 
-      {/* Categories Accordion */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : filteredCategories.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          {groupCategories.length === 0
-            ? `Nenhuma categoria em ${activeGroup === 'carlos' ? 'CARLOS' : 'CENTRAL'}. Crie sua primeira categoria!`
-            : "Nenhuma categoria encontrada."}
-        </div>
-      ) : (
-        <Accordion type="multiple" className="space-y-3">
-          {filteredCategories.map((cat) => {
-            const entries = getEntriesForCategory(cat.id);
-            const paidTotal = getCategoryPaidTotal(cat.id);
-            const pendingTotal = getCategoryPendingTotal(cat.id);
-            const isFuncionarios = isFuncionariosCategory(cat);
-
-            return (
-              <AccordionItem key={cat.id} value={cat.id} className="border rounded-lg bg-card px-4">
-                <AccordionTrigger className="hover:no-underline py-4">
-                  <div className="flex items-center justify-between w-full mr-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10">
-                        <TrendingDown className="h-4 w-4 text-destructive" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-semibold">{cat.name}</p>
-                        <p className="text-xs text-muted-foreground">{entries.length} itens</p>
-                      </div>
+        {/* Overdue Bills */}
+        {overdueBills.length > 0 && (
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              <h3 className="text-sm font-semibold text-destructive">Contas Vencidas</h3>
+              <Badge variant="destructive" className="text-[10px] h-5 px-1.5">{overdueBills.length}</Badge>
+            </div>
+            <div className="space-y-2">
+              {overdueBills.map(bill => {
+                const dueDate = new Date(`${bill.due_date}T12:00:00`);
+                const daysLate = differenceInDays(new Date(), dueDate);
+                return (
+                  <div key={bill.id} className="flex items-center justify-between rounded-lg bg-background/80 p-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{bill.name}</p>
+                      <p className="text-xs text-destructive">{daysLate} {daysLate === 1 ? 'dia' : 'dias'} atrasado</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Pago</p>
-                        <p className="text-sm font-semibold text-emerald-600">{formatCurrency(paidTotal)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Pendente</p>
-                        <p className="text-sm font-semibold text-destructive">{formatCurrency(pendingTotal)}</p>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditCategory(cat)}>
-                            <Edit className="mr-2 h-4 w-4" /> Editar Categoria
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteCategoryClick(cat.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir Categoria
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="pb-4">
-                    <div className="flex justify-end mb-3">
-                      <Button size="sm" onClick={() => handleCreateEntry(cat.id)}>
-                        <Plus className="mr-1 h-3 w-3" />
-                        Adicionar
+                    <div className="flex items-center gap-2 ml-2">
+                      <p className="text-sm font-bold text-destructive">{formatCurrency(bill.value)}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                        onClick={() => handleMarkPaid(bill)}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                        Pagar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDismissFromUpcoming(bill.id)}
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    {entries.length === 0 ? (
-                      <p className="text-center text-sm text-muted-foreground py-4">Nenhum item nesta categoria.</p>
-                    ) : (
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="border-border hover:bg-transparent">
-                            <TableHead>Nome</TableHead>
-                            <TableHead className="text-center">Vencimento</TableHead>
-                            <TableHead className="text-right">Valor</TableHead>
-                            {isFuncionarios && <TableHead className="text-right">Vale</TableHead>}
-                            <TableHead className="text-center">Status</TableHead>
-                            <TableHead className="text-center">Tipo</TableHead>
-                            <TableHead className="w-[70px]">Ações</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {entries.map((entry) => {
-                            const dueDate = new Date(entry.due_date + "T12:00:00");
-                            const isOverdue = entry.status !== "paid" && isBefore(dueDate, new Date()) && !isToday(dueDate);
-                            return (
-                            <TableRow key={entry.id} className="border-border">
-                              <TableCell className="font-medium">{entry.name}</TableCell>
-                              <TableCell className={`text-center text-sm ${isOverdue ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
-                                {format(dueDate, "dd/MM/yyyy")}
-                              </TableCell>
-                              <TableCell className="text-right font-semibold">
-                                {formatCurrency(entry.value)}
-                              </TableCell>
-                              {isFuncionarios && (
-                                <TableCell className="text-right">
-                                  {entry.vale_amount && entry.vale_amount > 0 ? (
-                                    <span className="text-amber-600 font-semibold flex items-center justify-end gap-1">
-                                      <AlertTriangle className="h-3 w-3" />
-                                      {formatCurrency(entry.vale_amount)}
-                                    </span>
-                                  ) : (
-                                    <span className="text-muted-foreground">-</span>
-                                  )}
-                                </TableCell>
-                              )}
-                              <TableCell className="text-center">
-                                {entry.status === "paid" ? (
-                                  <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Pago</Badge>
-                                ) : (
-                                  <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">Não Pago</Badge>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-center">
-                                {entry.is_fixed ? (
-                                  <Badge variant="outline">Fixo</Badge>
-                                ) : (
-                                  <Badge variant="secondary">Avulso</Badge>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    {entry.status !== "paid" ? (
-                                      <DropdownMenuItem onClick={() => handleMarkPaid(entry)}>
-                                        <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> Marcar Pago
-                                      </DropdownMenuItem>
-                                    ) : (
-                                      <DropdownMenuItem onClick={() => handleMarkUnpaid(entry)}>
-                                        <XCircle className="mr-2 h-4 w-4 text-destructive" /> Marcar Não Pago
-                                      </DropdownMenuItem>
-                                    )}
-                                    {isFuncionarios && (
-                                      <DropdownMenuItem onClick={() => handleOpenVale(entry)}>
-                                        <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" /> Registrar Vale
-                                      </DropdownMenuItem>
-                                    )}
-                                    <DropdownMenuItem onClick={() => handleEditEntry(entry)}>
-                                      <Edit className="mr-2 h-4 w-4" /> Editar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEntryClick(entry.id)}>
-                                      <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    )}
                   </div>
-                </AccordionContent>
-              </AccordionItem>
-            );
-          })}
-        </Accordion>
-      )}
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Upcoming Bills */}
+        {upcomingBillsGrouped.length > 0 && (
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold text-foreground">Próximas Contas</h3>
+            </div>
+            <div className="space-y-2">
+              {upcomingBillsGrouped.map((group, idx) => {
+                const dueDate = new Date(`${group.dueDate}T12:00:00`);
+                const isUrgent = isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
+                const baseName = group.bills[0].name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
+                return (
+                  <div key={idx} className={cn(
+                    "flex items-center justify-between rounded-lg p-3 transition-colors",
+                    isUrgent ? "bg-destructive/5" : "bg-muted/30"
+                  )}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {baseName}
+                        {group.bills.length > 1 && (
+                          <span className="text-xs text-muted-foreground ml-1">({group.bills.length} contas)</span>
+                        )}
+                      </p>
+                      <p className={cn("text-xs", isUrgent ? "text-destructive font-medium" : "text-muted-foreground")}>
+                        {format(dueDate, "dd/MM/yyyy")}
+                      </p>
+                    </div>
+                    <p className="text-sm font-semibold ml-2">{formatCurrency(group.totalValue)}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Category List */}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : filteredCategories.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground text-sm">
+            {groupCategories.length === 0
+              ? `Nenhuma categoria em ${activeGroup === 'carlos' ? 'Carlos' : 'Central'}.`
+              : "Nenhuma categoria encontrada."}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredCategories.map((cat) => {
+              const entries = getEntriesForCategory(cat.id);
+              const paidTotal = getCategoryPaidTotal(cat.id);
+              const pendingTotal = getCategoryPendingTotal(cat.id);
+              const total = getCategoryTotal(cat.id);
+              const paidPercent = total > 0 ? Math.round((paidTotal / total) * 100) : 0;
+              const isOpen = expandedCategories.has(cat.id);
+              const isFuncionarios = isFuncionariosCategory(cat);
+              const IconComponent = getCategoryIcon(cat.name);
+
+              return (
+                <Collapsible key={cat.id} open={isOpen} onOpenChange={() => toggleCategory(cat.id)}>
+                  <div className="rounded-xl border border-border bg-card overflow-hidden transition-shadow hover:shadow-sm">
+                    <CollapsibleTrigger className="w-full p-4 flex items-center gap-3 text-left">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                        <IconComponent className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <p className="text-sm font-semibold truncate">{cat.name}</p>
+                          <div className="flex items-center gap-2 ml-2">
+                            {pendingTotal > 0 && (
+                              <span className="text-sm font-bold text-destructive">{formatCurrency(pendingTotal)}</span>
+                            )}
+                            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Progress value={paidPercent} className="h-1.5 flex-1" />
+                          <span className="text-[10px] text-muted-foreground font-medium w-8 text-right">{paidPercent}%</span>
+                        </div>
+                      </div>
+                    </CollapsibleTrigger>
+
+                    <CollapsibleContent>
+                      <div className="px-4 pb-4 pt-1 border-t border-border">
+                        <div className="flex items-center justify-between mb-3 pt-3">
+                          <div className="flex gap-4 text-xs">
+                            <span className="text-emerald-500 font-medium">Pago: {formatCurrency(paidTotal)}</span>
+                            <span className="text-destructive font-medium">Pendente: {formatCurrency(pendingTotal)}</span>
+                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleCreateEntry(cat.id)}>
+                                <Plus className="mr-2 h-4 w-4" /> Adicionar Item
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditCategory(cat)}>
+                                <Edit className="mr-2 h-4 w-4" /> Editar Categoria
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteCategoryClick(cat.id)}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Excluir Categoria
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+
+                        {entries.length === 0 ? (
+                          <p className="text-center text-xs text-muted-foreground py-4">Nenhum item nesta categoria.</p>
+                        ) : (
+                          <div className="space-y-1">
+                            {entries.map((entry) => {
+                              const dueDate = new Date(entry.due_date + "T12:00:00");
+                              const isOverdue = entry.status !== "paid" && isBefore(dueDate, new Date()) && !isToday(dueDate);
+                              const isPaid = entry.status === "paid";
+                              return (
+                                <div key={entry.id} className={cn(
+                                  "flex items-center justify-between rounded-lg p-3 transition-colors",
+                                  isPaid ? "bg-emerald-500/5" : isOverdue ? "bg-destructive/5" : "bg-muted/30"
+                                )}>
+                                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <div className={cn(
+                                      "h-2 w-2 rounded-full shrink-0",
+                                      isPaid ? "bg-emerald-500" : isOverdue ? "bg-destructive" : "bg-amber-400"
+                                    )} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className={cn("text-sm font-medium truncate", isPaid && "text-muted-foreground line-through")}>{entry.name}</p>
+                                      <p className={cn("text-[11px]", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                                        {format(dueDate, "dd/MM/yyyy")}
+                                        {entry.is_fixed && <span className="ml-1 text-muted-foreground">· Fixo</span>}
+                                        {isFuncionarios && entry.vale_amount && entry.vale_amount > 0 && (
+                                          <span className="ml-1 text-amber-500">· Vale {formatCurrency(entry.vale_amount)}</span>
+                                        )}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-2">
+                                    <p className={cn("text-sm font-semibold", isPaid ? "text-emerald-500" : "text-foreground")}>
+                                      {formatCurrency(entry.value)}
+                                    </p>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                                          <MoreHorizontal className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        {!isPaid ? (
+                                          <DropdownMenuItem onClick={() => handleMarkPaid(entry)}>
+                                            <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> Marcar Pago
+                                          </DropdownMenuItem>
+                                        ) : (
+                                          <DropdownMenuItem onClick={() => handleMarkUnpaid(entry)}>
+                                            <XCircle className="mr-2 h-4 w-4 text-destructive" /> Marcar Não Pago
+                                          </DropdownMenuItem>
+                                        )}
+                                        {isFuncionarios && (
+                                          <DropdownMenuItem onClick={() => handleOpenVale(entry)}>
+                                            <AlertTriangle className="mr-2 h-4 w-4 text-amber-500" /> Registrar Vale
+                                          </DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuItem onClick={() => handleEditEntry(entry)}>
+                                          <Edit className="mr-2 h-4 w-4" /> Editar
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEntryClick(entry.id)}>
+                                          <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </CollapsibleContent>
+                  </div>
+                </Collapsible>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* FAB */}
+      <button
+        onClick={handleCreateCategory}
+        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all active:scale-95"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
 
       {/* Dialogs */}
-      <CategoryFormDialog
-        open={categoryFormOpen}
-        onOpenChange={setCategoryFormOpen}
-        category={selectedCategory}
-      />
-
-      <ContaEntryFormDialog
-        open={entryFormOpen}
-        onOpenChange={setEntryFormOpen}
-        entry={selectedEntry}
-        categoryId={entryCategoryId}
-      />
-
-      <ValeDialog
-        open={valeDialogOpen}
-        onOpenChange={setValeDialogOpen}
-        entry={valeEntry}
-      />
-
-      <DeleteConfirmDialog
-        open={deleteCategoryDialogOpen}
-        onOpenChange={setDeleteCategoryDialogOpen}
-        onConfirm={handleDeleteCategoryConfirm}
-        title="Excluir Categoria"
-        description="Tem certeza? Os itens dentro desta categoria não serão excluídos."
-        isLoading={deleteCategory.isPending}
-      />
-
-      <DeleteConfirmDialog
-        open={deleteEntryDialogOpen}
-        onOpenChange={setDeleteEntryDialogOpen}
-        onConfirm={handleDeleteEntryConfirm}
-        title="Excluir Item"
-        description="Tem certeza que deseja excluir este item?"
-        isLoading={deleteBill.isPending}
-      />
-
-      <DeleteConfirmDialog
-        open={dismissBillDialogOpen}
-        onOpenChange={setDismissBillDialogOpen}
-        onConfirm={handleDismissBillConfirm}
-        title="Apagar Conta"
-        description="Tem certeza que deseja apagar esta conta? Essa ação não pode ser desfeita."
-        isLoading={deleteBill.isPending}
-      />
+      <CategoryFormDialog open={categoryFormOpen} onOpenChange={setCategoryFormOpen} category={selectedCategory} />
+      <ContaEntryFormDialog open={entryFormOpen} onOpenChange={setEntryFormOpen} entry={selectedEntry} categoryId={entryCategoryId} />
+      <ValeDialog open={valeDialogOpen} onOpenChange={setValeDialogOpen} entry={valeEntry} />
+      <DeleteConfirmDialog open={deleteCategoryDialogOpen} onOpenChange={setDeleteCategoryDialogOpen} onConfirm={handleDeleteCategoryConfirm} title="Excluir Categoria" description="Tem certeza? Os itens dentro desta categoria não serão excluídos." isLoading={deleteCategory.isPending} />
+      <DeleteConfirmDialog open={deleteEntryDialogOpen} onOpenChange={setDeleteEntryDialogOpen} onConfirm={handleDeleteEntryConfirm} title="Excluir Item" description="Tem certeza que deseja excluir este item?" isLoading={deleteBill.isPending} />
+      <DeleteConfirmDialog open={dismissBillDialogOpen} onOpenChange={setDismissBillDialogOpen} onConfirm={handleDismissBillConfirm} title="Apagar Conta" description="Tem certeza que deseja apagar esta conta? Essa ação não pode ser desfeita." isLoading={deleteBill.isPending} />
     </MainLayout>
   );
 };
