@@ -239,18 +239,21 @@ const Contas = () => {
     return bills.filter(b => b.status !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
   }, [bills, savedCategoryIds]);
 
-  // Overdue bills - only last 30 days
+  // Overdue bills - only last 30 days, filtered by active group
   const overdueBills = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const thirtyDaysAgo = subDays(today, 30);
-    return openBillsFromSavedCategories
+    const groupCatIds = new Set(groupCategories.map(c => c.id));
+    return (bills || [])
       .filter(b => {
+        if (b.status === "paid") return false;
+        if (!b.category_id || !groupCatIds.has(b.category_id)) return false;
         const dueDate = new Date(`${b.due_date}T12:00:00`);
         return isBefore(dueDate, today) && !isToday(dueDate) && dueDate >= thirtyDaysAgo;
       })
-      .sort((a, b) => b.due_date.localeCompare(a.due_date)); // most recent first
-  }, [openBillsFromSavedCategories]);
+      .sort((a, b) => a.due_date.localeCompare(b.due_date)); // oldest first (most urgent)
+  }, [bills, groupCategories]);
 
   // Get urgency level for progressive styling
   const getUrgencyLevel = (daysLate: number): { bg: string; text: string; border: string } => {
