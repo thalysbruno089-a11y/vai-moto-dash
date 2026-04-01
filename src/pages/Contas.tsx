@@ -219,13 +219,13 @@ const Contas = () => {
 
   const getCategoryPaidTotal = (categoryId: string) => {
     return getEntriesForCategory(categoryId)
-      .filter(e => e.status === "paid")
+      .filter(e => getEffectiveStatus(e) === "paid")
       .reduce((acc, e) => acc + Number(e.value) - Number(e.vale_amount || 0), 0);
   };
 
   const getCategoryPendingTotal = (categoryId: string) => {
     return getEntriesForCategory(categoryId)
-      .filter(e => e.status !== "paid")
+      .filter(e => getEffectiveStatus(e) !== "paid")
       .reduce((acc, e) => acc + Number(e.value), 0);
   };
 
