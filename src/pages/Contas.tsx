@@ -611,8 +611,9 @@ const Contas = () => {
                           <div className="space-y-1">
                             {entries.map((entry) => {
                               const dueDate = new Date(entry.due_date + "T12:00:00");
-                              const isOverdue = entry.status !== "paid" && isBefore(dueDate, new Date()) && !isToday(dueDate);
-                              const isPaid = entry.status === "paid";
+                              const effectiveStatus = getEffectiveStatus(entry);
+                              const isOverdue = effectiveStatus !== "paid" && isBefore(dueDate, new Date()) && !isToday(dueDate);
+                              const isPaid = effectiveStatus === "paid";
                               return (
                                 <div key={entry.id} className={cn(
                                   "flex items-center justify-between rounded-lg p-3 transition-colors",
