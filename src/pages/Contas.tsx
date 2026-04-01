@@ -191,11 +191,10 @@ const Contas = () => {
     [groupCategories, searchTerm]
   );
 
-  // Entries for category
+  // Entries for category - all bills respect the period filter
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
       if (b.category_id !== categoryId) return false;
-      if (b.is_fixed) return true;
       const dueDate = new Date(b.due_date + "T12:00:00");
       return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
     });
