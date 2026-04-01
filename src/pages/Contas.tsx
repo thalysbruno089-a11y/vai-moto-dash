@@ -191,11 +191,10 @@ const Contas = () => {
     [groupCategories, searchTerm]
   );
 
-  // Entries for category
+  // Entries for category - all bills respect the period filter
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
       if (b.category_id !== categoryId) return false;
-      if (b.is_fixed) return true;
       const dueDate = new Date(b.due_date + "T12:00:00");
       return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
     });
@@ -258,34 +257,7 @@ const Contas = () => {
     return { bg: "bg-amber-500/10", text: "text-amber-600", border: "border-amber-500/20" };
   };
 
-  // Upcoming bills grouped
-  const upcomingBillsGrouped = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const twoWeeksLater = addDays(today, 14);
-
-    const upcoming = openBillsFromSavedCategories
-      .filter(b => {
-        const dueDate = new Date(`${b.due_date}T12:00:00`);
-        return dueDate >= today && dueDate <= twoWeeksLater;
-      })
-      .sort((a, b) => a.due_date.localeCompare(b.due_date));
-
-    const groups = new Map<string, { bills: Bill[]; totalValue: number; dueDate: string }>();
-    upcoming.forEach(bill => {
-      const baseName = bill.name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
-      const key = `${baseName}_${bill.due_date}`;
-      if (!groups.has(key)) {
-        groups.set(key, { bills: [bill], totalValue: bill.value, dueDate: bill.due_date });
-      } else {
-        const g = groups.get(key)!;
-        g.bills.push(bill);
-        g.totalValue += bill.value;
-      }
-    });
-
-    return Array.from(groups.values()).slice(0, 10);
-  }, [openBillsFromSavedCategories]);
+  // Removed "Próximas Contas" - only overdue bills shown now
 
   // Toggle category expansion
   const toggleCategory = (id: string) => {
@@ -536,41 +508,7 @@ const Contas = () => {
           </div>
         )}
 
-        {/* Upcoming Bills */}
-        {upcomingBillsGrouped.length > 0 && (
-          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-foreground">Próximas Contas</h3>
-            </div>
-            <div className="space-y-2">
-              {upcomingBillsGrouped.map((group, idx) => {
-                const dueDate = new Date(`${group.dueDate}T12:00:00`);
-                const isUrgent = isToday(dueDate) || isBefore(dueDate, addDays(new Date(), 3));
-                const baseName = group.bills[0].name.replace(/\s*\(\d+\/\d+\)\s*$/, '').trim();
-                return (
-                  <div key={idx} className={cn(
-                    "flex items-center justify-between rounded-lg p-3 transition-colors",
-                    isUrgent ? "bg-destructive/5" : "bg-muted/30"
-                  )}>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {baseName}
-                        {group.bills.length > 1 && (
-                          <span className="text-xs text-muted-foreground ml-1">({group.bills.length} contas)</span>
-                        )}
-                      </p>
-                      <p className={cn("text-xs", isUrgent ? "text-destructive font-medium" : "text-muted-foreground")}>
-                        {format(dueDate, "dd/MM/yyyy")}
-                      </p>
-                    </div>
-                    <p className="text-sm font-semibold ml-2">{formatCurrency(group.totalValue)}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {/* Upcoming Bills section removed */}
 
         {/* Category List */}
         {isLoading ? (
