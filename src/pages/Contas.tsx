@@ -363,8 +363,8 @@ const Contas = () => {
         {/* Group Tabs */}
         <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central")}>
           <TabsList className="w-full h-10">
-            <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm">Carlos</TabsTrigger>
-            <TabsTrigger value="central" className="flex-1 font-semibold text-sm">Central</TabsTrigger>
+            <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Carlos</TabsTrigger>
+            <TabsTrigger value="central" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Central</TabsTrigger>
           </TabsList>
         </Tabs>
 
