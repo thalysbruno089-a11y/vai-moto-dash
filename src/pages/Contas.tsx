@@ -627,7 +627,7 @@ const Contas = () => {
                                     <div className="flex-1 min-w-0">
                                       <p className={cn("text-sm font-medium truncate", isPaid && "text-muted-foreground line-through")}>{entry.name}</p>
                                       <p className={cn("text-[11px]", isOverdue ? "text-destructive" : "text-muted-foreground")}>
-                                        {format(dueDate, "dd/MM/yyyy")}
+                                        {entry.is_fixed ? `Dia ${dueDate.getDate()}` : format(dueDate, "dd/MM/yyyy")}
                                         {entry.is_fixed && <span className="ml-1 text-muted-foreground">· Fixo</span>}
                                         {isFuncionarios && entry.vale_amount && entry.vale_amount > 0 && (
                                           <span className="ml-1 text-amber-500">· Vale {formatCurrency(entry.vale_amount)}</span>
