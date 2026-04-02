@@ -1,0 +1,1 @@
+DELETE FROM cash_flow WHERE id = 'a019c2bc-549f-460b-9393-248eadc80535';

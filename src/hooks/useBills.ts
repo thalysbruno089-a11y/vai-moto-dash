@@ -183,68 +183,7 @@ export const useMarkBillAsPaid = () => {
       
       if (billError) throw billError;
 
-      // 2. Get user's company_id
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw new Error('Usuário não autenticado');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .maybeSingle();
-      
-      if (!profile?.company_id) throw new Error('Empresa não encontrada');
-
-      // 3. Use bill's category if it has one, otherwise check/create one with the bill name
-      let categoryId: string;
-      
-      if (bill.category_id) {
-        categoryId = bill.category_id;
-      } else {
-        const { data: existingCategory } = await supabase
-          .from('categories')
-          .select('id')
-          .eq('name', bill.name)
-          .eq('company_id', profile.company_id)
-          .eq('type', 'expense')
-          .maybeSingle();
-
-        if (existingCategory) {
-          categoryId = existingCategory.id;
-        } else {
-          const { data: newCategory, error: categoryError } = await supabase
-            .from('categories')
-            .insert({
-              name: bill.name,
-              type: 'expense',
-              company_id: profile.company_id,
-            })
-            .select('id')
-            .single();
-          
-          if (categoryError) throw categoryError;
-          categoryId = newCategory.id;
-        }
-      }
-
-      // 4. Create expense entry in cash_flow
-      // Use local date to avoid timezone shift
-      const today = new Date();
-      const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      
-      const { error: cashFlowError } = await supabase
-        .from('cash_flow')
-        .insert({
-          type: 'expense',
-          value: bill.value,
-          description: bill.description || `Pagamento: ${bill.name}`,
-          flow_date: localDate,
-          category_id: categoryId,
-          company_id: profile.company_id,
-          is_recurring: false,
-        });
-      
-      if (cashFlowError) throw cashFlowError;
+      // Bill payment is tracked only in the bills table, not duplicated to cash_flow
 
       return { success: true };
     },
