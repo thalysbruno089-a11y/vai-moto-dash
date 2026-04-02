@@ -191,6 +191,7 @@ const Motorcyclists = () => {
               <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="active">Ativo</SelectItem>
               <SelectItem value="inactive">Inativo</SelectItem>
+              <SelectItem value="inadimplente">Inadimplente</SelectItem>
             </SelectContent>
           </Select>
         </div>
