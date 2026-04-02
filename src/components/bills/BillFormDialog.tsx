@@ -322,15 +322,39 @@ export function BillFormDialog({ open, onOpenChange, bill, parentBill, installme
 
             <div className="space-y-2">
               <Label htmlFor="dueDate">
-                {isInstallment ? 'Data da 1ª Parcela *' : 'Data de Vencimento *'}
+                {isFixed ? 'Dia do Vencimento *' : isInstallment ? 'Data da 1ª Parcela *' : 'Data de Vencimento *'}
               </Label>
-              <Input
-                id="dueDate"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                required
-              />
+              {isFixed ? (
+                <Select
+                  value={dueDate ? String(parseDateString(dueDate).getDate()) : '1'}
+                  onValueChange={(day) => {
+                    const now = new Date();
+                    const d = parseInt(day);
+                    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                    const safeDay = Math.min(d, lastDay);
+                    setDueDate(formatDateString(new Date(now.getFullYear(), now.getMonth(), safeDay)));
+                  }}
+                >
+                  <SelectTrigger id="dueDate">
+                    <SelectValue placeholder="Dia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                      <SelectItem key={day} value={String(day)}>
+                        Dia {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="dueDate"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              )}
             </div>
           </div>
 

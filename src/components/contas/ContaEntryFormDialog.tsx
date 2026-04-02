@@ -136,8 +136,32 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
             <Input id="entry-value" type="number" step="0.01" min="0.01" value={value} onChange={(e) => setValue(e.target.value)} placeholder="0,00" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="entry-date">Data de Vencimento</Label>
-            <Input id="entry-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <Label htmlFor="entry-date">{isFixed ? "Dia do Vencimento" : "Data de Vencimento"}</Label>
+            {isFixed ? (
+              <Select
+                value={String(new Date(dueDate + "T12:00:00").getDate())}
+                onValueChange={(day) => {
+                  const now = new Date();
+                  const d = parseInt(day);
+                  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                  const safeDay = Math.min(d, lastDay);
+                  setDueDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(safeDay).padStart(2, "0")}`);
+                }}
+              >
+                <SelectTrigger id="entry-date">
+                  <SelectValue placeholder="Dia" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                    <SelectItem key={day} value={String(day)}>
+                      Dia {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input id="entry-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="entry-desc">Descrição</Label>
