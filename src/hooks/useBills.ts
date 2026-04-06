@@ -183,7 +183,31 @@ export const useMarkBillAsPaid = () => {
       
       if (billError) throw billError;
 
-      // Bill payment is tracked only in the bills table, not duplicated to cash_flow
+      // 2. Register payment in cash_flow as expense
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('Usuário não autenticado');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (!profile?.company_id) throw new Error('Empresa não encontrada');
+
+      const netValue = bill.value - (bill.vale_amount || 0);
+      const { error: cfError } = await supabase
+        .from('cash_flow')
+        .insert({
+          company_id: profile.company_id,
+          description: bill.name,
+          value: netValue,
+          type: 'expense' as const,
+          flow_date: new Date().toISOString().split('T')[0],
+          category_id: bill.category_id,
+        });
+      
+      if (cfError) throw cfError;
 
       return { success: true };
     },
