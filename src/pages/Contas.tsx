@@ -206,12 +206,12 @@ const Contas = () => {
     return bill.status;
   };
 
-  // Entries for category - fixed bills always show in current period
+  // Entries for category - fixed bills only bypass date filter in month view
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
       if (b.category_id !== categoryId) return false;
-      // Fixed bills always appear in the current view
-      if (b.is_fixed) return true;
+      // Fixed bills always appear when viewing by month
+      if (b.is_fixed && period === "month") return true;
       const dueDate = new Date(b.due_date + "T12:00:00");
       return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
     });
