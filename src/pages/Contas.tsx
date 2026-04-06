@@ -558,8 +558,8 @@ const Contas = () => {
                 <Collapsible key={cat.id} open={isOpen} onOpenChange={() => toggleCategory(cat.id)}>
                   <div className="rounded-xl border border-border bg-card overflow-hidden transition-shadow hover:shadow-sm">
                     <CollapsibleTrigger className="w-full p-4 flex items-center gap-3 text-left">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                        <IconComponent className="h-5 w-5 text-primary" />
+                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", activeGroup === 'carlos' ? "bg-destructive/10" : "bg-primary/10")}>
+                        <IconComponent className={cn("h-5 w-5", activeGroup === 'carlos' ? "text-destructive" : "text-primary")} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1.5">
