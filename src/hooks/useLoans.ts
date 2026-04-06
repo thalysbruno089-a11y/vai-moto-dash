@@ -58,6 +58,22 @@ export const useLoanPayments = (loanId: string) => {
   });
 };
 
+export const useAllLoanPayments = (type: 'lent' | 'borrowed', loanIds: string[]) => {
+  return useQuery({
+    queryKey: ['all_loan_payments', type, loanIds],
+    queryFn: async () => {
+      if (loanIds.length === 0) return [] as LoanPayment[];
+      const { data, error } = await supabase
+        .from('loan_payments')
+        .select('*')
+        .in('loan_id', loanIds);
+      if (error) throw error;
+      return data as LoanPayment[];
+    },
+    enabled: loanIds.length > 0,
+  });
+};
+
 export const useCreateLoan = () => {
   const queryClient = useQueryClient();
   return useMutation({

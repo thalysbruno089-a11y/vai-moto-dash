@@ -1,21 +1,24 @@
 import MainLayout from "@/components/layout/MainLayout";
-import { useLoans } from "@/hooks/useLoans";
+import { useLoans, useAllLoanPayments } from "@/hooks/useLoans";
 import LoanFormDialog from "@/components/loans/LoanFormDialog";
 import LoanCard from "@/components/loans/LoanCard";
 import { Card, CardContent } from "@/components/ui/card";
-import { HandCoins, TrendingUp, DollarSign } from "lucide-react";
+import { HandCoins, TrendingUp, Banknote } from "lucide-react";
+import { useMemo } from "react";
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 const LoansLent = () => {
   const { data: loans = [], isLoading } = useLoans('lent');
+  const loanIds = useMemo(() => loans.map(l => l.id), [loans]);
+  const { data: allPayments = [] } = useAllLoanPayments('lent', loanIds);
 
   const activeLoans = loans.filter(l => l.status === 'active');
   const totalLent = activeLoans.reduce((s, l) => s + Number(l.principal_amount), 0);
-  // We can't calculate exact totals without payments loaded per card,
-  // so we show the principal totals here
-  const totalAllLent = loans.reduce((s, l) => s + Number(l.principal_amount), 0);
+  const totalInterestPaid = allPayments
+    .filter(p => p.payment_type === 'interest')
+    .reduce((s, p) => s + Number(p.amount), 0);
 
   return (
     <MainLayout title="Emprestei" subtitle="Dinheiro que você emprestou para outras pessoas">
@@ -51,12 +54,12 @@ const LoansLent = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
-                  <DollarSign className="h-5 w-5 text-blue-600" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
+                  <Banknote className="h-5 w-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Geral Emprestado</p>
-                  <p className="text-xl font-bold">{formatCurrency(totalAllLent)}</p>
+                  <p className="text-sm text-muted-foreground">Total de Juros Recebidos</p>
+                  <p className="text-xl font-bold">{formatCurrency(totalInterestPaid)}</p>
                 </div>
               </div>
             </CardContent>
