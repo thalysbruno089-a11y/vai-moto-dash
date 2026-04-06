@@ -159,22 +159,12 @@ export const useMarkBillAsPaid = () => {
   
   return useMutation({
     mutationFn: async (bill: Bill) => {
-      const isInstallmentBill = bill.total_installments && bill.total_installments > 1;
-      const currentPaid = bill.paid_installments || 0;
-      const newPaidCount = currentPaid + 1;
-      const isFullyPaid = isInstallmentBill 
-        ? newPaidCount >= bill.total_installments! 
-        : true;
-
-      // 1. Update bill status and paid_installments
+      // Each bill row represents a single payable item (even if it's an installment)
       const updateData: Record<string, unknown> = {
-        paid_installments: newPaidCount,
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+        paid_installments: (bill.paid_installments || 0) + 1,
       };
-      
-      if (isFullyPaid) {
-        updateData.status = 'paid';
-        updateData.paid_at = new Date().toISOString();
-      }
 
       const { error: billError } = await supabase
         .from('bills')
