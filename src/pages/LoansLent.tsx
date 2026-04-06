@@ -54,12 +54,12 @@ const LoansLent = () => {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10">
-                  <DollarSign className="h-5 w-5 text-blue-600" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
+                  <Banknote className="h-5 w-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Geral Emprestado</p>
-                  <p className="text-xl font-bold">{formatCurrency(totalAllLent)}</p>
+                  <p className="text-sm text-muted-foreground">Total de Juros Recebidos</p>
+                  <p className="text-xl font-bold">{formatCurrency(totalInterestPaid)}</p>
                 </div>
               </div>
             </CardContent>
