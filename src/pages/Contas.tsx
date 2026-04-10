@@ -506,15 +506,6 @@ const Contas = () => {
                       <p className={cn("text-sm font-bold", urgency.text)}>{formatCurrency(bill.value)}</p>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                        onClick={() => handleMarkPaid(bill)}
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                        Pagar
-                      </Button>
-                      <Button
-                        variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-muted-foreground hover:text-destructive"
                         onClick={() => handleDismissFromUpcoming(bill.id)}
