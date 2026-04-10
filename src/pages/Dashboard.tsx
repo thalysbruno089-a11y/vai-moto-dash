@@ -405,7 +405,11 @@ function MotoboyList({ motoboys, isLoading }: { motoboys: any[] | undefined; isL
           <p className="text-muted-foreground">Carregando...</p>
         ) : motoboys && motoboys.length > 0 ? (
           <div className="space-y-3">
-            {motoboys.slice(0, 8).map((motoboy) => (
+            {[...motoboys].sort((a, b) => {
+              const aPaid = a.payment_status === 'paid' ? 1 : 0;
+              const bPaid = b.payment_status === 'paid' ? 1 : 0;
+              return aPaid - bPaid;
+            }).map((motoboy) => (
               <div key={motoboy.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                 <div className="flex items-center gap-3">
                   <div className="relative">
