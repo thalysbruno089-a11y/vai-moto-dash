@@ -4,9 +4,10 @@ import { Wallet, TrendingUp, TrendingDown, Bike, RotateCcw, ChevronLeft, Chevron
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
-import { useBills } from "@/hooks/useBills";
+import { useBills, Bill } from "@/hooks/useBills";
 
 import { useMonthlyClosings, useSaveMonthlyClosing, useDeleteMonthlyClosing } from "@/hooks/useMonthlyClosings";
 import { useWeeklyClosings, useSaveWeeklyClosing, useDeleteWeeklyClosing } from "@/hooks/useWeeklyClosings";
