@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
+import { useBills } from "@/hooks/useBills";
 
 import { useMonthlyClosings, useSaveMonthlyClosing, useDeleteMonthlyClosing } from "@/hooks/useMonthlyClosings";
 import { useWeeklyClosings, useSaveWeeklyClosing, useDeleteWeeklyClosing } from "@/hooks/useWeeklyClosings";
@@ -231,7 +232,7 @@ const Dashboard = () => {
             <StatCard title="Motoboys Ativos" value={isLoading ? "..." : String(activeMotoboys)} icon={<Bike className="h-6 w-6 text-primary" />} />
             <StatCard title="Receita Motoboys (Pagos)" value={isLoading ? "..." : formatCurrency(weekMotoboyIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
           </div>
-          <MotoboyList motoboys={motoboys} isLoading={isLoading} />
+          <PaidBillsList />
         </TabsContent>
 
         {/* MÊS */}
@@ -391,57 +392,53 @@ const Dashboard = () => {
   );
 };
 
-function MotoboyList({ motoboys, isLoading }: { motoboys: any[] | undefined; isLoading: boolean }) {
+function PaidBillsList() {
+  const { data: bills, isLoading } = useBills();
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+  const paidBills = bills?.filter((b) => b.status === "paid") || [];
+  const totalPaid = paidBills.reduce((s, b) => s + Number(b.value), 0);
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Motoboys Cadastrados</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Contas Pagas</CardTitle>
+        {paidBills.length > 0 && (
+          <span className="text-sm font-semibold text-success">{formatCurrency(totalPaid)}</span>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <p className="text-muted-foreground">Carregando...</p>
-        ) : motoboys && motoboys.length > 0 ? (
+        ) : paidBills.length > 0 ? (
           <div className="space-y-3">
-            {[...motoboys].sort((a, b) => {
-              const aPaid = a.payment_status === 'paid' ? 1 : 0;
-              const bPaid = b.payment_status === 'paid' ? 1 : 0;
-              return aPaid - bPaid;
-            }).map((motoboy) => (
-              <div key={motoboy.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+            {paidBills.map((bill) => (
+              <div key={bill.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
                 <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                      <span className="text-sm font-medium text-primary">
-                        {motoboy.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
-                      </span>
-                    </div>
-                    <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${
-                      motoboy.status === "active" ? "bg-success" : "bg-muted"
-                    }`} />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
+                    <span className="text-sm font-medium text-success">✅</span>
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">{motoboy.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {motoboy.shift === "day" ? "Diurno" : motoboy.shift === "night" ? "Noturno" : motoboy.shift === "star" ? "Estrela" : motoboy.shift === "free" ? "Free" : "Fim de Semana"}
-                    </p>
+                    <p className="font-medium text-foreground">{bill.name}</p>
+                    {bill.description && (
+                      <p className="text-sm text-muted-foreground">{bill.description}</p>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`text-sm font-medium ${motoboy.payment_status === "paid" ? "text-success" : "text-destructive"}`}>
-                    {motoboy.payment_status === "paid" ? "✅ Pago" : "❌ Não Pago"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatCurrency(Number(motoboy.weekly_payment || 0))}
-                  </p>
+                  <p className="text-sm font-semibold text-success">{formatCurrency(Number(bill.value))}</p>
+                  {bill.paid_at && (
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(bill.paid_at), "dd/MM/yyyy", { locale: ptBR })}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground">Nenhum motoboy cadastrado</p>
+          <p className="text-muted-foreground">Nenhuma conta paga ainda</p>
         )}
       </CardContent>
     </Card>
