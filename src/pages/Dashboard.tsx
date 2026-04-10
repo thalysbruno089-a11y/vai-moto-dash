@@ -4,9 +4,10 @@ import { Wallet, TrendingUp, TrendingDown, Bike, RotateCcw, ChevronLeft, Chevron
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
-import { useBills } from "@/hooks/useBills";
+import { useBills, Bill } from "@/hooks/useBills";
 
 import { useMonthlyClosings, useSaveMonthlyClosing, useDeleteMonthlyClosing } from "@/hooks/useMonthlyClosings";
 import { useWeeklyClosings, useSaveWeeklyClosing, useDeleteWeeklyClosing } from "@/hooks/useWeeklyClosings";
@@ -394,54 +395,92 @@ const Dashboard = () => {
 
 function PaidBillsList() {
   const { data: bills, isLoading } = useBills();
+  const [showAll, setShowAll] = useState(false);
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  const paidBills = bills?.filter((b) => b.status === "paid") || [];
+  const paidBills = (bills?.filter((b) => b.status === "paid") || [])
+    .sort((a, b) => {
+      const dateA = a.paid_at ? new Date(a.paid_at).getTime() : 0;
+      const dateB = b.paid_at ? new Date(b.paid_at).getTime() : 0;
+      return dateB - dateA;
+    });
+
   const totalPaid = paidBills.reduce((s, b) => s + Number(b.value), 0);
+  const displayBills = showAll ? paidBills : paidBills.slice(0, 10);
+
+  const renderBillItem = (bill: Bill) => (
+    <div key={bill.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
+          <span className="text-sm font-medium text-success">✅</span>
+        </div>
+        <div>
+          <p className="font-medium text-foreground">{bill.name}</p>
+          {bill.description && (
+            <p className="text-sm text-muted-foreground">{bill.description}</p>
+          )}
+        </div>
+      </div>
+      <div className="text-right">
+        <p className="text-sm font-semibold text-success">{formatCurrency(Number(bill.value))}</p>
+        {bill.paid_at && (
+          <p className="text-xs text-muted-foreground">
+            {format(new Date(bill.paid_at), "dd/MM/yyyy", { locale: ptBR })}
+          </p>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Contas Pagas</CardTitle>
-        {paidBills.length > 0 && (
-          <span className="text-sm font-semibold text-success">{formatCurrency(totalPaid)}</span>
-        )}
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <p className="text-muted-foreground">Carregando...</p>
-        ) : paidBills.length > 0 ? (
-          <div className="space-y-3">
-            {paidBills.map((bill) => (
-              <div key={bill.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-success/10">
-                    <span className="text-sm font-medium text-success">✅</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">{bill.name}</p>
-                    {bill.description && (
-                      <p className="text-sm text-muted-foreground">{bill.description}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-success">{formatCurrency(Number(bill.value))}</p>
-                  {bill.paid_at && (
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(bill.paid_at), "dd/MM/yyyy", { locale: ptBR })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Contas Pagas</CardTitle>
+          <div className="flex items-center gap-2">
+            {paidBills.length > 0 && (
+              <span className="text-sm font-semibold text-success">{formatCurrency(totalPaid)}</span>
+            )}
           </div>
-        ) : (
-          <p className="text-muted-foreground">Nenhuma conta paga ainda</p>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-muted-foreground">Carregando...</p>
+          ) : paidBills.length > 0 ? (
+            <div className="space-y-3">
+              {displayBills.map(renderBillItem)}
+              {paidBills.length > 10 && (
+                <Button
+                  variant="outline"
+                  className="w-full mt-2"
+                  onClick={() => setShowAll(true)}
+                >
+                  CONTAS PAGAS ({paidBills.length})
+                </Button>
+              )}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Nenhuma conta paga ainda</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal com todas as contas pagas */}
+      <Dialog open={showAll} onOpenChange={setShowAll}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Todas as Contas Pagas</span>
+              <span className="text-sm font-semibold text-success">{formatCurrency(totalPaid)}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1">
+            {paidBills.map(renderBillItem)}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
