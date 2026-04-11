@@ -102,7 +102,7 @@ const Dashboard = () => {
 
   const weekIncome = weekMotoboyIncome + weekCfIncome;
   const weekExpense = weekCfExpense;
-  const weekBalance = 0;
+  const weekBalance = weekIncome - weekExpense;
 
   // MONTH
   const monthMotoboyIncome = motoboys
