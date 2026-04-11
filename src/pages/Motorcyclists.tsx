@@ -245,18 +245,18 @@ const Motorcyclists = () => {
               onClick={() => setShiftFilter(isSelected ? "all" : shift)}
               className={`p-3 rounded-lg border text-left transition-all ${
                 isSelected 
-                  ? 'border-primary bg-primary/10 ring-2 ring-primary' 
-                  : 'border-border bg-card hover:border-primary/50'
-              }`}
+                  ? 'ring-2 ring-primary' 
+                  : 'hover:opacity-80'
+              } ${shiftColors[shift as ShiftType]}`}
             >
               <div className="flex items-center gap-2 mb-1">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs font-medium text-muted-foreground">{label}</span>
+                <DollarSign className="h-4 w-4" />
+                <span className="text-xs font-medium">{label}</span>
               </div>
               <div className="text-lg font-bold">
                 {data.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs opacity-75">
                 {data.count} motoboy{data.count !== 1 ? 's' : ''} ativo{data.count !== 1 ? 's' : ''}
               </div>
             </button>
