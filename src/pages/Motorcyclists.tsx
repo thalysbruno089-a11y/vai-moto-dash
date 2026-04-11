@@ -49,6 +49,22 @@ const shiftColors: Record<ShiftType, string> = {
   free: "bg-purple-500/10 text-purple-600",
 };
 
+const shiftAvatarColors: Record<ShiftType, string> = {
+  day: "bg-orange-500/10 text-orange-600",
+  night: "bg-gray-900/10 text-gray-900 dark:bg-gray-100/10 dark:text-gray-100",
+  weekend: "bg-blue-500/10 text-blue-600",
+  star: "bg-green-500/10 text-green-600",
+  free: "bg-purple-500/10 text-purple-600",
+};
+
+const shiftValueColors: Record<ShiftType, string> = {
+  day: "text-orange-600",
+  night: "text-gray-900 dark:text-gray-100",
+  weekend: "text-blue-600",
+  star: "text-green-600",
+  free: "text-purple-600",
+};
+
 const Motorcyclists = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [shiftFilter, setShiftFilter] = useState<string>("all");
