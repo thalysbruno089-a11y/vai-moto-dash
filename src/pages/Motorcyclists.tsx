@@ -297,15 +297,15 @@ const Motorcyclists = () => {
                   </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                        <span className="text-sm font-medium text-primary">
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-full ${shiftAvatarColors[motoboy.shift]}`}>
+                        <span className="text-sm font-medium">
                           {motoboy.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                         </span>
                       </div>
                       {motoboy.name}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium text-primary">
+                  <TableCell className={`font-medium ${shiftValueColors[motoboy.shift]}`}>
                     {Number((motoboy as any).weekly_payment || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </TableCell>
                   <TableCell>
