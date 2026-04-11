@@ -49,6 +49,22 @@ const shiftColors: Record<ShiftType, string> = {
   free: "bg-purple-500/10 text-purple-600",
 };
 
+const shiftAvatarColors: Record<ShiftType, string> = {
+  day: "bg-orange-500/10 text-orange-600",
+  night: "bg-gray-900/10 text-gray-900 dark:bg-gray-100/10 dark:text-gray-100",
+  weekend: "bg-blue-500/10 text-blue-600",
+  star: "bg-green-500/10 text-green-600",
+  free: "bg-purple-500/10 text-purple-600",
+};
+
+const shiftValueColors: Record<ShiftType, string> = {
+  day: "text-orange-600",
+  night: "text-gray-900 dark:text-gray-100",
+  weekend: "text-blue-600",
+  star: "text-green-600",
+  free: "text-purple-600",
+};
+
 const Motorcyclists = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [shiftFilter, setShiftFilter] = useState<string>("all");
@@ -281,15 +297,15 @@ const Motorcyclists = () => {
                   </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-                        <span className="text-sm font-medium text-primary">
+                      <div className={`flex h-9 w-9 items-center justify-center rounded-full ${shiftAvatarColors[motoboy.shift]}`}>
+                        <span className="text-sm font-medium">
                           {motoboy.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                         </span>
                       </div>
                       {motoboy.name}
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium text-primary">
+                  <TableCell className={`font-medium ${shiftValueColors[motoboy.shift]}`}>
                     {Number((motoboy as any).weekly_payment || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </TableCell>
                   <TableCell>
