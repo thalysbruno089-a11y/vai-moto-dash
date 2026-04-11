@@ -86,7 +86,7 @@ const Dashboard = () => {
 
   // WEEK
   const weekMotoboyIncome = motoboys
-    ?.filter((m) => m.status === "active" && m.payment_status === "paid")
+    ?.filter((m) => m.payment_status === "paid")
     .reduce((s, m) => s + Number(m.weekly_payment || 0), 0) || 0;
 
   const weekResetAt = latestWeeklyResetAt ? new Date(latestWeeklyResetAt) : null;
@@ -106,7 +106,7 @@ const Dashboard = () => {
 
   // MONTH
   const monthMotoboyIncome = motoboys
-    ?.filter((m) => m.status === "active" && m.payment_status === "paid")
+    ?.filter((m) => m.payment_status === "paid")
     .reduce((s, m) => s + Number(m.weekly_payment || 0), 0) || 0;
 
   const monthCashFlowEntries = cashFlowEntries?.filter(
