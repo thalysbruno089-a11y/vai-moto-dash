@@ -56,10 +56,14 @@ import {
 } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
 import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from "@/hooks/useBills";
+import { useMotoboys } from "@/hooks/useMotoboys";
+import { useCashFlow } from "@/hooks/useCashFlow";
+import { useWeeklyClosings } from "@/hooks/useWeeklyClosings";
 import { CategoryFormDialog } from "@/components/categories/CategoryFormDialog";
 import { ContaEntryFormDialog } from "@/components/contas/ContaEntryFormDialog";
 import { ValeDialog } from "@/components/contas/ValeDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import { InsufficientBalanceDialog } from "@/components/bills/InsufficientBalanceDialog";
 import { format, startOfMonth, endOfMonth, addMonths, addDays, isWithinInterval, isBefore, isToday, differenceInDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
