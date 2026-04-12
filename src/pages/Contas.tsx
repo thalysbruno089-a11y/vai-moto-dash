@@ -759,6 +759,14 @@ const Contas = () => {
       <DeleteConfirmDialog open={deleteCategoryDialogOpen} onOpenChange={setDeleteCategoryDialogOpen} onConfirm={handleDeleteCategoryConfirm} title="Excluir Categoria" description="Tem certeza? Os itens dentro desta categoria não serão excluídos." isLoading={deleteCategory.isPending} />
       <DeleteConfirmDialog open={deleteEntryDialogOpen} onOpenChange={setDeleteEntryDialogOpen} onConfirm={handleDeleteEntryConfirm} title="Excluir Item" description="Tem certeza que deseja excluir este item?" isLoading={deleteBill.isPending} />
       <DeleteConfirmDialog open={dismissBillDialogOpen} onOpenChange={setDismissBillDialogOpen} onConfirm={handleDismissBillConfirm} title="Apagar Conta" description="Tem certeza que deseja apagar esta conta? Essa ação não pode ser desfeita." isLoading={deleteBill.isPending} />
+      <InsufficientBalanceDialog
+        open={balanceDialogOpen}
+        onOpenChange={setBalanceDialogOpen}
+        billName={balanceBillPending?.name || ''}
+        billValue={balanceBillPending ? balanceBillPending.value - (balanceBillPending.vale_amount || 0) : 0}
+        currentBalance={weekBalance}
+        onConfirm={handleBalanceConfirm}
+      />
     </MainLayout>
   );
 };
