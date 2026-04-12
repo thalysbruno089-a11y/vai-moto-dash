@@ -1,6 +1,6 @@
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import { Wallet, TrendingUp, TrendingDown, Bike, RotateCcw, ChevronLeft, ChevronRight, Save, History, Trash2 } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, RotateCcw, ChevronLeft, ChevronRight, Save, History, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -119,7 +119,7 @@ const Dashboard = () => {
   const monthExpense = monthCfExpense;
   const monthBalance = monthIncome - monthExpense;
 
-  const activeMotoboys = motoboys?.filter((m) => m.status === "active").length || 0;
+  
 
   const handleReset = async () => {
     setIsResetting(true);
@@ -230,7 +230,7 @@ const Dashboard = () => {
             <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
           </div>
           <div className="grid gap-4 grid-cols-2">
-            <StatCard title="Motoboys Ativos" value={isLoading ? "..." : String(activeMotoboys)} icon={<Bike className="h-6 w-6 text-primary" />} />
+            <StatCard title="Diferença" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
             <StatCard title="Receita Motoboys (Pagos)" value={isLoading ? "..." : formatCurrency(weekMotoboyIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
           </div>
           <PaidBillsList />

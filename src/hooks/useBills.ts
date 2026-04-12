@@ -134,6 +134,25 @@ export const useUpdateBill = () => {
         throw new Error(errorMessages);
       }
 
+      // If marking as unpaid (pending/overdue), remove the cash_flow entry
+      if (updates.status && updates.status !== 'paid') {
+        // Get the bill first to find its name for cash_flow matching
+        const { data: currentBill } = await supabase
+          .from('bills')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (currentBill && currentBill.status === 'paid') {
+          // Remove the cash_flow expense entry that was created when marking as paid
+          await supabase
+            .from('cash_flow')
+            .delete()
+            .eq('description', currentBill.name)
+            .eq('type', 'expense');
+        }
+      }
+
       const { data, error } = await supabase
         .from('bills')
         .update(updates)
@@ -146,6 +165,7 @@ export const useUpdateBill = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bills'] });
+      queryClient.invalidateQueries({ queryKey: ['cash_flow'] });
       toast.success('Conta atualizada com sucesso!');
     },
     onError: (error) => {
@@ -218,6 +238,21 @@ export const useDeleteBill = () => {
   
   return useMutation({
     mutationFn: async (id: string) => {
+      // Check if bill is paid, if so remove cash_flow entry
+      const { data: bill } = await supabase
+        .from('bills')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (bill && bill.status === 'paid') {
+        await supabase
+          .from('cash_flow')
+          .delete()
+          .eq('description', bill.name)
+          .eq('type', 'expense');
+      }
+
       const { error } = await supabase
         .from('bills')
         .delete()
@@ -227,6 +262,7 @@ export const useDeleteBill = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bills'] });
+      queryClient.invalidateQueries({ queryKey: ['cash_flow'] });
       toast.success('Conta excluída com sucesso!');
     },
     onError: (error) => {

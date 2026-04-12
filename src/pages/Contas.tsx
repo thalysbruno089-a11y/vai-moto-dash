@@ -56,10 +56,14 @@ import {
 } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
 import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from "@/hooks/useBills";
+import { useMotoboys } from "@/hooks/useMotoboys";
+import { useCashFlow } from "@/hooks/useCashFlow";
+import { useWeeklyClosings } from "@/hooks/useWeeklyClosings";
 import { CategoryFormDialog } from "@/components/categories/CategoryFormDialog";
 import { ContaEntryFormDialog } from "@/components/contas/ContaEntryFormDialog";
 import { ValeDialog } from "@/components/contas/ValeDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import { InsufficientBalanceDialog } from "@/components/bills/InsufficientBalanceDialog";
 import { format, startOfMonth, endOfMonth, addMonths, addDays, isWithinInterval, isBefore, isToday, differenceInDays, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -123,14 +127,63 @@ const Contas = () => {
   const [valeDialogOpen, setValeDialogOpen] = useState(false);
   const [valeEntry, setValeEntry] = useState<Bill | null>(null);
 
+  // Insufficient balance dialog
+  const [balanceDialogOpen, setBalanceDialogOpen] = useState(false);
+  const [balanceBillPending, setBalanceBillPending] = useState<Bill | null>(null);
+
   const { data: categories, isLoading: loadingCategories } = useCategories();
   const { data: bills, isLoading: loadingBills } = useBills();
+  const { data: motoboys } = useMotoboys();
+  const { data: cashFlowEntries } = useCashFlow();
+  const { data: weeklyClosings = [] } = useWeeklyClosings();
   const deleteCategory = useDeleteCategory();
   const deleteBill = useDeleteBill();
   const markAsPaid = useMarkBillAsPaid();
   const updateBill = useUpdateBill();
 
   const isLoading = loadingCategories || loadingBills;
+
+  // Calculate current week balance for insufficient balance check
+  const weekBalance = useMemo(() => {
+    const getWeekRangeForBalance = () => {
+      const d = new Date();
+      const day = d.getDay();
+      const diffToThursday = day >= 4 ? day - 4 : day + 3;
+      const start = new Date(d);
+      start.setDate(d.getDate() - diffToThursday);
+      start.setHours(0, 0, 0, 0);
+      const end = addDays(start, 6);
+      return { start, end };
+    };
+    const week = getWeekRangeForBalance();
+    const fmtDate = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const weekStartStr = fmtDate(week.start);
+    const weekEndStr = fmtDate(week.end);
+
+    const latestResetAt = weeklyClosings
+      .filter(c => {
+        const createdAt = new Date(c.created_at);
+        return createdAt >= week.start && createdAt <= week.end;
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]?.created_at ?? null;
+    const resetAt = latestResetAt ? new Date(latestResetAt) : null;
+
+    const motoboyIncome = motoboys
+      ?.filter(m => m.payment_status === "paid")
+      .reduce((s, m) => s + Number(m.weekly_payment || 0), 0) || 0;
+
+    const weekCf = cashFlowEntries?.filter(e => {
+      const inRange = e.flow_date >= weekStartStr && e.flow_date <= weekEndStr;
+      if (!inRange) return false;
+      if (!resetAt) return true;
+      return new Date(e.created_at) > resetAt;
+    }) || [];
+    const cfIncome = weekCf.filter(e => e.type === "revenue").reduce((s, e) => s + Number(e.value), 0);
+    const cfExpense = weekCf.filter(e => e.type === "expense").reduce((s, e) => s + Number(e.value), 0);
+
+    return (motoboyIncome + cfIncome) - cfExpense;
+  }, [motoboys, cashFlowEntries, weeklyClosings]);
 
   // Period calculations
   const getWeekRange = (refDate: Date) => {
@@ -308,10 +361,26 @@ const Contas = () => {
     if (billToDismiss) { await deleteBill.mutateAsync(billToDismiss); setDismissBillDialogOpen(false); setBillToDismiss(null); }
   };
   const handleMarkPaid = async (entry: Bill) => {
+    const netValue = entry.value - (entry.vale_amount || 0);
+    if (netValue > weekBalance) {
+      setBalanceBillPending(entry);
+      setBalanceDialogOpen(true);
+      return;
+    }
     if (entry.vale_amount && entry.vale_amount > 0) {
       toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(entry.vale_amount)}. Valor líquido: ${formatCurrency(entry.value - entry.vale_amount)}.`, { duration: 6000 });
     }
     await markAsPaid.mutateAsync(entry);
+  };
+  const handleBalanceConfirm = async (source: string) => {
+    if (!balanceBillPending) return;
+    toast.info(`Origem: ${source}`, { duration: 5000 });
+    if (balanceBillPending.vale_amount && balanceBillPending.vale_amount > 0) {
+      toast.warning(`⚠️ ${balanceBillPending.name} possui vale de ${formatCurrency(balanceBillPending.vale_amount)}. Valor líquido: ${formatCurrency(balanceBillPending.value - balanceBillPending.vale_amount)}.`, { duration: 6000 });
+    }
+    await markAsPaid.mutateAsync(balanceBillPending);
+    setBalanceDialogOpen(false);
+    setBalanceBillPending(null);
   };
   const handleMarkUnpaid = async (entry: Bill) => { await updateBill.mutateAsync({ id: entry.id, status: "pending", paid_at: null }); };
   const handleOpenVale = (entry: Bill) => { setValeEntry(entry); setValeDialogOpen(true); };
@@ -690,6 +759,14 @@ const Contas = () => {
       <DeleteConfirmDialog open={deleteCategoryDialogOpen} onOpenChange={setDeleteCategoryDialogOpen} onConfirm={handleDeleteCategoryConfirm} title="Excluir Categoria" description="Tem certeza? Os itens dentro desta categoria não serão excluídos." isLoading={deleteCategory.isPending} />
       <DeleteConfirmDialog open={deleteEntryDialogOpen} onOpenChange={setDeleteEntryDialogOpen} onConfirm={handleDeleteEntryConfirm} title="Excluir Item" description="Tem certeza que deseja excluir este item?" isLoading={deleteBill.isPending} />
       <DeleteConfirmDialog open={dismissBillDialogOpen} onOpenChange={setDismissBillDialogOpen} onConfirm={handleDismissBillConfirm} title="Apagar Conta" description="Tem certeza que deseja apagar esta conta? Essa ação não pode ser desfeita." isLoading={deleteBill.isPending} />
+      <InsufficientBalanceDialog
+        open={balanceDialogOpen}
+        onOpenChange={setBalanceDialogOpen}
+        billName={balanceBillPending?.name || ''}
+        billValue={balanceBillPending ? balanceBillPending.value - (balanceBillPending.vale_amount || 0) : 0}
+        currentBalance={weekBalance}
+        onConfirm={handleBalanceConfirm}
+      />
     </MainLayout>
   );
 };
