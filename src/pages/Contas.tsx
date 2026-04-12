@@ -361,10 +361,26 @@ const Contas = () => {
     if (billToDismiss) { await deleteBill.mutateAsync(billToDismiss); setDismissBillDialogOpen(false); setBillToDismiss(null); }
   };
   const handleMarkPaid = async (entry: Bill) => {
+    const netValue = entry.value - (entry.vale_amount || 0);
+    if (netValue > weekBalance) {
+      setBalanceBillPending(entry);
+      setBalanceDialogOpen(true);
+      return;
+    }
     if (entry.vale_amount && entry.vale_amount > 0) {
       toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(entry.vale_amount)}. Valor líquido: ${formatCurrency(entry.value - entry.vale_amount)}.`, { duration: 6000 });
     }
     await markAsPaid.mutateAsync(entry);
+  };
+  const handleBalanceConfirm = async (source: string) => {
+    if (!balanceBillPending) return;
+    toast.info(`Origem: ${source}`, { duration: 5000 });
+    if (balanceBillPending.vale_amount && balanceBillPending.vale_amount > 0) {
+      toast.warning(`⚠️ ${balanceBillPending.name} possui vale de ${formatCurrency(balanceBillPending.vale_amount)}. Valor líquido: ${formatCurrency(balanceBillPending.value - balanceBillPending.vale_amount)}.`, { duration: 6000 });
+    }
+    await markAsPaid.mutateAsync(balanceBillPending);
+    setBalanceDialogOpen(false);
+    setBalanceBillPending(null);
   };
   const handleMarkUnpaid = async (entry: Bill) => { await updateBill.mutateAsync({ id: entry.id, status: "pending", paid_at: null }); };
   const handleOpenVale = (entry: Bill) => { setValeEntry(entry); setValeDialogOpen(true); };
