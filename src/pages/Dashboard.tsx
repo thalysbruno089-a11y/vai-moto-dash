@@ -230,7 +230,7 @@ const Dashboard = () => {
             <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
           </div>
           <div className="grid gap-4 grid-cols-2">
-            <StatCard title="Motoboys Ativos" value={isLoading ? "..." : String(activeMotoboys)} icon={<Bike className="h-6 w-6 text-primary" />} />
+            <StatCard title="Diferença" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
             <StatCard title="Receita Motoboys (Pagos)" value={isLoading ? "..." : formatCurrency(weekMotoboyIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
           </div>
           <PaidBillsList />
