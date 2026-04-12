@@ -119,7 +119,7 @@ const Dashboard = () => {
   const monthExpense = monthCfExpense;
   const monthBalance = monthIncome - monthExpense;
 
-  const activeMotoboys = motoboys?.filter((m) => m.status === "active").length || 0;
+  
 
   const handleReset = async () => {
     setIsResetting(true);
