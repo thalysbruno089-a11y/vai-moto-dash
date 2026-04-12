@@ -227,10 +227,10 @@ const Dashboard = () => {
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
             <StatCard title="Entradas da Semana" value={isLoading ? "..." : formatCurrency(weekIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
             <StatCard title="Saídas da Semana" value={isLoading ? "..." : formatCurrency(weekExpense)} icon={<TrendingDown className="h-6 w-6 text-destructive" />} variant="destructive" />
-            <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
+            <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(Math.max(0, weekBalance))} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
           </div>
           <div className="grid gap-4 grid-cols-2">
-            <StatCard title="Diferença" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
+            <StatCard title="Diferença" value={isLoading ? "..." : formatCurrency(Math.min(0, weekBalance))} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
             <StatCard title="Receita Motoboys (Pagos)" value={isLoading ? "..." : formatCurrency(weekMotoboyIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
           </div>
           <PaidBillsList />
