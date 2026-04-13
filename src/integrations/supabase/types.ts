@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      balance_differences: {
+        Row: {
+          available_balance: number
+          bill_id: string | null
+          bill_name: string
+          bill_value: number
+          company_id: string
+          created_at: string
+          difference_amount: number
+          id: string
+          source: string
+        }
+        Insert: {
+          available_balance?: number
+          bill_id?: string | null
+          bill_name: string
+          bill_value: number
+          company_id: string
+          created_at?: string
+          difference_amount: number
+          id?: string
+          source: string
+        }
+        Update: {
+          available_balance?: number
+          bill_id?: string | null
+          bill_name?: string
+          bill_value?: number
+          company_id?: string
+          created_at?: string
+          difference_amount?: number
+          id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balance_differences_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balance_differences_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bills: {
         Row: {
           category_id: string | null

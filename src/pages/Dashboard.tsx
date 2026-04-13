@@ -1,6 +1,6 @@
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import { Wallet, TrendingUp, TrendingDown, RotateCcw, ChevronLeft, ChevronRight, Save, History, Trash2 } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, RotateCcw, ChevronLeft, ChevronRight, Save, History, Trash2, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useBills, Bill } from "@/hooks/useBills";
+import { useBalanceDifferences, useDeleteBalanceDifference } from "@/hooks/useBalanceDifferences";
 
 import { useMonthlyClosings, useSaveMonthlyClosing, useDeleteMonthlyClosing } from "@/hooks/useMonthlyClosings";
 import { useWeeklyClosings, useSaveWeeklyClosing, useDeleteWeeklyClosing } from "@/hooks/useWeeklyClosings";
@@ -56,7 +57,10 @@ const Dashboard = () => {
   const [deleteHistoryId, setDeleteHistoryId] = useState<string | null>(null);
   const [deleteHistoryType, setDeleteHistoryType] = useState<'weekly' | 'monthly'>('weekly');
   const [deleteHistoryDialogOpen, setDeleteHistoryDialogOpen] = useState(false);
+  const [differenceDialogOpen, setDifferenceDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { data: balanceDifferences = [] } = useBalanceDifferences();
+  const deleteBalanceDifference = useDeleteBalanceDifference();
 
   const isLoading = loadingCashFlow || loadingMotoboys;
 
@@ -227,10 +231,17 @@ const Dashboard = () => {
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
             <StatCard title="Entradas da Semana" value={isLoading ? "..." : formatCurrency(weekIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
             <StatCard title="Saídas da Semana" value={isLoading ? "..." : formatCurrency(weekExpense)} icon={<TrendingDown className="h-6 w-6 text-destructive" />} variant="destructive" />
-            <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(Math.max(0, weekBalance))} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
+            <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
           </div>
           <div className="grid gap-4 grid-cols-2">
-            <StatCard title="Diferença" value={isLoading ? "..." : formatCurrency(Math.min(0, weekBalance))} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
+            <div onClick={() => setDifferenceDialogOpen(true)} className="cursor-pointer">
+              <StatCard 
+                title="Diferença" 
+                value={isLoading ? "..." : formatCurrency(balanceDifferences.reduce((s, d) => s + Number(d.difference_amount), 0))} 
+                icon={<DollarSign className="h-6 w-6 text-warning" />} 
+                variant={balanceDifferences.length > 0 ? "warning" : "default"} 
+              />
+            </div>
             <StatCard title="Receita Motoboys (Pagos)" value={isLoading ? "..." : formatCurrency(weekMotoboyIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
           </div>
           <PaidBillsList />
@@ -389,6 +400,60 @@ const Dashboard = () => {
         description="Tem certeza que deseja excluir este registro do histórico? Esta ação não pode ser desfeita."
         isLoading={deleteWeeklyClosing.isPending || deleteMonthlyClosing.isPending}
       />
+
+      {/* Diferença Dialog */}
+      <Dialog open={differenceDialogOpen} onOpenChange={setDifferenceDialogOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Diferenças de Pagamento</DialogTitle>
+          </DialogHeader>
+          {balanceDifferences.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">Nenhuma diferença registrada.</p>
+          ) : (
+            <div className="space-y-3">
+              {balanceDifferences.map((diff) => (
+                <div key={diff.id} className="rounded-lg border p-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-foreground">{diff.bill_name}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive"
+                      onClick={async () => {
+                        await deleteBalanceDifference.mutateAsync(diff.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Valor da conta</span>
+                    <span>{formatCurrency(Number(diff.bill_value))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Saldo disponível</span>
+                    <span>{formatCurrency(Number(diff.available_balance))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-destructive">Diferença</span>
+                    <span className="text-destructive">{formatCurrency(Number(diff.difference_amount))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Origem</span>
+                    <span className="font-medium">{diff.source}</span>
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-between border-t pt-3 font-bold">
+                <span>Total</span>
+                <span className="text-destructive">
+                  {formatCurrency(balanceDifferences.reduce((s, d) => s + Number(d.difference_amount), 0))}
+                </span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
