@@ -59,6 +59,7 @@ import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from 
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useWeeklyClosings } from "@/hooks/useWeeklyClosings";
+import { useCreateBalanceDifference } from "@/hooks/useBalanceDifferences";
 import { CategoryFormDialog } from "@/components/categories/CategoryFormDialog";
 import { ContaEntryFormDialog } from "@/components/contas/ContaEntryFormDialog";
 import { ValeDialog } from "@/components/contas/ValeDialog";
