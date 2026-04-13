@@ -400,6 +400,60 @@ const Dashboard = () => {
         description="Tem certeza que deseja excluir este registro do histórico? Esta ação não pode ser desfeita."
         isLoading={deleteWeeklyClosing.isPending || deleteMonthlyClosing.isPending}
       />
+
+      {/* Diferença Dialog */}
+      <Dialog open={differenceDialogOpen} onOpenChange={setDifferenceDialogOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Diferenças de Pagamento</DialogTitle>
+          </DialogHeader>
+          {balanceDifferences.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">Nenhuma diferença registrada.</p>
+          ) : (
+            <div className="space-y-3">
+              {balanceDifferences.map((diff) => (
+                <div key={diff.id} className="rounded-lg border p-3 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-foreground">{diff.bill_name}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive"
+                      onClick={async () => {
+                        await deleteBalanceDifference.mutateAsync(diff.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Valor da conta</span>
+                    <span>{formatCurrency(Number(diff.bill_value))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Saldo disponível</span>
+                    <span>{formatCurrency(Number(diff.available_balance))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-semibold">
+                    <span className="text-destructive">Diferença</span>
+                    <span className="text-destructive">{formatCurrency(Number(diff.difference_amount))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Origem</span>
+                    <span className="font-medium">{diff.source}</span>
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-between border-t pt-3 font-bold">
+                <span>Total</span>
+                <span className="text-destructive">
+                  {formatCurrency(balanceDifferences.reduce((s, d) => s + Number(d.difference_amount), 0))}
+                </span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
