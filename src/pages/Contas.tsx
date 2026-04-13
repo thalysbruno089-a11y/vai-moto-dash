@@ -376,7 +376,19 @@ const Contas = () => {
   };
   const handleBalanceConfirm = async (source: string) => {
     if (!balanceBillPending) return;
-    toast.info(`Origem: ${source}`, { duration: 5000 });
+    const netValue = balanceBillPending.value - (balanceBillPending.vale_amount || 0);
+    const difference = netValue - Math.max(0, weekBalance);
+    
+    // Save the difference to the database
+    await createBalanceDifference.mutateAsync({
+      bill_id: balanceBillPending.id,
+      bill_name: balanceBillPending.name,
+      bill_value: netValue,
+      available_balance: Math.max(0, weekBalance),
+      difference_amount: difference,
+      source: source,
+    });
+
     if (balanceBillPending.vale_amount && balanceBillPending.vale_amount > 0) {
       toast.warning(`⚠️ ${balanceBillPending.name} possui vale de ${formatCurrency(balanceBillPending.vale_amount)}. Valor líquido: ${formatCurrency(balanceBillPending.value - balanceBillPending.vale_amount)}.`, { duration: 6000 });
     }
