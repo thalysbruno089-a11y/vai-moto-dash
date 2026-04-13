@@ -57,7 +57,10 @@ const Dashboard = () => {
   const [deleteHistoryId, setDeleteHistoryId] = useState<string | null>(null);
   const [deleteHistoryType, setDeleteHistoryType] = useState<'weekly' | 'monthly'>('weekly');
   const [deleteHistoryDialogOpen, setDeleteHistoryDialogOpen] = useState(false);
+  const [differenceDialogOpen, setDifferenceDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+  const { data: balanceDifferences = [] } = useBalanceDifferences();
+  const deleteBalanceDifference = useDeleteBalanceDifference();
 
   const isLoading = loadingCashFlow || loadingMotoboys;
 
