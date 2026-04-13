@@ -231,10 +231,17 @@ const Dashboard = () => {
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
             <StatCard title="Entradas da Semana" value={isLoading ? "..." : formatCurrency(weekIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
             <StatCard title="Saídas da Semana" value={isLoading ? "..." : formatCurrency(weekExpense)} icon={<TrendingDown className="h-6 w-6 text-destructive" />} variant="destructive" />
-            <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(Math.max(0, weekBalance))} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
+            <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
           </div>
           <div className="grid gap-4 grid-cols-2">
-            <StatCard title="Diferença" value={isLoading ? "..." : formatCurrency(Math.min(0, weekBalance))} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
+            <div onClick={() => setDifferenceDialogOpen(true)} className="cursor-pointer">
+              <StatCard 
+                title="Diferença" 
+                value={isLoading ? "..." : formatCurrency(balanceDifferences.reduce((s, d) => s + Number(d.difference_amount), 0))} 
+                icon={<DollarSign className="h-6 w-6 text-warning" />} 
+                variant={balanceDifferences.length > 0 ? "warning" : "default"} 
+              />
+            </div>
             <StatCard title="Receita Motoboys (Pagos)" value={isLoading ? "..." : formatCurrency(weekMotoboyIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
           </div>
           <PaidBillsList />
