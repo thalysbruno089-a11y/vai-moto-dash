@@ -141,6 +141,7 @@ const Contas = () => {
   const deleteBill = useDeleteBill();
   const markAsPaid = useMarkBillAsPaid();
   const updateBill = useUpdateBill();
+  const createBalanceDifference = useCreateBalanceDifference();
 
   const isLoading = loadingCategories || loadingBills;
 
