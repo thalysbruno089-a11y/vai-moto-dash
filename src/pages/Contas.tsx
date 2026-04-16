@@ -246,18 +246,17 @@ const Contas = () => {
     [groupCategories, searchTerm]
   );
 
-  // Helper: check if a fixed bill was paid in a previous month and should reset to pending
-  const isFixedBillPendingThisMonth = (bill: Bill): boolean => {
-    if (!bill.is_fixed || bill.status !== "paid" || !bill.paid_at) return false;
-    const paidDate = new Date(bill.paid_at);
-    const now = new Date();
-    // If paid in a previous month, treat as pending
-    return paidDate.getMonth() !== now.getMonth() || paidDate.getFullYear() !== now.getFullYear();
-  };
-
-  // Get effective status: fixed bills paid in previous months show as "pending"
+  // Get effective status: fixed bills should only show "paid" if paid_at falls within the viewed period
   const getEffectiveStatus = (bill: Bill): string => {
-    if (isFixedBillPendingThisMonth(bill)) return "pending";
+    if (!bill.is_fixed) return bill.status;
+    if (bill.status !== "paid" || !bill.paid_at) return bill.status;
+    const paidDate = new Date(bill.paid_at + (bill.paid_at.includes("T") ? "" : "T12:00:00"));
+    const viewedMonth = currentRange.start.getMonth();
+    const viewedYear = currentRange.start.getFullYear();
+    // Fixed bill only counts as "paid" if it was paid in the same month being viewed
+    if (paidDate.getMonth() !== viewedMonth || paidDate.getFullYear() !== viewedYear) {
+      return "pending";
+    }
     return bill.status;
   };
 
