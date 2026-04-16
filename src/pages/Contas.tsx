@@ -550,6 +550,54 @@ const Contas = () => {
           )}
         </div>
 
+        {/* Period Bills Summary Card */}
+        {(() => {
+          const groupCatIds = new Set(groupCategories.map(c => c.id));
+          const periodBills = (bills || []).filter(b => {
+            if (!b.category_id || !groupCatIds.has(b.category_id)) return false;
+            if (b.is_fixed && period === "month") return true;
+            const dueDate = new Date(b.due_date + "T12:00:00");
+            return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
+          });
+          if (periodBills.length === 0) return null;
+          const totalPeriod = periodBills.reduce((s, b) => s + Number(b.value), 0);
+          return (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-sm font-semibold text-foreground">Contas no período</h3>
+                <Badge variant="secondary" className="text-[10px] h-5 px-1.5">{periodBills.length}</Badge>
+              </div>
+              <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                {periodBills.map(b => {
+                  const effectiveStatus = getEffectiveStatus(b);
+                  return (
+                    <div key={b.id} className="flex items-center justify-between py-1.5 px-2 rounded-md bg-muted/50">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {effectiveStatus === "paid" ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                        ) : (
+                          <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        )}
+                        <span className="text-xs font-medium truncate">{b.name}</span>
+                      </div>
+                      <span className={cn(
+                        "text-xs font-bold ml-2 shrink-0",
+                        effectiveStatus === "paid" ? "text-emerald-500" : "text-foreground"
+                      )}>
+                        {formatCurrency(b.value)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="border-t border-border pt-2 flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">Total</span>
+                <span className="text-sm font-bold text-foreground">{formatCurrency(totalPeriod)}</span>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
