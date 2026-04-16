@@ -45,15 +45,15 @@
 
     --radius: 0.75rem;
 
-    --sidebar-background: 280 45% 25%;
-    --sidebar-foreground: 280 15% 95%;
-    --sidebar-primary: 280 60% 55%;
+    --sidebar-background: 273 70% 35%;
+    --sidebar-foreground: 273 15% 95%;
+    --sidebar-primary: 273 70% 59%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 280 45% 32%;
-    --sidebar-accent-foreground: 280 15% 95%;
-    --sidebar-border: 280 45% 32%;
-    --sidebar-ring: 280 60% 55%;
-    --sidebar-muted: 280 20% 70%;
+    --sidebar-accent: 273 60% 42%;
+    --sidebar-accent-foreground: 273 15% 95%;
+    --sidebar-border: 273 60% 42%;
+    --sidebar-ring: 273 70% 59%;
+    --sidebar-muted: 273 30% 70%;
 
     /* Custom gradients */
     --gradient-primary: linear-gradient(135deg, hsl(280 60% 45%) 0%, hsl(280 60% 35%) 100%);
