@@ -191,20 +191,6 @@ const Motorcyclists = () => {
 
         <div className="hidden lg:flex lg:flex-1" />
 
-        <Button 
-          onClick={handleResetAllPayments} 
-          variant="outline" 
-          className="w-full sm:w-auto"
-          disabled={isResetting}
-        >
-          {isResetting ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <RotateCcw className="mr-2 h-4 w-4" />
-          )}
-          Redefinir Pagamentos
-        </Button>
-
         <Button onClick={handleCreate} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Novo Motoboy
