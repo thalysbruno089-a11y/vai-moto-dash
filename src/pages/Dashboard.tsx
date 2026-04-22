@@ -69,10 +69,12 @@ const Dashboard = () => {
   const weekEndStr = fmtDate(week.end);
 
   const latestWeeklyResetAt = useMemo(() => {
+    const weekEndInclusive = new Date(week.end);
+    weekEndInclusive.setHours(23, 59, 59, 999);
     const thisWeekClosings = weeklyClosings
       .filter((closing) => {
         const createdAt = new Date(closing.created_at);
-        return createdAt >= week.start && createdAt <= week.end;
+        return createdAt >= week.start && createdAt <= weekEndInclusive;
       })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
