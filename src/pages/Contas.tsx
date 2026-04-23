@@ -570,19 +570,27 @@ const Contas = () => {
                 {periodBills.map(b => {
                   const effectiveStatus = getEffectiveStatus(b);
                   return (
-                    <div key={b.id} className="flex items-center justify-between py-1.5 px-2 rounded-md bg-muted/50">
+                    <div key={b.id} className={cn(
+                      "flex items-center justify-between py-1.5 px-2 rounded-md border",
+                      effectiveStatus === "paid"
+                        ? "bg-emerald-500/10 border-emerald-500/30"
+                        : "bg-amber-500/10 border-amber-500/30"
+                    )}>
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         {effectiveStatus === "paid" ? (
                           <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                         ) : (
                           <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                         )}
-                        <span className="text-xs font-medium truncate">{b.name}</span>
+                        <span className={cn(
+                          "text-xs font-medium truncate",
+                          effectiveStatus === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"
+                        )}>{b.name}</span>
                         <span className="text-[10px] text-muted-foreground shrink-0">({new Date(b.due_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
                       </div>
                       <span className={cn(
                         "text-xs font-bold ml-2 shrink-0",
-                        effectiveStatus === "paid" ? "text-emerald-500" : "text-foreground"
+                        effectiveStatus === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"
                       )}>
                         {formatCurrency(b.value)}
                       </span>
