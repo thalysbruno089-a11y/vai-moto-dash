@@ -334,12 +334,12 @@ const Contas = () => {
 
   // Removed "Próximas Contas" - only overdue bills shown now
 
-  // Toggle category expansion
-  const toggleCategory = (id: string) => {
+  // Set category expansion based on desired open state
+  const setCategoryOpen = (id: string, open: boolean) => {
     setExpandedCategories(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (open) next.add(id);
+      else next.delete(id);
       return next;
     });
   };
@@ -685,7 +685,7 @@ const Contas = () => {
               const IconComponent = getCategoryIcon(cat.name);
 
               return (
-                <Collapsible key={cat.id} open={isOpen} onOpenChange={() => toggleCategory(cat.id)}>
+                <Collapsible key={cat.id} open={isOpen} onOpenChange={(open) => setCategoryOpen(cat.id, open)}>
                   <div className="rounded-xl border border-border bg-card overflow-hidden transition-shadow hover:shadow-sm">
                     <CollapsibleTrigger className="w-full p-4 flex items-center gap-3 text-left">
                       <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", activeGroup === 'carlos' ? "bg-destructive/10" : "bg-primary/10")}>
