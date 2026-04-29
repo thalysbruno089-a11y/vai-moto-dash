@@ -50,11 +50,21 @@ export const useClientsWithStats = () => {
       if (clientsError) throw clientsError;
 
       // Then get ride stats for each client
-      const { data: rides, error: ridesError } = await supabase
-        .from('rides')
-        .select('client_id, value, ride_date');
-      
-      if (ridesError) throw ridesError;
+      // Paginate to bypass Supabase's default 1000-row limit
+      const pageSize = 1000;
+      let from = 0;
+      const rides: { client_id: string; value: number; ride_date: string }[] = [];
+      while (true) {
+        const { data: page, error: ridesError } = await supabase
+          .from('rides')
+          .select('client_id, value, ride_date')
+          .range(from, from + pageSize - 1);
+        if (ridesError) throw ridesError;
+        if (!page || page.length === 0) break;
+        rides.push(...(page as any));
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
 
       // Calculate stats
       const statsMap = new Map<string, { total_rides: number; total_value: number; byDate: Map<string, { total_rides: number; total_value: number }> }>();
