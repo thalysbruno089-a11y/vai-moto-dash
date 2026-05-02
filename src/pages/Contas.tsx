@@ -425,7 +425,7 @@ const Contas = () => {
         <div className="rounded-xl bg-card border border-border p-5">
           <div className="text-center mb-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo do período</p>
-            <p className={cn("text-3xl font-bold tracking-tight", totalPending > 0 ? "text-destructive" : "text-foreground")}>
+            <p className="text-3xl font-bold tracking-tight text-foreground">
               {formatCurrency(totalPaid + totalPending)}
             </p>
           </div>
@@ -569,29 +569,29 @@ const Contas = () => {
               <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
                 {periodBills.map(b => {
                   const effectiveStatus = getEffectiveStatus(b);
+                  const dueDate = new Date(b.due_date + "T12:00:00");
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const isOverdue = effectiveStatus !== "paid" && isBefore(dueDate, today) && !isToday(dueDate);
+                  const tone = effectiveStatus === "paid"
+                    ? { wrap: "bg-emerald-500/10 border-emerald-500/30", text: "text-emerald-600 dark:text-emerald-400", icon: "text-emerald-500" }
+                    : isOverdue
+                      ? { wrap: "bg-destructive/10 border-destructive/30", text: "text-destructive", icon: "text-destructive" }
+                      : { wrap: "bg-amber-500/10 border-amber-500/30", text: "text-amber-700 dark:text-amber-400", icon: "text-amber-500" };
                   return (
-                    <div key={b.id} className={cn(
-                      "flex items-center justify-between py-1.5 px-2 rounded-md border",
-                      effectiveStatus === "paid"
-                        ? "bg-emerald-500/10 border-emerald-500/30"
-                        : "bg-amber-500/10 border-amber-500/30"
-                    )}>
+                    <div key={b.id} className={cn("flex items-center justify-between py-1.5 px-2 rounded-md border", tone.wrap)}>
                       <div className="flex items-center gap-2 min-w-0 flex-1">
                         {effectiveStatus === "paid" ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                          <CheckCircle2 className={cn("h-3.5 w-3.5 shrink-0", tone.icon)} />
+                        ) : isOverdue ? (
+                          <AlertTriangle className={cn("h-3.5 w-3.5 shrink-0", tone.icon)} />
                         ) : (
-                          <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          <Clock className={cn("h-3.5 w-3.5 shrink-0", tone.icon)} />
                         )}
-                        <span className={cn(
-                          "text-xs font-medium truncate",
-                          effectiveStatus === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"
-                        )}>{b.name}</span>
+                        <span className={cn("text-xs font-medium truncate", tone.text)}>{b.name}</span>
                         <span className="text-[10px] text-muted-foreground shrink-0">({new Date(b.due_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
                       </div>
-                      <span className={cn(
-                        "text-xs font-bold ml-2 shrink-0",
-                        effectiveStatus === "paid" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"
-                      )}>
+                      <span className={cn("text-xs font-bold ml-2 shrink-0", tone.text)}>
                         {formatCurrency(b.value)}
                       </span>
                     </div>
