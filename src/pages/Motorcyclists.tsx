@@ -1,4 +1,9 @@
 import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, Loader2, DollarSign, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, Loader2, DollarSign, CheckCircle, XCircle, History, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useMotoboys, useDeleteMotoboy, useUpdateMotoboy, Motoboy } from "@/hooks/useMotoboys";
 import { MotoboyFormDialog } from "@/components/motoboys/MotoboyFormDialog";
@@ -73,10 +78,25 @@ const Motorcyclists = () => {
   const [selectedMotoboy, setSelectedMotoboy] = useState<Motoboy | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [motoboyToDelete, setMotoboyToDelete] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const { data: motoboys, isLoading } = useMotoboys();
   const deleteMotoboy = useDeleteMotoboy();
   const updateMotoboy = useUpdateMotoboy();
+  const queryClient = useQueryClient();
+
+  const { data: paymentHistory = [] } = useQuery({
+    queryKey: ["motoboy_payment_history"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("motoboy_payment_history" as any)
+        .select("*")
+        .order("paid_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+  });
 
   const filteredMotoboys = (motoboys || [])
     .filter((m) => {
@@ -84,7 +104,7 @@ const Motorcyclists = () => {
       const matchesSearch = m.name.toLowerCase().includes(searchLower) || 
         (m.number && m.number.toLowerCase().includes(searchLower));
       const matchesShift = shiftFilter === "all" || m.shift === shiftFilter;
-      const matchesStatus = statusFilter === "all" || m.status === statusFilter || (statusFilter === "inadimplente" && m.payment_status !== "paid");
+      const matchesStatus = statusFilter === "all" || m.status === statusFilter;
       return matchesSearch && matchesShift && matchesStatus;
     })
     .sort((a, b) => {
@@ -143,10 +163,36 @@ const Motorcyclists = () => {
 
   const handleTogglePaymentStatus = async (motoboy: Motoboy) => {
     const currentStatus = (motoboy as any).payment_status || 'pending';
+    const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
     await updateMotoboy.mutateAsync({
       id: motoboy.id,
-      payment_status: currentStatus === 'paid' ? 'pending' : 'paid',
+      payment_status: newStatus,
     });
+    if (newStatus === 'paid') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (profile?.company_id) {
+          await supabase.from('motoboy_payment_history' as any).insert({
+            company_id: profile.company_id,
+            motoboy_id: motoboy.id,
+            motoboy_name: motoboy.name,
+            amount: Number((motoboy as any).weekly_payment || 0),
+          });
+          queryClient.invalidateQueries({ queryKey: ["motoboy_payment_history"] });
+        }
+      }
+    }
+  };
+
+  const handleDeleteHistoryEntry = async (id: string) => {
+    await supabase.from('motoboy_payment_history' as any).delete().eq('id', id);
+    queryClient.invalidateQueries({ queryKey: ["motoboy_payment_history"] });
+    toast.success("Registro removido");
   };
 
   return (
@@ -184,12 +230,16 @@ const Motorcyclists = () => {
               <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="active">Ativo</SelectItem>
               <SelectItem value="inactive">Inativo</SelectItem>
-              <SelectItem value="inadimplente">Inadimplente</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="hidden lg:flex lg:flex-1" />
+
+        <Button variant="outline" onClick={() => setHistoryOpen(true)} className="w-full sm:w-auto">
+          <History className="mr-2 h-4 w-4" />
+          Histórico de Pagamentos
+        </Button>
 
         <Button onClick={handleCreate} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
@@ -358,6 +408,39 @@ const Motorcyclists = () => {
         description="Tem certeza que deseja excluir este motoboy? Esta ação não pode ser desfeita."
         isLoading={deleteMotoboy.isPending}
       />
+
+      {/* Payment History Dialog */}
+      <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Histórico de Pagamentos</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto space-y-2">
+            {paymentHistory.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-8">Nenhum pagamento registrado ainda.</p>
+            ) : (
+              paymentHistory.map((p: any) => (
+                <div key={p.id} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{p.motoboy_name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(p.paid_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2">
+                    <span className="text-sm font-bold text-success">
+                      {Number(p.amount || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </span>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteHistoryEntry(p.id)}>
+                      <Trash className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };
