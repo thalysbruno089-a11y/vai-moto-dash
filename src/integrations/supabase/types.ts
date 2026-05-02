@@ -437,6 +437,36 @@ export type Database = {
           },
         ]
       }
+      motoboy_payment_history: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          id: string
+          motoboy_id: string
+          motoboy_name: string
+          paid_at: string
+        }
+        Insert: {
+          amount?: number
+          company_id: string
+          created_at?: string
+          id?: string
+          motoboy_id: string
+          motoboy_name: string
+          paid_at?: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          motoboy_id?: string
+          motoboy_name?: string
+          paid_at?: string
+        }
+        Relationships: []
+      }
       motoboys: {
         Row: {
           address: string | null
