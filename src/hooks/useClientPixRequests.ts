@@ -21,10 +21,24 @@ export const useClientPixRequests = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('client_pix_requests')
-        .select('*, client:clients(id, name)')
+        .select('*')
         .order('requested_at', { ascending: false });
       if (error) throw error;
-      return (data || []) as unknown as PixRequest[];
+
+      const ids = Array.from(new Set((data || []).map((r: any) => r.client_id)));
+      let clientsMap = new Map<string, { id: string; name: string }>();
+      if (ids.length > 0) {
+        const { data: clients } = await supabase
+          .from('clients')
+          .select('id, name')
+          .in('id', ids);
+        (clients || []).forEach((c: any) => clientsMap.set(c.id, c));
+      }
+
+      return (data || []).map((r: any) => ({
+        ...r,
+        client: clientsMap.get(r.client_id),
+      })) as PixRequest[];
     },
   });
 };
