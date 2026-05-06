@@ -24,6 +24,8 @@ import { ClientDetailsDialog } from "@/components/clients/ClientDetailsDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PixRequestsTab } from "@/components/clients/PixRequestsTab";
 
 const Clients = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -98,8 +100,15 @@ const Clients = () => {
 
   return (
     <MainLayout title="Clientes" subtitle="Gerencie clientes e suas corridas">
-      {/* Stats */}
-      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3 mb-6 sm:mb-8">
+      <Tabs defaultValue="clients" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="clients">Clientes</TabsTrigger>
+          <TabsTrigger value="pix">Solicitações PIX</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="clients">
+        {/* Stats */}
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-3 mb-6 sm:mb-8">
         <StatCard
           title="Total de Clientes"
           value={totalClients.toString()}
@@ -116,7 +125,7 @@ const Clients = () => {
           icon={<DollarSign className="h-6 w-6 text-success" />}
           variant="success"
         />
-      </div>
+        </div>
 
       {/* Filters */}
       <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:flex-wrap">
@@ -250,6 +259,12 @@ const Clients = () => {
       <div className="mt-4 text-sm text-muted-foreground">
         Mostrando {filteredClients.length} de {clients?.length || 0} clientes
       </div>
+        </TabsContent>
+
+        <TabsContent value="pix">
+          <PixRequestsTab />
+        </TabsContent>
+      </Tabs>
 
       {/* Client Form Dialog */}
       <ClientFormDialog 
