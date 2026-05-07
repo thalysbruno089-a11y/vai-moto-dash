@@ -26,8 +26,12 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PixRequestsTab } from "@/components/clients/PixRequestsTab";
+import { CarlosBankTab } from "@/components/clients/CarlosBankTab";
+import { useAuth } from "@/hooks/useAuth";
 
 const Clients = () => {
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === "admin";
   const [searchTerm, setSearchTerm] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -104,6 +108,7 @@ const Clients = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="clients">Clientes</TabsTrigger>
           <TabsTrigger value="pix">Solicitações PIX</TabsTrigger>
+          {isAdmin && <TabsTrigger value="bank">Banco do Carlos</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="clients">
@@ -264,6 +269,12 @@ const Clients = () => {
         <TabsContent value="pix">
           <PixRequestsTab />
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="bank">
+            <CarlosBankTab />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Client Form Dialog */}

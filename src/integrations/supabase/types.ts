@@ -147,6 +147,48 @@ export type Database = {
           },
         ]
       }
+      carlos_bank_transactions: {
+        Row: {
+          amount: number
+          client_id: string | null
+          client_name: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          ride_id: string | null
+          transaction_date: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          client_id?: string | null
+          client_name?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          ride_id?: string | null
+          transaction_date?: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string | null
+          client_name?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          ride_id?: string | null
+          transaction_date?: string
+          type?: string
+        }
+        Relationships: []
+      }
       cash_flow: {
         Row: {
           category_id: string | null
