@@ -14,6 +14,9 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -26,13 +29,28 @@ export const CarlosBankTab = () => {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [toDelete, setToDelete] = useState<string | null>(null);
+  const [clientFilter, setClientFilter] = useState<string>("all");
+
+  const clientOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    (txs || []).forEach(t => {
+      if (t.client_id && t.client_name) map.set(t.client_id, t.client_name);
+    });
+    return Array.from(map, ([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [txs]);
+
+  const filteredTxs = useMemo(() => {
+    if (clientFilter === "all") return txs || [];
+    return (txs || []).filter(t => t.client_id === clientFilter);
+  }, [txs, clientFilter]);
 
   const totals = useMemo(() => {
-    const list = txs || [];
+    const list = filteredTxs;
     const deposits = list.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0);
     const debits = list.filter(t => t.type === "debit").reduce((s, t) => s + Number(t.amount), 0);
     return { deposits, debits, balance: deposits - debits };
-  }, [txs]);
+  }, [filteredTxs]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,12 +111,32 @@ export const CarlosBankTab = () => {
         </CardContent>
       </Card>
 
+      <div className="flex items-center gap-2 sm:max-w-sm">
+        <Label className="whitespace-nowrap">Filtrar cliente:</Label>
+        <Select value={clientFilter} onValueChange={setClientFilter}>
+          <SelectTrigger>
+            <SelectValue placeholder="Todos" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os clientes</SelectItem>
+            {clientOptions.map(c => (
+              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {clientFilter !== "all" && (
+          <Button variant="ghost" size="sm" onClick={() => setClientFilter("all")}>
+            Limpar
+          </Button>
+        )}
+      </div>
+
       <div className="data-table">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-        ) : !txs || txs.length === 0 ? (
+        ) : filteredTxs.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">Nenhuma movimentação ainda.</div>
         ) : (
           <Table>
@@ -112,7 +150,7 @@ export const CarlosBankTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {txs.map((t) => {
+              {filteredTxs.map((t) => {
                 const isDep = t.type === "deposit";
                 return (
                   <TableRow key={t.id} className={isDep ? "bg-success/5" : "bg-destructive/5"}>
