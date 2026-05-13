@@ -45,6 +45,19 @@ export const CarlosBankTab = () => {
     return (txs || []).filter(t => t.client_id === clientFilter);
   }, [txs, clientFilter]);
 
+  const perClient = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; total: number; count: number }>();
+    (txs || []).forEach(t => {
+      if (t.type !== "debit" || !t.client_id) return;
+      const key = t.client_id;
+      const cur = map.get(key) || { id: key, name: t.client_name || "—", total: 0, count: 0 };
+      cur.total += Number(t.amount);
+      cur.count += 1;
+      map.set(key, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [txs]);
+
   const totals = useMemo(() => {
     const list = filteredTxs;
     const deposits = list.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0);
@@ -130,6 +143,41 @@ export const CarlosBankTab = () => {
           </Button>
         )}
       </div>
+
+      {perClient.length > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <p className="text-sm font-semibold">Total pago por cliente</p>
+            <div className="data-table">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead className="text-right">Lançamentos</TableHead>
+                    <TableHead className="text-right">Total Pago</TableHead>
+                    <TableHead className="w-[100px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {perClient.map(c => (
+                    <TableRow key={c.id} className={clientFilter === c.id ? "bg-accent/30" : ""}>
+                      <TableCell className="font-medium">{c.name}</TableCell>
+                      <TableCell className="text-right">{c.count}</TableCell>
+                      <TableCell className="text-right font-semibold text-destructive">{fmt(c.total)}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm"
+                          onClick={() => setClientFilter(clientFilter === c.id ? "all" : c.id)}>
+                          {clientFilter === c.id ? "Limpar" : "Ver"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="data-table">
         {isLoading ? (
