@@ -11,6 +11,7 @@ import {
   Landmark,
   CarFront,
   Wrench,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -28,6 +29,7 @@ const adminNavigation = [
   { name: "Peguei Emprestado", href: "/loans-borrowed", icon: Landmark },
   { name: "Aluguel Moto", href: "/motorcycle-rentals", icon: CarFront },
   { name: "Despesa Moto", href: "/motorcycle-expenses", icon: Wrench },
+  { name: "Histórico Exclusões", href: "/deletion-logs", icon: Trash2 },
 ];
 
 const employeeNavigation = [
