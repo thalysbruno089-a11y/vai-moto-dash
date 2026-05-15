@@ -388,6 +388,42 @@ export type Database = {
         }
         Relationships: []
       }
+      deletion_logs: {
+        Row: {
+          company_id: string
+          deleted_at: string
+          deleted_by: string | null
+          deleted_by_name: string | null
+          id: string
+          record_data: Json | null
+          record_id: string | null
+          record_label: string | null
+          table_name: string
+        }
+        Insert: {
+          company_id: string
+          deleted_at?: string
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          id?: string
+          record_data?: Json | null
+          record_id?: string | null
+          record_label?: string | null
+          table_name: string
+        }
+        Update: {
+          company_id?: string
+          deleted_at?: string
+          deleted_by?: string | null
+          deleted_by_name?: string | null
+          id?: string
+          record_data?: Json | null
+          record_id?: string | null
+          record_label?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       loan_payments: {
         Row: {
           amount: number
