@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Loan, LoanPayment, useLoanPayments, calculateLoanDetails, useUpdateLoanStatus, useDeleteLoan, useUpdateLoanPayment, useDeleteLoanPayment } from "@/hooks/useLoans";
 import LoanPaymentDialog from "./LoanPaymentDialog";
 import LoanEditDialog from "./LoanEditDialog";
-import { ChevronDown, ChevronUp, Trash2, CheckCircle, Clock, Pencil, Save, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Trash2, CheckCircle, Clock, Pencil, Save, X, AlertCircle, CalendarClock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
@@ -82,11 +82,36 @@ const LoanCard = ({ loan }: Props) => {
           </div>
         </div>
         {loan.notes && <p className="text-sm text-muted-foreground mt-1">{loan.notes}</p>}
-        {loan.due_date && (
-          <p className="text-sm text-muted-foreground mt-1">
-            Vencimento: {format(new Date(loan.due_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })}
-          </p>
-        )}
+        {loan.due_date && (() => {
+          const due = new Date(loan.due_date + 'T12:00:00');
+          const today = new Date(); today.setHours(0,0,0,0);
+          const dueDay = new Date(due); dueDay.setHours(0,0,0,0);
+          const diffDays = Math.round((dueDay.getTime() - today.getTime()) / 86400000);
+          const isToday = diffDays === 0;
+          const isOverdue = diffDays < 0 && isActive;
+          const isSoon = diffDays > 0 && diffDays <= 3;
+          const cls = isOverdue
+            ? "bg-destructive/10 text-destructive border-destructive/30"
+            : isToday
+              ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/40"
+              : isSoon
+                ? "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30"
+                : "bg-muted text-foreground border-border";
+          return (
+            <div className={`mt-2 inline-flex items-center gap-2 rounded-md border px-3 py-1.5 ${cls}`}>
+              {isOverdue || isToday ? <AlertCircle className="h-4 w-4" /> : <CalendarClock className="h-4 w-4" />}
+              <span className="text-base font-bold">
+                Vencimento: {format(due, "dd/MM/yyyy", { locale: ptBR })}
+              </span>
+              {isActive && isToday && (
+                <span className="text-sm font-semibold">— Hoje é dia de pagamento, Carlos!</span>
+              )}
+              {isOverdue && (
+                <span className="text-sm font-semibold">— Vencido há {Math.abs(diffDays)} dia{Math.abs(diffDays) !== 1 ? 's' : ''}</span>
+              )}
+            </div>
+          );
+        })()}
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">

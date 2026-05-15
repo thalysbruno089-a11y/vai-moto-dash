@@ -104,7 +104,12 @@ const Motorcyclists = () => {
       const matchesSearch = m.name.toLowerCase().includes(searchLower) || 
         (m.number && m.number.toLowerCase().includes(searchLower));
       const matchesShift = shiftFilter === "all" || m.shift === shiftFilter;
-      const matchesStatus = statusFilter === "all" || m.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all"
+          ? true
+          : statusFilter === "delinquent"
+            ? m.status === "active" && (m as any).payment_status !== "paid"
+            : m.status === statusFilter;
       return matchesSearch && matchesShift && matchesStatus;
     })
     .sort((a, b) => {
@@ -230,6 +235,7 @@ const Motorcyclists = () => {
               <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="active">Ativo</SelectItem>
               <SelectItem value="inactive">Inativo</SelectItem>
+              <SelectItem value="delinquent">Inadimplentes</SelectItem>
             </SelectContent>
           </Select>
         </div>
