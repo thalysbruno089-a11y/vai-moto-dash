@@ -65,6 +65,39 @@ export type Database = {
           },
         ]
       }
+      bill_vales: {
+        Row: {
+          amount: number
+          bill_id: string
+          cash_flow_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          taken_at: string
+        }
+        Insert: {
+          amount: number
+          bill_id: string
+          cash_flow_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          taken_at?: string
+        }
+        Update: {
+          amount?: number
+          bill_id?: string
+          cash_flow_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          taken_at?: string
+        }
+        Relationships: []
+      }
       bills: {
         Row: {
           category_id: string | null
