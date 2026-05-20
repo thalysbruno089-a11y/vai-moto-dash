@@ -34,6 +34,8 @@ import { toast } from "sonner";
 import { useMotoboys, useDeleteMotoboy, useUpdateMotoboy, Motoboy } from "@/hooks/useMotoboys";
 import { MotoboyFormDialog } from "@/components/motoboys/MotoboyFormDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import { MotoboyPaymentDialog, PaymentBreakdown } from "@/components/motoboys/MotoboyPaymentDialog";
+import { printMotoboyReceipt } from "@/lib/motoboyReceipt";
 import { Database } from "@/integrations/supabase/types";
 
 type ShiftType = Database['public']['Enums']['shift_type'];
@@ -79,6 +81,8 @@ const Motorcyclists = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [motoboyToDelete, setMotoboyToDelete] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [motoboyToPay, setMotoboyToPay] = useState<Motoboy | null>(null);
 
   const { data: motoboys, isLoading } = useMotoboys();
   const deleteMotoboy = useDeleteMotoboy();
@@ -168,30 +172,56 @@ const Motorcyclists = () => {
 
   const handleTogglePaymentStatus = async (motoboy: Motoboy) => {
     const currentStatus = (motoboy as any).payment_status || 'pending';
-    const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
+    if (currentStatus === 'paid') {
+      await updateMotoboy.mutateAsync({ id: motoboy.id, payment_status: 'pending' });
+      return;
+    }
+    setMotoboyToPay(motoboy);
+    setPaymentDialogOpen(true);
+  };
+
+  const handleConfirmPayment = async (data: PaymentBreakdown) => {
+    if (!motoboyToPay) return;
+    const motoboy = motoboyToPay;
+    const total = data.pixAmount + data.cashAmount + data.otherAmount;
     await updateMotoboy.mutateAsync({
       id: motoboy.id,
-      payment_status: newStatus,
+      payment_status: 'paid',
     });
-    if (newStatus === 'paid') {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('company_id')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (profile?.company_id) {
-          await supabase.from('motoboy_payment_history' as any).insert({
-            company_id: profile.company_id,
-            motoboy_id: motoboy.id,
-            motoboy_name: motoboy.name,
-            amount: Number((motoboy as any).weekly_payment || 0),
-          });
-          queryClient.invalidateQueries({ queryKey: ["motoboy_payment_history"] });
-        }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (profile?.company_id) {
+        await supabase.from('motoboy_payment_history' as any).insert({
+          company_id: profile.company_id,
+          motoboy_id: motoboy.id,
+          motoboy_name: motoboy.name,
+          amount: total || Number((motoboy as any).weekly_payment || 0),
+          pix_amount: data.pixAmount,
+          cash_amount: data.cashAmount,
+          other_amount: data.otherAmount,
+          notes: data.notes || null,
+          shift: motoboy.shift,
+        });
+        queryClient.invalidateQueries({ queryKey: ["motoboy_payment_history"] });
       }
     }
+    printMotoboyReceipt({
+      motoboyName: motoboy.name,
+      amount: Number((motoboy as any).weekly_payment || 0),
+      shift: shiftLabels[motoboy.shift],
+      paidAt: new Date(),
+      pixAmount: data.pixAmount,
+      cashAmount: data.cashAmount,
+      otherAmount: data.otherAmount,
+      notes: data.notes,
+    });
+    setPaymentDialogOpen(false);
+    setMotoboyToPay(null);
   };
 
   const handleDeleteHistoryEntry = async (id: string) => {
@@ -403,6 +433,13 @@ const Motorcyclists = () => {
         open={formOpen}
         onOpenChange={setFormOpen}
         motoboy={selectedMotoboy}
+      />
+
+      <MotoboyPaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        motoboy={motoboyToPay}
+        onConfirm={handleConfirmPayment}
       />
 
       {/* Delete Confirmation */}
