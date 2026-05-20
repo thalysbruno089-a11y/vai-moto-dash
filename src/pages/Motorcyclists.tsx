@@ -435,6 +435,13 @@ const Motorcyclists = () => {
         motoboy={selectedMotoboy}
       />
 
+      <MotoboyPaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={setPaymentDialogOpen}
+        motoboy={motoboyToPay}
+        onConfirm={handleConfirmPayment}
+      />
+
       {/* Delete Confirmation */}
       <DeleteConfirmDialog
         open={deleteDialogOpen}
