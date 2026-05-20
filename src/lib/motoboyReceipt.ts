@@ -24,17 +24,17 @@ export function printMotoboyReceipt(d: ReceiptData) {
 <title>Comprovante - ${d.motoboyName}</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, system-ui, Arial, sans-serif; margin: 0; padding: 24px; color: #111; }
+  body { font-family: -apple-system, system-ui, Arial, sans-serif; margin: 0; padding: 24px; color: #000; font-weight: 700; }
   .receipt { max-width: 360px; margin: 0 auto; border: 1px dashed #999; padding: 20px; }
   h1 { text-align: center; font-size: 28px; letter-spacing: 4px; margin: 0 0 4px; }
-  .sub { text-align: center; font-size: 11px; color: #666; margin-bottom: 14px; }
+  .sub { text-align: center; font-size: 12px; color: #000; font-weight: 700; margin-bottom: 14px; }
   hr { border: 0; border-top: 1px dashed #bbb; margin: 12px 0; }
-  .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
-  .row b { font-weight: 700; }
-  .big { font-size: 16px; font-weight: 700; }
-  .label { color: #555; }
-  .notes { font-size: 12px; background: #f5f5f5; padding: 8px; border-radius: 4px; white-space: pre-wrap; }
-  .footer { text-align: center; font-size: 11px; color: #888; margin-top: 16px; }
+  .row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; font-weight: 700; color: #000; }
+  .row b { font-weight: 800; }
+  .big { font-size: 16px; font-weight: 800; }
+  .label { color: #000; font-weight: 700; }
+  .notes { font-size: 13px; background: #f5f5f5; padding: 8px; border-radius: 4px; white-space: pre-wrap; font-weight: 700; color: #000; }
+  .footer { text-align: center; font-size: 12px; color: #000; font-weight: 700; margin-top: 16px; }
   @media print { body { padding: 0; } .receipt { border: none; } .no-print { display: none; } }
   .btns { text-align: center; margin-top: 16px; }
   .btns button { padding: 8px 16px; margin: 0 4px; cursor: pointer; }
