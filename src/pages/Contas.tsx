@@ -445,7 +445,7 @@ const Contas = () => {
         {/* Group Tabs */}
         <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central")}>
           <TabsList className="w-full h-10">
-            <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground">Carlos</TabsTrigger>
+            <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-emerald-500 data-[state=active]:text-white">Carlos</TabsTrigger>
             <TabsTrigger value="central" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Central</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -688,8 +688,8 @@ const Contas = () => {
                 <Collapsible key={cat.id} open={isOpen} onOpenChange={(open) => setCategoryOpen(cat.id, open)}>
                   <div className="rounded-xl border border-border bg-card overflow-hidden transition-shadow hover:shadow-sm">
                     <CollapsibleTrigger className="w-full p-4 flex items-center gap-3 text-left">
-                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", activeGroup === 'carlos' ? "bg-destructive/10" : "bg-primary/10")}>
-                        <IconComponent className={cn("h-5 w-5", activeGroup === 'carlos' ? "text-destructive" : "text-primary")} />
+                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", activeGroup === 'carlos' ? "bg-emerald-500/10" : "bg-primary/10")}>
+                        <IconComponent className={cn("h-5 w-5", activeGroup === 'carlos' ? "text-emerald-600 dark:text-emerald-400" : "text-primary")} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1.5">
@@ -702,7 +702,7 @@ const Contas = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Progress value={paidPercent} className="h-1.5 flex-1" />
+                          <Progress value={paidPercent} className={cn("h-1.5 flex-1", activeGroup === 'carlos' && "[&>div]:bg-emerald-500")} />
                           <span className="text-[10px] text-muted-foreground font-medium w-8 text-right">{paidPercent}%</span>
                         </div>
                       </div>
