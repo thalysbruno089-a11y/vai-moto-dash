@@ -115,10 +115,10 @@ const Reports = () => {
       });
       filename = `relatorio-corridas-${startDate}-${endDate}.csv`;
     } else if (type === "academia") {
-      csvContent = "Número,Nome,Telefone,Turno\n";
+      csvContent = "Número,Nome,Telefone,CPF,Turno\n";
       (motoboys || []).filter(m => m.status === 'active').forEach(m => {
         const turno = m.shift === 'day' ? 'Diurno' : m.shift === 'night' ? 'Noturno' : m.shift === 'weekend' ? 'Final de Semana' : m.shift === 'star' ? 'Estrela' : 'Livre';
-        csvContent += `"${m.number || ''}","${m.name}","${m.phone || ''}",${turno}\n`;
+        csvContent += `"${m.number || ''}","${m.name}","${m.phone || ''}","${m.cpf || ''}",${turno}\n`;
       });
       filename = `relatorio-academia-${format(today, 'yyyy-MM-dd')}.csv`;
     }
