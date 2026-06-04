@@ -114,6 +114,13 @@ const Reports = () => {
         csvContent += `${formatDateDisplay(r.ride_date)},"${r.clients?.name || 'N/A'}","${r.motoboys?.name || 'N/A'}",${Number(r.value)},"${r.notes || ''}"\n`;
       });
       filename = `relatorio-corridas-${startDate}-${endDate}.csv`;
+    } else if (type === "academia") {
+      csvContent = "Número,Nome,Telefone,Turno\n";
+      (motoboys || []).filter(m => m.status === 'active').forEach(m => {
+        const turno = m.shift === 'day' ? 'Diurno' : m.shift === 'night' ? 'Noturno' : m.shift === 'weekend' ? 'Final de Semana' : m.shift === 'star' ? 'Estrela' : 'Livre';
+        csvContent += `"${m.number || ''}","${m.name}","${m.phone || ''}",${turno}\n`;
+      });
+      filename = `relatorio-academia-${format(today, 'yyyy-MM-dd')}.csv`;
     }
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -247,6 +254,41 @@ const Reports = () => {
         </body>
         </html>
       `;
+    } else if (type === "academia") {
+      content = `
+        <html>
+        <head>
+          <title>Relatório Academia - VAIMOTO</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f4f4f4; }
+          </style>
+        </head>
+        <body>
+          <h1>VAIMOTO - Relatório Academia</h1>
+          <p>Motoboys ativos - Gerado em: ${format(today, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+          <table>
+            <thead>
+              <tr><th>Número</th><th>Nome</th><th>Telefone</th><th>Turno</th></tr>
+            </thead>
+            <tbody>
+              ${(motoboys || []).filter(m => m.status === 'active').map(m => `
+                <tr>
+                  <td>${m.number || '-'}</td>
+                  <td>${m.name}</td>
+                  <td>${m.phone || '-'}</td>
+                  <td>${m.shift === 'day' ? 'Diurno' : m.shift === 'night' ? 'Noturno' : m.shift === 'weekend' ? 'Fim de Semana' : m.shift === 'star' ? 'Estrela' : 'Livre'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <p style="font-weight:bold;margin-top:20px;">Total de Motoboys Ativos: ${activeMotoboys}</p>
+        </body>
+        </html>
+      `;
     }
 
     const printWindow = window.open('', '_blank');
@@ -276,6 +318,12 @@ const Reports = () => {
       title: "Relatório de Corridas",
       description: "Corridas registradas por cliente e motoboy",
       icon: Users,
+    },
+    {
+      id: "academia",
+      title: "Relatório Academia",
+      description: "Lista de motoboys ativos (sem valores) para parceria com academia",
+      icon: Bike,
     },
   ];
 
