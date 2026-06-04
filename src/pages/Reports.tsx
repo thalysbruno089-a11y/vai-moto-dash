@@ -272,7 +272,7 @@ const Reports = () => {
           <p>Motoboys ativos - Gerado em: ${format(today, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
           <table>
             <thead>
-              <tr><th>Número</th><th>Nome</th><th>Telefone</th><th>Turno</th></tr>
+              <tr><th>Número</th><th>Nome</th><th>Telefone</th><th>CPF</th><th>Turno</th></tr>
             </thead>
             <tbody>
               ${(motoboys || []).filter(m => m.status === 'active').map(m => `
@@ -280,6 +280,7 @@ const Reports = () => {
                   <td>${m.number || '-'}</td>
                   <td>${m.name}</td>
                   <td>${m.phone || '-'}</td>
+                  <td>${m.cpf || '-'}</td>
                   <td>${m.shift === 'day' ? 'Diurno' : m.shift === 'night' ? 'Noturno' : m.shift === 'weekend' ? 'Fim de Semana' : m.shift === 'star' ? 'Estrela' : 'Livre'}</td>
                 </tr>
               `).join('')}
