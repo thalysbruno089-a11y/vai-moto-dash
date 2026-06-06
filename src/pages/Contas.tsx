@@ -567,12 +567,12 @@ const Contas = () => {
           if (periodBills.length === 0) return null;
           const totalPeriod = periodBills.reduce((s, b) => s + Number(b.value), 0);
           return (
-            <div className="rounded-xl border border-border bg-card p-4 space-y-2">
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-base font-semibold text-foreground">Contas no período</h3>
-                <Badge variant="secondary" className="text-xs h-6 px-2">{periodBills.length}</Badge>
+            <div className="rounded-2xl border-2 border-border bg-card p-5 space-y-3 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xl font-bold text-foreground">Contas no período</h3>
+                <Badge variant="secondary" className="text-sm h-7 px-3 font-semibold">{periodBills.length}</Badge>
               </div>
-              <div className="space-y-2 max-h-[280px] overflow-y-auto">
+              <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                 {periodBills.map(b => {
                   const effectiveStatus = getEffectiveStatus(b);
                   const dueDate = new Date(b.due_date + "T12:00:00");
@@ -585,28 +585,28 @@ const Contas = () => {
                       ? { wrap: "bg-destructive/10 border-destructive/30", text: "text-destructive", icon: "text-destructive" }
                       : { wrap: "bg-amber-500/10 border-amber-500/30", text: "text-amber-700 dark:text-amber-400", icon: "text-amber-500" };
                   return (
-                    <div key={b.id} className={cn("flex items-center justify-between py-2.5 px-3 rounded-md border", tone.wrap)}>
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div key={b.id} className={cn("flex items-center justify-between py-3.5 px-4 rounded-lg border", tone.wrap)}>
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         {effectiveStatus === "paid" ? (
-                          <CheckCircle2 className={cn("h-4 w-4 shrink-0", tone.icon)} />
+                          <CheckCircle2 className={cn("h-5 w-5 shrink-0", tone.icon)} />
                         ) : isOverdue ? (
-                          <AlertTriangle className={cn("h-4 w-4 shrink-0", tone.icon)} />
+                          <AlertTriangle className={cn("h-5 w-5 shrink-0", tone.icon)} />
                         ) : (
-                          <Clock className={cn("h-4 w-4 shrink-0", tone.icon)} />
+                          <Clock className={cn("h-5 w-5 shrink-0", tone.icon)} />
                         )}
-                        <span className={cn("text-sm font-semibold truncate", tone.text)}>{b.name}</span>
+                        <span className={cn("text-base font-semibold truncate", tone.text)}>{b.name}</span>
                         <span className="text-xs text-muted-foreground shrink-0">({new Date(b.due_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
                       </div>
-                      <span className={cn("text-sm font-bold ml-2 shrink-0", tone.text)}>
+                      <span className={cn("text-base font-bold ml-2 shrink-0", tone.text)}>
                         {formatCurrency(b.value)}
                       </span>
                     </div>
                   );
                 })}
               </div>
-              <div className="border-t border-border pt-2 flex items-center justify-between">
-                <span className="text-sm font-semibold text-muted-foreground">Total</span>
-                <span className="text-base font-bold text-foreground">{formatCurrency(totalPeriod)}</span>
+              <div className="border-t border-border pt-3 flex items-center justify-between">
+                <span className="text-base font-semibold text-muted-foreground">Total</span>
+                <span className="text-xl font-bold text-foreground">{formatCurrency(totalPeriod)}</span>
               </div>
             </div>
           );
@@ -623,49 +623,7 @@ const Contas = () => {
           />
         </div>
 
-        {/* Overdue Bills - last 30 days only */}
-        {overdueBills.length > 0 && (
-          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 space-y-2">
-            <div className="flex items-center gap-1.5">
-              <AlertTriangle className="h-3 w-3 text-destructive" />
-              <h3 className="text-xs font-semibold text-destructive">Contas Vencidas</h3>
-              <Badge variant="destructive" className="text-[9px] h-4 px-1">{overdueBills.length}</Badge>
-            </div>
-            <div className="space-y-1.5">
-              {overdueBills.map(bill => {
-                const dueDate = new Date(`${bill.due_date}T12:00:00`);
-                const daysLate = differenceInDays(new Date(), dueDate);
-                const urgency = getUrgencyLevel(daysLate);
-                return (
-                  <div key={bill.id} className={cn(
-                    "flex items-center justify-between rounded-lg py-1.5 px-2 border",
-                    urgency.bg, urgency.border
-                  )}>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{bill.name}</p>
-                      <p className={cn("text-[10px] font-medium", urgency.text)}>
-                        {daysLate} {daysLate === 1 ? 'dia' : 'dias'} atrasado
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 ml-2">
-                      <p className={cn("text-xs font-bold", urgency.text)}>{formatCurrency(bill.value)}</p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDismissFromUpcoming(bill.id)}
-                      >
-                        <XCircle className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Upcoming Bills section removed */}
+        {/* Contas Vencidas section removed — now shown only inside "Contas no período" */}
 
         {/* Category List */}
         {isLoading ? (
