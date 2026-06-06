@@ -99,7 +99,7 @@ const Contas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [period, setPeriod] = useState<"month" | "week" | "custom">("month");
   const [offset, setOffset] = useState(0);
-  const [activeGroup, setActiveGroup] = useState<"carlos" | "central">("carlos");
+  const [activeGroup, setActiveGroup] = useState<"carlos" | "central" | "both">("carlos");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Custom date range
@@ -236,10 +236,15 @@ const Contas = () => {
     [categories]
   );
 
-  const groupCategories = useMemo(() =>
-    expenseCategories.filter(c => (c as any).group_name === activeGroup),
-    [expenseCategories, activeGroup]
-  );
+  const groupCategories = useMemo(() => {
+    if (activeGroup === "both") {
+      return expenseCategories.filter(c => {
+        const g = (c as any).group_name;
+        return g === "carlos" || g === "central";
+      });
+    }
+    return expenseCategories.filter(c => (c as any).group_name === activeGroup);
+  }, [expenseCategories, activeGroup]);
 
   const filteredCategories = useMemo(() =>
     groupCategories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())),
@@ -443,10 +448,11 @@ const Contas = () => {
         </div>
 
         {/* Group Tabs */}
-        <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central")}>
+        <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central" | "both")}>
           <TabsList className="w-full h-10">
             <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-emerald-500 data-[state=active]:text-white">Carlos</TabsTrigger>
             <TabsTrigger value="central" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Central</TabsTrigger>
+            <TabsTrigger value="both" className="flex-1 font-semibold text-sm data-[state=active]:bg-foreground data-[state=active]:text-background">Ambos</TabsTrigger>
           </TabsList>
         </Tabs>
 
