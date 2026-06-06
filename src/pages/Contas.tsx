@@ -303,7 +303,7 @@ const Contas = () => {
   const getCategoryPaidTotal = (categoryId: string) => {
     return getEntriesForCategory(categoryId)
       .filter(e => getEffectiveStatus(e) === "paid")
-      .reduce((acc, e) => acc + Number(e.value) - Number(e.vale_amount || 0), 0);
+      .reduce((acc, e) => acc + Number(e.value) - getVale(e), 0);
   };
 
   const getCategoryPendingTotal = (categoryId: string) => {
@@ -391,20 +391,22 @@ const Contas = () => {
     if (billToDismiss) { await deleteBill.mutateAsync(billToDismiss); setDismissBillDialogOpen(false); setBillToDismiss(null); }
   };
   const handleMarkPaid = async (entry: Bill) => {
-    const netValue = entry.value - (entry.vale_amount || 0);
+    const valeNow = getVale(entry);
+    const netValue = entry.value - valeNow;
     if (netValue > weekBalance) {
       setBalanceBillPending(entry);
       setBalanceDialogOpen(true);
       return;
     }
-    if (entry.vale_amount && entry.vale_amount > 0) {
-      toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(entry.vale_amount)}. Valor líquido: ${formatCurrency(entry.value - entry.vale_amount)}.`, { duration: 6000 });
+    if (valeNow > 0) {
+      toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync(entry);
+    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow });
   };
   const handleBalanceConfirm = async (source: string) => {
     if (!balanceBillPending) return;
-    const netValue = balanceBillPending.value - (balanceBillPending.vale_amount || 0);
+    const valeNow = getVale(balanceBillPending);
+    const netValue = balanceBillPending.value - valeNow;
     const difference = netValue - Math.max(0, weekBalance);
     
     // Save the difference to the database
@@ -417,10 +419,10 @@ const Contas = () => {
       source: source,
     });
 
-    if (balanceBillPending.vale_amount && balanceBillPending.vale_amount > 0) {
-      toast.warning(`⚠️ ${balanceBillPending.name} possui vale de ${formatCurrency(balanceBillPending.vale_amount)}. Valor líquido: ${formatCurrency(balanceBillPending.value - balanceBillPending.vale_amount)}.`, { duration: 6000 });
+    if (valeNow > 0) {
+      toast.warning(`⚠️ ${balanceBillPending.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync(balanceBillPending);
+    await markAsPaid.mutateAsync({ ...balanceBillPending, vale_amount: valeNow });
     setBalanceDialogOpen(false);
     setBalanceBillPending(null);
   };
