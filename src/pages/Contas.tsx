@@ -823,7 +823,7 @@ const Contas = () => {
         open={balanceDialogOpen}
         onOpenChange={setBalanceDialogOpen}
         billName={balanceBillPending?.name || ''}
-        billValue={balanceBillPending ? balanceBillPending.value - (balanceBillPending.vale_amount || 0) : 0}
+        billValue={balanceBillPending ? balanceBillPending.value - getVale(balanceBillPending) : 0}
         currentBalance={weekBalance}
         onConfirm={handleBalanceConfirm}
       />
