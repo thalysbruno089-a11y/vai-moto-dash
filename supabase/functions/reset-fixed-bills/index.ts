@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
       const { error: updateError } = await supabase
         .from("bills")
-        .update({ status: "pending", paid_at: null, due_date: newDueDate })
+        .update({ status: "pending", paid_at: null, due_date: newDueDate, vale_amount: 0 })
         .eq("id", bill.id);
 
       if (updateError) {

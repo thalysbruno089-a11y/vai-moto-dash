@@ -45,10 +45,13 @@ export function ValeDialog({ open, onOpenChange, entry }: ValeDialogProps) {
     queryKey: ["bill_vales", entry?.id],
     enabled: !!entry?.id && open,
     queryFn: async () => {
+      const now = new Date();
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
       const { data, error } = await supabase
         .from("bill_vales" as any)
         .select("*")
         .eq("bill_id", entry!.id)
+        .gte("taken_at", monthStart)
         .order("taken_at", { ascending: false });
       if (error) throw error;
       return (data || []) as unknown as ValeRow[];
