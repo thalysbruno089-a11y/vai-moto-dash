@@ -637,7 +637,7 @@ const Contas = () => {
               : "Nenhuma categoria encontrada."}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {filteredCategories.map((cat) => {
               const entries = getEntriesForCategory(cat.id);
               const paidTotal = getCategoryPaidTotal(cat.id);
@@ -650,24 +650,24 @@ const Contas = () => {
 
               return (
                 <Collapsible key={cat.id} open={isOpen} onOpenChange={(open) => setCategoryOpen(cat.id, open)}>
-                  <div className="rounded-xl border border-border bg-card overflow-hidden transition-shadow hover:shadow-sm">
-                    <CollapsibleTrigger className="w-full p-4 flex items-center gap-3 text-left">
-                      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", activeGroup === 'carlos' ? "bg-emerald-500/10" : "bg-primary/10")}>
-                        <IconComponent className={cn("h-5 w-5", activeGroup === 'carlos' ? "text-emerald-600 dark:text-emerald-400" : "text-primary")} />
+                  <div className="rounded-lg border border-border bg-card overflow-hidden transition-shadow hover:shadow-sm">
+                    <CollapsibleTrigger className="w-full px-3 py-2.5 flex items-center gap-2.5 text-left">
+                      <div className={cn("flex h-7 w-7 shrink-0 items-center justify-center rounded-md", activeGroup === 'carlos' ? "bg-emerald-500/10" : activeGroup === 'central' ? "bg-primary/10" : "bg-muted")}>
+                        <IconComponent className={cn("h-3.5 w-3.5", activeGroup === 'carlos' ? "text-emerald-600 dark:text-emerald-400" : activeGroup === 'central' ? "text-primary" : "text-foreground")} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <p className="text-sm font-semibold truncate">{cat.name}</p>
-                          <div className="flex items-center gap-2 ml-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-xs font-semibold truncate">{cat.name}</p>
+                          <div className="flex items-center gap-1.5 ml-2">
                             {pendingTotal > 0 && (
-                              <span className="text-sm font-bold text-destructive">{formatCurrency(pendingTotal)}</span>
+                              <span className="text-xs font-bold text-destructive">{formatCurrency(pendingTotal)}</span>
                             )}
-                            <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
+                            <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform duration-200", isOpen && "rotate-180")} />
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Progress value={paidPercent} className={cn("h-1.5 flex-1", activeGroup === 'carlos' && "[&>div]:bg-emerald-500")} />
-                          <span className="text-[10px] text-muted-foreground font-medium w-8 text-right">{paidPercent}%</span>
+                        <div className="flex items-center gap-1.5">
+                          <Progress value={paidPercent} className={cn("h-1 flex-1", activeGroup === 'carlos' && "[&>div]:bg-emerald-500")} />
+                          <span className="text-[9px] text-muted-foreground font-medium w-7 text-right">{paidPercent}%</span>
                         </div>
                       </div>
                     </CollapsibleTrigger>
