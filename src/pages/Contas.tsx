@@ -69,6 +69,8 @@ import { format, startOfMonth, endOfMonth, addMonths, addDays, isWithinInterval,
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 // Icon mapping for categories
 const getCategoryIcon = (name: string) => {
