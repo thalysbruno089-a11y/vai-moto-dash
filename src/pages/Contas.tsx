@@ -69,6 +69,8 @@ import { format, startOfMonth, endOfMonth, addMonths, addDays, isWithinInterval,
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 // Icon mapping for categories
 const getCategoryIcon = (name: string) => {
@@ -144,6 +146,28 @@ const Contas = () => {
   const createBalanceDifference = useCreateBalanceDifference();
 
   const isLoading = loadingCategories || loadingBills;
+
+  // Fetch current-month vales only — vales should reset visually when month flips
+  const { data: currentMonthVales = {} } = useQuery({
+    queryKey: ["bill_vales", "current_month"],
+    queryFn: async () => {
+      const now = new Date();
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const { data, error } = await supabase
+        .from("bill_vales" as any)
+        .select("bill_id, amount, taken_at")
+        .gte("taken_at", monthStart);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      (data || []).forEach((v: any) => {
+        map[v.bill_id] = (map[v.bill_id] || 0) + Number(v.amount);
+      });
+      return map;
+    },
+  });
+
+  // Returns vale only for current month (ignores stale prior-month totals on bills.vale_amount)
+  const getVale = (b: Bill) => currentMonthVales[b.id] || 0;
 
   // Calculate current week balance for insufficient balance check
   const weekBalance = useMemo(() => {
@@ -279,7 +303,7 @@ const Contas = () => {
   const getCategoryPaidTotal = (categoryId: string) => {
     return getEntriesForCategory(categoryId)
       .filter(e => getEffectiveStatus(e) === "paid")
-      .reduce((acc, e) => acc + Number(e.value) - Number(e.vale_amount || 0), 0);
+      .reduce((acc, e) => acc + Number(e.value) - getVale(e), 0);
   };
 
   const getCategoryPendingTotal = (categoryId: string) => {
@@ -367,20 +391,22 @@ const Contas = () => {
     if (billToDismiss) { await deleteBill.mutateAsync(billToDismiss); setDismissBillDialogOpen(false); setBillToDismiss(null); }
   };
   const handleMarkPaid = async (entry: Bill) => {
-    const netValue = entry.value - (entry.vale_amount || 0);
+    const valeNow = getVale(entry);
+    const netValue = entry.value - valeNow;
     if (netValue > weekBalance) {
       setBalanceBillPending(entry);
       setBalanceDialogOpen(true);
       return;
     }
-    if (entry.vale_amount && entry.vale_amount > 0) {
-      toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(entry.vale_amount)}. Valor líquido: ${formatCurrency(entry.value - entry.vale_amount)}.`, { duration: 6000 });
+    if (valeNow > 0) {
+      toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync(entry);
+    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow });
   };
   const handleBalanceConfirm = async (source: string) => {
     if (!balanceBillPending) return;
-    const netValue = balanceBillPending.value - (balanceBillPending.vale_amount || 0);
+    const valeNow = getVale(balanceBillPending);
+    const netValue = balanceBillPending.value - valeNow;
     const difference = netValue - Math.max(0, weekBalance);
     
     // Save the difference to the database
@@ -393,10 +419,10 @@ const Contas = () => {
       source: source,
     });
 
-    if (balanceBillPending.vale_amount && balanceBillPending.vale_amount > 0) {
-      toast.warning(`⚠️ ${balanceBillPending.name} possui vale de ${formatCurrency(balanceBillPending.vale_amount)}. Valor líquido: ${formatCurrency(balanceBillPending.value - balanceBillPending.vale_amount)}.`, { duration: 6000 });
+    if (valeNow > 0) {
+      toast.warning(`⚠️ ${balanceBillPending.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync(balanceBillPending);
+    await markAsPaid.mutateAsync({ ...balanceBillPending, vale_amount: valeNow });
     setBalanceDialogOpen(false);
     setBalanceBillPending(null);
   };
@@ -723,8 +749,8 @@ const Contas = () => {
                                       <p className={cn("text-[11px]", isOverdue ? "text-destructive" : "text-muted-foreground")}>
                                         {entry.is_fixed ? `Dia ${dueDate.getDate()}` : format(dueDate, "dd/MM/yyyy")}
                                         {entry.is_fixed && <span className="ml-1 text-muted-foreground">· Fixo</span>}
-                                        {isFuncionarios && entry.vale_amount && entry.vale_amount > 0 && (
-                                          <span className="ml-1 text-amber-500">· Vale {formatCurrency(entry.vale_amount)}</span>
+                                        {isFuncionarios && getVale(entry) > 0 && (
+                                          <span className="ml-1 text-amber-500">· Vale {formatCurrency(getVale(entry))}</span>
                                         )}
                                       </p>
                                     </div>
@@ -797,7 +823,7 @@ const Contas = () => {
         open={balanceDialogOpen}
         onOpenChange={setBalanceDialogOpen}
         billName={balanceBillPending?.name || ''}
-        billValue={balanceBillPending ? balanceBillPending.value - (balanceBillPending.vale_amount || 0) : 0}
+        billValue={balanceBillPending ? balanceBillPending.value - getVale(balanceBillPending) : 0}
         currentBalance={weekBalance}
         onConfirm={handleBalanceConfirm}
       />

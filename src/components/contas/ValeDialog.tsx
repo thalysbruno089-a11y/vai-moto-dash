@@ -112,6 +112,7 @@ export function ValeDialog({ open, onOpenChange, entry }: ValeDialogProps) {
       await refetch();
       qc.invalidateQueries({ queryKey: ["bills"] });
       qc.invalidateQueries({ queryKey: ["cash_flow"] });
+      qc.invalidateQueries({ queryKey: ["bill_vales", "current_month"] });
       toast.success("Vale registrado!");
       setAmount("");
       setNotes("");
@@ -136,6 +137,7 @@ export function ValeDialog({ open, onOpenChange, entry }: ValeDialogProps) {
       await refetch();
       qc.invalidateQueries({ queryKey: ["bills"] });
       qc.invalidateQueries({ queryKey: ["cash_flow"] });
+      qc.invalidateQueries({ queryKey: ["bill_vales", "current_month"] });
       toast.success("Vale excluído.");
     } catch (err: any) {
       toast.error("Erro ao excluir vale", { description: err.message });
