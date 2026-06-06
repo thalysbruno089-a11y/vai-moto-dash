@@ -44,6 +44,7 @@ const MONTH_NAMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
 const Dashboard = () => {
   const { data: motoboys, isLoading: loadingMotoboys } = useMotoboys();
   const { data: cashFlowEntries, isLoading: loadingCashFlow } = useCashFlow();
+  const { data: bills, isLoading: loadingBills } = useBills();
   
   const { data: closings = [] } = useMonthlyClosings();
   const { data: weeklyClosings = [] } = useWeeklyClosings();
@@ -62,7 +63,7 @@ const Dashboard = () => {
   const { data: balanceDifferences = [] } = useBalanceDifferences();
   const deleteBalanceDifference = useDeleteBalanceDifference();
 
-  const isLoading = loadingCashFlow || loadingMotoboys;
+  const isLoading = loadingCashFlow || loadingMotoboys || loadingBills;
 
   const week = getWeekRange();
   const weekStartStr = fmtDate(week.start);
@@ -119,10 +120,16 @@ const Dashboard = () => {
     (e) => e.flow_date >= monthStartStr && e.flow_date <= monthEndStr
   ) || [];
   const monthCfIncome = monthCashFlowEntries.filter((e) => e.type === "revenue").reduce((s, e) => s + Number(e.value), 0);
-  const monthCfExpense = monthCashFlowEntries.filter((e) => e.type === "expense").reduce((s, e) => s + Number(e.value), 0);
+  const monthPaidBillsExpense = (bills || [])
+    .filter((bill) => {
+      if (bill.status !== "paid" || !bill.paid_at) return false;
+      const paidDate = fmtDate(new Date(bill.paid_at));
+      return paidDate >= monthStartStr && paidDate <= monthEndStr && bill.due_date >= monthStartStr;
+    })
+    .reduce((s, bill) => s + Number(bill.value), 0);
 
   const monthIncome = monthMotoboyIncome + monthCfIncome;
-  const monthExpense = monthCfExpense;
+  const monthExpense = monthPaidBillsExpense;
   const monthBalance = monthIncome - monthExpense;
 
   
