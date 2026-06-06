@@ -147,6 +147,28 @@ const Contas = () => {
 
   const isLoading = loadingCategories || loadingBills;
 
+  // Fetch current-month vales only — vales should reset visually when month flips
+  const { data: currentMonthVales = {} } = useQuery({
+    queryKey: ["bill_vales", "current_month"],
+    queryFn: async () => {
+      const now = new Date();
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      const { data, error } = await supabase
+        .from("bill_vales" as any)
+        .select("bill_id, amount, taken_at")
+        .gte("taken_at", monthStart);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      (data || []).forEach((v: any) => {
+        map[v.bill_id] = (map[v.bill_id] || 0) + Number(v.amount);
+      });
+      return map;
+    },
+  });
+
+  // Returns vale only for current month (ignores stale prior-month totals on bills.vale_amount)
+  const getVale = (b: Bill) => currentMonthVales[b.id] || 0;
+
   // Calculate current week balance for insufficient balance check
   const weekBalance = useMemo(() => {
     const getWeekRangeForBalance = () => {
