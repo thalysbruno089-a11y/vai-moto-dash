@@ -267,10 +267,9 @@ const Motorcyclists = () => {
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-[160px]">
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="delinquent">Inadimplentes</SelectItem>
               <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="inactive">Inativo</SelectItem>
