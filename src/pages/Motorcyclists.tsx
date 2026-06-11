@@ -270,8 +270,8 @@ const Motorcyclists = () => {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="delinquent">Inadimplentes</SelectItem>
+              <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="active">Ativo</SelectItem>
               <SelectItem value="inactive">Inativo</SelectItem>
             </SelectContent>
