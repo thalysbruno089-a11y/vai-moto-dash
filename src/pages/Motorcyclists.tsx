@@ -117,9 +117,14 @@ const Motorcyclists = () => {
       return matchesSearch && matchesShift && matchesStatus;
     })
     .sort((a, b) => {
-      const aDelinq = a.status === 'active' && (a as any).payment_status !== 'paid' ? 0 : 1;
-      const bDelinq = b.status === 'active' && (b as any).payment_status !== 'paid' ? 0 : 1;
-      if (aDelinq !== bDelinq) return aDelinq - bDelinq;
+      const sortValue = (m: typeof a) => {
+        if (m.status === 'active' && (m as any).payment_status !== 'paid') return 0; // Inadimplente
+        if (m.status === 'active') return 1; // Ativo
+        return 2; // Inativo
+      };
+      const aVal = sortValue(a);
+      const bVal = sortValue(b);
+      if (aVal !== bVal) return aVal - bVal;
       const numA = parseInt(a.number || '999999', 10);
       const numB = parseInt(b.number || '999999', 10);
       return numA - numB;
