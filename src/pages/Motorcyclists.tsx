@@ -75,7 +75,7 @@ const shiftValueColors: Record<ShiftType, string> = {
 const Motorcyclists = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [shiftFilter, setShiftFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("delinquent");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [formOpen, setFormOpen] = useState(false);
   const [selectedMotoboy, setSelectedMotoboy] = useState<Motoboy | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -109,7 +109,9 @@ const Motorcyclists = () => {
         (m.number && m.number.toLowerCase().includes(searchLower));
       const matchesShift = shiftFilter === "all" || m.shift === shiftFilter;
       const matchesStatus =
-        statusFilter === "delinquent"
+        statusFilter === "all"
+          ? true
+          : statusFilter === "delinquent"
           ? m.status === "active" && (m as any).payment_status !== "paid"
           : m.status === statusFilter;
       return matchesSearch && matchesShift && matchesStatus;
@@ -268,8 +270,9 @@ const Motorcyclists = () => {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
               <SelectItem value="delinquent">Inadimplentes</SelectItem>
-              <SelectItem value="active">Ativo</SelectItem>
+              <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="inactive">Inativo</SelectItem>
             </SelectContent>
           </Select>
