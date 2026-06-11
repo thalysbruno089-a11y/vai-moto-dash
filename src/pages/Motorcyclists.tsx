@@ -265,7 +265,7 @@ const Motorcyclists = () => {
             </SelectContent>
           </Select>
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter === "all" ? "" : statusFilter} onValueChange={(val) => setStatusFilter(val || "all")}>
             <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
