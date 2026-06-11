@@ -38,9 +38,8 @@ export function MotoboyPaymentDialog({ open, onOpenChange, motoboy, onConfirm }:
 
   useEffect(() => {
     if (open) {
-      setUsePix(true); setUseCash(false); setUseOther(false);
-      setPix(expected ? expected.toFixed(2) : "");
-      setCash(""); setOther(""); setNotes("");
+      setUsePix(false); setUseCash(false); setUseOther(false);
+      setPix(""); setCash(""); setOther(""); setNotes("");
     }
   }, [open, expected]);
 
