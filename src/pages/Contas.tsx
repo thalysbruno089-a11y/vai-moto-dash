@@ -756,7 +756,7 @@ const Contas = () => {
                         ) : (
                           <div className="space-y-1">
                             {entries.map((entry) => {
-                              const dueDate = new Date(entry.due_date + "T12:00:00");
+                              const dueDate = getEffectiveDueDate(entry);
                               const effectiveStatus = getEffectiveStatus(entry);
                               const isOverdue = effectiveStatus !== "paid" && isBefore(dueDate, new Date()) && !isToday(dueDate);
                               const isPaid = effectiveStatus === "paid";
@@ -808,6 +808,9 @@ const Contas = () => {
                                         )}
                                         <DropdownMenuItem onClick={() => handleEditEntry(entry)}>
                                           <Edit className="mr-2 h-4 w-4" /> Editar
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleEditEntry(entry)}>
+                                          <Package className="mr-2 h-4 w-4" /> Trocar Categoria
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEntryClick(entry.id)}>
                                           <Trash2 className="mr-2 h-4 w-4" /> Excluir
