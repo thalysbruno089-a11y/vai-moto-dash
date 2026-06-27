@@ -466,24 +466,19 @@ const Contas = () => {
     <MainLayout title="Contas" subtitle="">
       <div className="max-w-2xl mx-auto pb-24 space-y-5">
 
-        {/* Financial Summary Header */}
-        <div className="rounded-xl bg-card border border-border p-5">
-          <div className="text-center mb-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo do período</p>
-            <p className="text-3xl font-bold tracking-tight text-foreground">
-              {formatCurrency(totalPaid + totalPending)}
-            </p>
+        {/* Financial Summary — estilo balões (igual dashboard) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="stat-card-primary">
+            <p className="text-xs font-medium opacity-90 uppercase tracking-wider mb-1">Saldo do período</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalPaid + totalPending)}</p>
           </div>
-          <div className="flex justify-center gap-8">
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-0.5">Pago</p>
-              <p className="text-lg font-semibold text-emerald-500">{formatCurrency(totalPaid)}</p>
-            </div>
-            <div className="w-px bg-border" />
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-0.5">Pendente</p>
-              <p className="text-lg font-semibold text-destructive">{formatCurrency(totalPending)}</p>
-            </div>
+          <div className="stat-card-success">
+            <p className="text-xs font-medium opacity-90 uppercase tracking-wider mb-1">Pago</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalPaid)}</p>
+          </div>
+          <div className="stat-card-destructive">
+            <p className="text-xs font-medium opacity-90 uppercase tracking-wider mb-1">Pendente</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalPending)}</p>
           </div>
         </div>
 
