@@ -294,7 +294,7 @@ const Contas = () => {
   // (otherwise stale due dates from June make every future month look "atrasado").
   const getEffectiveDueDate = (b: Bill): Date => {
     const raw = new Date(b.due_date + "T12:00:00");
-    if (b.is_fixed && period === "month") {
+    if (b.is_fixed) {
       const year = currentRange.start.getFullYear();
       const month = currentRange.start.getMonth();
       const lastDay = new Date(year, month + 1, 0).getDate();
@@ -309,7 +309,7 @@ const Contas = () => {
       if (b.category_id !== categoryId) return false;
       // Fixed bills always appear when viewing by month
       if (b.is_fixed && period === "month") return true;
-      const dueDate = new Date(b.due_date + "T12:00:00");
+      const dueDate = getEffectiveDueDate(b);
       return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
     });
   };
@@ -464,7 +464,7 @@ const Contas = () => {
 
   return (
     <MainLayout title="Contas" subtitle="">
-      <div className="max-w-2xl mx-auto pb-24 space-y-5">
+      <div className="w-full pb-24 space-y-5">
 
         {/* Financial Summary — estilo balões (igual dashboard) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -608,12 +608,12 @@ const Contas = () => {
         </div>
 
         {/* Period Bills Summary Card */}
-        {(() => {
+        {!showCategories && (() => {
           const groupCatIds = new Set(groupCategories.map(c => c.id));
           const periodBills = (bills || []).filter(b => {
             if (!b.category_id || !groupCatIds.has(b.category_id)) return false;
             if (b.is_fixed && period === "month") return true;
-            const dueDate = new Date(b.due_date + "T12:00:00");
+            const dueDate = getEffectiveDueDate(b);
             return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
           });
           if (periodBills.length === 0) return null;
@@ -664,7 +664,8 @@ const Contas = () => {
           );
         })()}
 
-        {/* Search */}
+        {/* Search - only relevant when category list is visible */}
+        {showCategories && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -674,6 +675,7 @@ const Contas = () => {
             className="pl-9 h-9 bg-card"
           />
         </div>
+        )}
 
         {/* Contas Vencidas section removed — now shown only inside "Contas no período" */}
 
