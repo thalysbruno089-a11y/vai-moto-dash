@@ -627,7 +627,7 @@ const Contas = () => {
               <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                 {periodBills.map(b => {
                   const effectiveStatus = getEffectiveStatus(b);
-                  const dueDate = new Date(b.due_date + "T12:00:00");
+                  const dueDate = getEffectiveDueDate(b);
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   const isOverdue = effectiveStatus !== "paid" && isBefore(dueDate, today) && !isToday(dueDate);
@@ -647,7 +647,7 @@ const Contas = () => {
                           <Clock className={cn("h-5 w-5 shrink-0", tone.icon)} />
                         )}
                         <span className={cn("text-base font-semibold truncate", tone.text)}>{b.name}</span>
-                        <span className="text-xs text-muted-foreground shrink-0">({new Date(b.due_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
+                        <span className="text-xs text-muted-foreground shrink-0">({dueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
                       </div>
                       <span className={cn("text-base font-bold ml-2 shrink-0", tone.text)}>
                         {formatCurrency(b.value)}
