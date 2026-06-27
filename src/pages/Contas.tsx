@@ -514,6 +514,23 @@ const Contas = () => {
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
+              <Button
+                variant={showCategories ? "default" : "outline"}
+                size="sm"
+                className="h-8 text-xs px-3"
+                onClick={() => {
+                  const next = !showCategories;
+                  setShowCategories(next);
+                  if (next) {
+                    setExpandedCategories(new Set(filteredCategories.map(c => c.id)));
+                  } else {
+                    setExpandedCategories(new Set());
+                  }
+                }}
+              >
+                <Package className="h-3 w-3 mr-1" />
+                Categorias
+              </Button>
             </div>
             {period !== "custom" && (
               <div className="flex items-center gap-1">
