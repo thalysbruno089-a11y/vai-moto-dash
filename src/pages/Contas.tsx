@@ -678,6 +678,13 @@ const Contas = () => {
         {/* Contas Vencidas section removed — now shown only inside "Contas no período" */}
 
         {/* Category List — toggled by "Categorias" button */}
+        {showCategories && (
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleCreateCategory}>
+              <Plus className="h-3 w-3 mr-1" /> Nova Categoria
+            </Button>
+          </div>
+        )}
         {showCategories && (isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
