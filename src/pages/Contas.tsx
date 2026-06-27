@@ -103,6 +103,7 @@ const Contas = () => {
   const [offset, setOffset] = useState(0);
   const [activeGroup, setActiveGroup] = useState<"carlos" | "central" | "both">("carlos");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [showCategories, setShowCategories] = useState(false);
 
   // Custom date range
   const [customStart, setCustomStart] = useState<Date | undefined>(undefined);
@@ -287,6 +288,19 @@ const Contas = () => {
       return "pending";
     }
     return bill.status;
+  };
+
+  // For fixed bills viewed in month mode, anchor the due date to the viewed month/year
+  // (otherwise stale due dates from June make every future month look "atrasado").
+  const getEffectiveDueDate = (b: Bill): Date => {
+    const raw = new Date(b.due_date + "T12:00:00");
+    if (b.is_fixed && period === "month") {
+      const year = currentRange.start.getFullYear();
+      const month = currentRange.start.getMonth();
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      return new Date(year, month, Math.min(raw.getDate(), lastDay), 12, 0, 0);
+    }
+    return raw;
   };
 
   // Entries for category - fixed bills only bypass date filter in month view
