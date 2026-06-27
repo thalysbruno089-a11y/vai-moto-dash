@@ -664,7 +664,8 @@ const Contas = () => {
           );
         })()}
 
-        {/* Search */}
+        {/* Search - only relevant when category list is visible */}
+        {showCategories && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -674,6 +675,7 @@ const Contas = () => {
             className="pl-9 h-9 bg-card"
           />
         </div>
+        )}
 
         {/* Contas Vencidas section removed — now shown only inside "Contas no período" */}
 
