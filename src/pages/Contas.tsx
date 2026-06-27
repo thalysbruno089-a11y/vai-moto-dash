@@ -294,7 +294,7 @@ const Contas = () => {
   // (otherwise stale due dates from June make every future month look "atrasado").
   const getEffectiveDueDate = (b: Bill): Date => {
     const raw = new Date(b.due_date + "T12:00:00");
-    if (b.is_fixed && period === "month") {
+    if (b.is_fixed) {
       const year = currentRange.start.getFullYear();
       const month = currentRange.start.getMonth();
       const lastDay = new Date(year, month + 1, 0).getDate();
@@ -309,7 +309,7 @@ const Contas = () => {
       if (b.category_id !== categoryId) return false;
       // Fixed bills always appear when viewing by month
       if (b.is_fixed && period === "month") return true;
-      const dueDate = new Date(b.due_date + "T12:00:00");
+      const dueDate = getEffectiveDueDate(b);
       return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
     });
   };
