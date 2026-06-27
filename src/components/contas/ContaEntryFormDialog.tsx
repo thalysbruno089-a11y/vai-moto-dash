@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { Bill, useCreateBill, useUpdateBill } from "@/hooks/useBills";
+import { useCategories } from "@/hooks/useCategories";
 
 interface ContaEntryFormDialogProps {
   open: boolean;
@@ -25,9 +26,14 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
   const [installmentCount, setInstallmentCount] = useState("2");
   const [installmentInterval, setInstallmentInterval] = useState<"monthly" | "weekly">("monthly");
   const [splitValue, setSplitValue] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
 
   const createBill = useCreateBill();
   const updateBill = useUpdateBill();
+  const { data: allCategories = [] } = useCategories();
+  const expenseCategories = allCategories.filter((c) => c.type === "expense");
+  const carlosCats = expenseCategories.filter((c) => (c as any).group_name === "carlos");
+  const centralCats = expenseCategories.filter((c) => (c as any).group_name === "central");
   const isLoading = createBill.isPending || updateBill.isPending;
   const isEditing = !!entry;
 
@@ -42,6 +48,7 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
       setInstallmentCount("2");
       setInstallmentInterval("monthly");
       setSplitValue(false);
+      setSelectedCategoryId(entry.category_id || categoryId || "");
     } else {
       setName("");
       setValue("");
@@ -51,10 +58,11 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
       setInstallmentCount("2");
       setInstallmentInterval("monthly");
       setSplitValue(false);
+      setSelectedCategoryId(categoryId || "");
       const today = new Date();
       setDueDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`);
     }
-  }, [entry, open]);
+  }, [entry, open, categoryId]);
 
   const parsedValue = parseFloat(value) || 0;
   const count = parseInt(installmentCount) || 2;
@@ -63,6 +71,8 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const effectiveCategoryId = selectedCategoryId || categoryId || null;
+    if (!effectiveCategoryId) return;
     try {
       if (isEditing && entry) {
         await updateBill.mutateAsync({
@@ -72,6 +82,7 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
           description: description || null,
           is_fixed: isFixed,
           due_date: dueDate,
+          category_id: effectiveCategoryId,
         });
       } else if (isInstallment && !isFixed) {
         const baseDate = new Date(`${dueDate}T12:00:00`);
@@ -92,7 +103,7 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
             is_fixed: false,
             due_date: dateStr,
             status: "pending",
-            category_id: categoryId || null,
+            category_id: effectiveCategoryId,
             parent_bill_id: null,
             installment_number: i + 1,
             total_installments: count,
@@ -106,7 +117,7 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
           is_fixed: isFixed,
           due_date: dueDate,
           status: "pending",
-          category_id: categoryId || null,
+          category_id: effectiveCategoryId,
           parent_bill_id: null,
           installment_number: null,
         });
@@ -127,6 +138,32 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="entry-category">Categoria *</Label>
+            <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+              <SelectTrigger id="entry-category">
+                <SelectValue placeholder="Selecione a categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {carlosCats.length > 0 && (
+                  <>
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">Carlos</div>
+                    {carlosCats.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </>
+                )}
+                {centralCats.length > 0 && (
+                  <>
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-primary">Central</div>
+                    {centralCats.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="entry-name">Nome *</Label>
             <Input id="entry-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Energia, João..." required />
@@ -225,7 +262,7 @@ export function ContaEntryFormDialog({ open, onOpenChange, entry, categoryId }: 
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isLoading || !name || !value}>
+            <Button type="submit" disabled={isLoading || !name || !value || !(selectedCategoryId || categoryId)}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? "Salvar" : "Criar"}
             </Button>

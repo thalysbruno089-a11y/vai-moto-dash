@@ -103,6 +103,7 @@ const Contas = () => {
   const [offset, setOffset] = useState(0);
   const [activeGroup, setActiveGroup] = useState<"carlos" | "central" | "both">("carlos");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [showCategories, setShowCategories] = useState(false);
 
   // Custom date range
   const [customStart, setCustomStart] = useState<Date | undefined>(undefined);
@@ -289,6 +290,19 @@ const Contas = () => {
     return bill.status;
   };
 
+  // For fixed bills viewed in month mode, anchor the due date to the viewed month/year
+  // (otherwise stale due dates from June make every future month look "atrasado").
+  const getEffectiveDueDate = (b: Bill): Date => {
+    const raw = new Date(b.due_date + "T12:00:00");
+    if (b.is_fixed && period === "month") {
+      const year = currentRange.start.getFullYear();
+      const month = currentRange.start.getMonth();
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      return new Date(year, month, Math.min(raw.getDate(), lastDay), 12, 0, 0);
+    }
+    return raw;
+  };
+
   // Entries for category - fixed bills only bypass date filter in month view
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
@@ -452,24 +466,19 @@ const Contas = () => {
     <MainLayout title="Contas" subtitle="">
       <div className="max-w-2xl mx-auto pb-24 space-y-5">
 
-        {/* Financial Summary Header */}
-        <div className="rounded-xl bg-card border border-border p-5">
-          <div className="text-center mb-4">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Saldo do período</p>
-            <p className="text-3xl font-bold tracking-tight text-foreground">
-              {formatCurrency(totalPaid + totalPending)}
-            </p>
+        {/* Financial Summary — estilo balões (igual dashboard) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="stat-card-primary">
+            <p className="text-xs font-medium opacity-90 uppercase tracking-wider mb-1">Saldo do período</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalPaid + totalPending)}</p>
           </div>
-          <div className="flex justify-center gap-8">
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-0.5">Pago</p>
-              <p className="text-lg font-semibold text-emerald-500">{formatCurrency(totalPaid)}</p>
-            </div>
-            <div className="w-px bg-border" />
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-0.5">Pendente</p>
-              <p className="text-lg font-semibold text-destructive">{formatCurrency(totalPending)}</p>
-            </div>
+          <div className="stat-card-success">
+            <p className="text-xs font-medium opacity-90 uppercase tracking-wider mb-1">Pago</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalPaid)}</p>
+          </div>
+          <div className="stat-card-destructive">
+            <p className="text-xs font-medium opacity-90 uppercase tracking-wider mb-1">Pendente</p>
+            <p className="text-2xl font-bold">{formatCurrency(totalPending)}</p>
           </div>
         </div>
 
@@ -505,6 +514,23 @@ const Contas = () => {
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
+              <Button
+                variant={showCategories ? "default" : "outline"}
+                size="sm"
+                className="h-8 text-xs px-3"
+                onClick={() => {
+                  const next = !showCategories;
+                  setShowCategories(next);
+                  if (next) {
+                    setExpandedCategories(new Set(filteredCategories.map(c => c.id)));
+                  } else {
+                    setExpandedCategories(new Set());
+                  }
+                }}
+              >
+                <Package className="h-3 w-3 mr-1" />
+                Categorias
+              </Button>
             </div>
             {period !== "custom" && (
               <div className="flex items-center gap-1">
@@ -601,7 +627,7 @@ const Contas = () => {
               <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                 {periodBills.map(b => {
                   const effectiveStatus = getEffectiveStatus(b);
-                  const dueDate = new Date(b.due_date + "T12:00:00");
+                  const dueDate = getEffectiveDueDate(b);
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   const isOverdue = effectiveStatus !== "paid" && isBefore(dueDate, today) && !isToday(dueDate);
@@ -621,7 +647,7 @@ const Contas = () => {
                           <Clock className={cn("h-5 w-5 shrink-0", tone.icon)} />
                         )}
                         <span className={cn("text-base font-semibold truncate", tone.text)}>{b.name}</span>
-                        <span className="text-xs text-muted-foreground shrink-0">({new Date(b.due_date + "T12:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
+                        <span className="text-xs text-muted-foreground shrink-0">({dueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
                       </div>
                       <span className={cn("text-base font-bold ml-2 shrink-0", tone.text)}>
                         {formatCurrency(b.value)}
@@ -651,8 +677,15 @@ const Contas = () => {
 
         {/* Contas Vencidas section removed — now shown only inside "Contas no período" */}
 
-        {/* Category List */}
-        {isLoading ? (
+        {/* Category List — toggled by "Categorias" button */}
+        {showCategories && (
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleCreateCategory}>
+              <Plus className="h-3 w-3 mr-1" /> Nova Categoria
+            </Button>
+          </div>
+        )}
+        {showCategories && (isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
@@ -730,7 +763,7 @@ const Contas = () => {
                         ) : (
                           <div className="space-y-1">
                             {entries.map((entry) => {
-                              const dueDate = new Date(entry.due_date + "T12:00:00");
+                              const dueDate = getEffectiveDueDate(entry);
                               const effectiveStatus = getEffectiveStatus(entry);
                               const isOverdue = effectiveStatus !== "paid" && isBefore(dueDate, new Date()) && !isToday(dueDate);
                               const isPaid = effectiveStatus === "paid";
@@ -783,6 +816,9 @@ const Contas = () => {
                                         <DropdownMenuItem onClick={() => handleEditEntry(entry)}>
                                           <Edit className="mr-2 h-4 w-4" /> Editar
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleEditEntry(entry)}>
+                                          <Package className="mr-2 h-4 w-4" /> Trocar Categoria
+                                        </DropdownMenuItem>
                                         <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEntryClick(entry.id)}>
                                           <Trash2 className="mr-2 h-4 w-4" /> Excluir
                                         </DropdownMenuItem>
@@ -801,13 +837,14 @@ const Contas = () => {
               );
             })}
           </div>
-        )}
+        ))}
       </div>
 
-      {/* FAB */}
+      {/* FAB — adicionar conta (com seleção de categoria/grupo) */}
       <button
-        onClick={handleCreateCategory}
+        onClick={() => { setSelectedEntry(null); setEntryCategoryId(null); setEntryFormOpen(true); }}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all active:scale-95"
+        aria-label="Adicionar conta"
       >
         <Plus className="h-6 w-6" />
       </button>
