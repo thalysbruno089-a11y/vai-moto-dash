@@ -608,12 +608,12 @@ const Contas = () => {
         </div>
 
         {/* Period Bills Summary Card */}
-        {(() => {
+        {!showCategories && (() => {
           const groupCatIds = new Set(groupCategories.map(c => c.id));
           const periodBills = (bills || []).filter(b => {
             if (!b.category_id || !groupCatIds.has(b.category_id)) return false;
             if (b.is_fixed && period === "month") return true;
-            const dueDate = new Date(b.due_date + "T12:00:00");
+            const dueDate = getEffectiveDueDate(b);
             return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
           });
           if (periodBills.length === 0) return null;
