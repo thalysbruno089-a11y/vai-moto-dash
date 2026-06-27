@@ -464,7 +464,7 @@ const Contas = () => {
 
   return (
     <MainLayout title="Contas" subtitle="">
-      <div className="max-w-2xl mx-auto pb-24 space-y-5">
+      <div className="w-full pb-24 space-y-5">
 
         {/* Financial Summary — estilo balões (igual dashboard) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
