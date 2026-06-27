@@ -677,8 +677,8 @@ const Contas = () => {
 
         {/* Contas Vencidas section removed — now shown only inside "Contas no período" */}
 
-        {/* Category List */}
-        {isLoading ? (
+        {/* Category List — toggled by "Categorias" button */}
+        {showCategories && (isLoading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
@@ -827,7 +827,7 @@ const Contas = () => {
               );
             })}
           </div>
-        )}
+        ))}
       </div>
 
       {/* FAB */}
