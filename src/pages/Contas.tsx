@@ -617,7 +617,7 @@ const Contas = () => {
             return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
           });
           if (periodBills.length === 0) return null;
-          const totalPeriod = periodBills.reduce((s, b) => s + Number(b.value), 0);
+          const totalPeriod = periodBills.reduce((s, b) => s + Number(b.value) - getVale(b), 0);
           return (
             <div className="rounded-2xl border-2 border-border bg-card p-5 space-y-3 shadow-sm">
               <div className="flex items-center justify-between mb-2">
@@ -650,7 +650,7 @@ const Contas = () => {
                         <span className="text-xs text-muted-foreground shrink-0">({dueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
                       </div>
                       <span className={cn("text-base font-bold ml-2 shrink-0", tone.text)}>
-                        {formatCurrency(b.value)}
+                        {formatCurrency(Number(b.value) - getVale(b))}
                       </span>
                     </div>
                   );
