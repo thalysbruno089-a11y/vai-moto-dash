@@ -323,12 +323,12 @@ const Contas = () => {
   const getCategoryPendingTotal = (categoryId: string) => {
     return getEntriesForCategory(categoryId)
       .filter(e => getEffectiveStatus(e) !== "paid")
-      .reduce((acc, e) => acc + Number(e.value), 0);
+      .reduce((acc, e) => acc + Number(e.value) - getVale(e), 0);
   };
 
   const getCategoryTotal = (categoryId: string) => {
     return getEntriesForCategory(categoryId)
-      .reduce((acc, e) => acc + Number(e.value), 0);
+      .reduce((acc, e) => acc + Number(e.value) - getVale(e), 0);
   };
 
   const totalPaid = useMemo(() =>
