@@ -23,17 +23,12 @@ Deno.serve(async (req) => {
     if (!data.users.length) break
 
     for (const u of data.users) {
-      const res = await fetch(`${url}/auth/v1/admin/users/${u.id}/logout`, {
-        method: 'POST',
-        headers: {
-          apikey: serviceKey,
-          Authorization: `Bearer ${serviceKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ scope: 'global' }),
-      })
-      if (!res.ok) errors.push(`${u.id}: ${res.status}`)
-      else total++
+      // Ban briefly to revoke all active sessions, then unban
+      const ban = await admin.auth.admin.updateUserById(u.id, { ban_duration: '1h' } as any)
+      if (ban.error) { errors.push(`${u.id} ban: ${ban.error.message}`); continue }
+      const unban = await admin.auth.admin.updateUserById(u.id, { ban_duration: 'none' } as any)
+      if (unban.error) { errors.push(`${u.id} unban: ${unban.error.message}`); continue }
+      total++
     }
 
     if (data.users.length < 1000) break
