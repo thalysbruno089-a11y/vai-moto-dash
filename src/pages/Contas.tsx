@@ -792,7 +792,7 @@ const Contas = () => {
                                   </div>
                                   <div className="flex items-center gap-2 ml-2">
                                     <p className={cn("text-sm font-semibold", isPaid ? "text-emerald-500" : "text-foreground")}>
-                                      {formatCurrency(entry.value)}
+                                      {formatCurrency(Number(entry.value) - getVale(entry))}
                                     </p>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger asChild>
