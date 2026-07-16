@@ -1049,6 +1049,68 @@ export type Database = {
           },
         ]
       }
+      ultra_deliveries: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          created_by: string | null
+          delivery_date: string
+          endereco: string | null
+          entregador: string | null
+          horario: string | null
+          id: string
+          ok: boolean
+          pagamento: number | null
+          position: number
+          receita_ok: boolean
+          taxa: number | null
+          tem_receita: boolean
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_date?: string
+          endereco?: string | null
+          entregador?: string | null
+          horario?: string | null
+          id?: string
+          ok?: boolean
+          pagamento?: number | null
+          position?: number
+          receita_ok?: boolean
+          taxa?: number | null
+          tem_receita?: boolean
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_date?: string
+          endereco?: string | null
+          entregador?: string | null
+          horario?: string | null
+          id?: string
+          ok?: boolean
+          pagamento?: number | null
+          position?: number
+          receita_ok?: boolean
+          taxa?: number | null
+          tem_receita?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ultra_deliveries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_closings: {
         Row: {
           company_id: string

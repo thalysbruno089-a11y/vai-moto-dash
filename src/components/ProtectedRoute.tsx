@@ -5,9 +5,10 @@ import { Loader2 } from 'lucide-react';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowEmployee?: boolean;
+  allowUltra?: boolean;
 }
 
-const ProtectedRoute = ({ children, allowEmployee = false }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
 
@@ -24,6 +25,11 @@ const ProtectedRoute = ({ children, allowEmployee = false }: ProtectedRouteProps
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // ULTRA user can only access /ultra-registro
+  if (profile?.name === 'ULTRA' && !allowUltra) {
+    return <Navigate to="/ultra-registro" replace />;
   }
 
   // Employees can only access /clients
