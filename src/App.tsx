@@ -19,6 +19,8 @@ import LoansBorrowed from "./pages/LoansBorrowed";
 import MotorcycleRentals from "./pages/MotorcycleRentals";
 import MotorcycleExpenses from "./pages/MotorcycleExpenses";
 import DeletionLogs from "./pages/DeletionLogs";
+import Ultra from "./pages/Ultra";
+import UltraRegistro from "./pages/UltraRegistro";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +46,8 @@ const App = () => (
               <Route path="/motorcycle-rentals" element={<AdminRoute><MotorcycleRentals /></AdminRoute>} />
               <Route path="/motorcycle-expenses" element={<AdminRoute><MotorcycleExpenses /></AdminRoute>} />
               <Route path="/deletion-logs" element={<AdminRoute><DeletionLogs /></AdminRoute>} />
+              <Route path="/ultra" element={<AdminRoute><Ultra /></AdminRoute>} />
+              <Route path="/ultra-registro" element={<ProtectedRoute allowEmployee allowUltra><UltraRegistro /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
