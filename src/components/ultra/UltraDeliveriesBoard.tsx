@@ -36,6 +36,7 @@ import {
 } from "@/hooks/useUltraDeliveries";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { toast } from "sonner";
+import ultraLogo from "@/assets/ultra-logo.png.asset.json";
 
 const fmtMoney = (v: number | null) =>
   v == null
@@ -392,8 +393,20 @@ export const UltraDeliveriesBoard = ({
       </div>
 
       {/* Print header */}
-      <div className="hidden print:block">
-        <h2 className="text-xl font-bold">Relatório ULTRA — {format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy")}</h2>
+      <div className="hidden print:flex print:flex-col print:items-center print:gap-2 print:mb-3">
+        <img src={ultraLogo.url} alt="ULTRA" className="h-16 w-auto" />
+        <h2 className="text-xl font-bold">
+          Relatório ULTRA — {format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy")}
+        </h2>
+      </div>
+
+      {/* On-screen small centered logo */}
+      <div className="flex justify-center print:hidden">
+        <img
+          src={ultraLogo.url}
+          alt="ULTRA"
+          className="h-14 w-14 rounded-lg shadow-sm object-cover"
+        />
       </div>
 
       {/* Totals */}
