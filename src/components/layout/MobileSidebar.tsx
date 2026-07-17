@@ -44,6 +44,7 @@ const adminNavigation = [
 
 const employeeNavigation = [
   { name: "Clientes", href: "/clients", icon: CreditCard },
+  { name: "ULTRA", href: "/ultra", icon: Zap },
 ];
 
 const roleLabels: Record<string, string> = {

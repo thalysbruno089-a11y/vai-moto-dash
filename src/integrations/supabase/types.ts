@@ -1061,8 +1061,11 @@ export type Database = {
           id: string
           ok: boolean
           pagamento: number | null
+          payment_method: string | null
           position: number
           receita_ok: boolean
+          sent_at: string | null
+          sent_to_central: boolean
           taxa: number | null
           tem_receita: boolean
           updated_at: string
@@ -1078,8 +1081,11 @@ export type Database = {
           id?: string
           ok?: boolean
           pagamento?: number | null
+          payment_method?: string | null
           position?: number
           receita_ok?: boolean
+          sent_at?: string | null
+          sent_to_central?: boolean
           taxa?: number | null
           tem_receita?: boolean
           updated_at?: string
@@ -1095,8 +1101,11 @@ export type Database = {
           id?: string
           ok?: boolean
           pagamento?: number | null
+          payment_method?: string | null
           position?: number
           receita_ok?: boolean
+          sent_at?: string | null
+          sent_to_central?: boolean
           taxa?: number | null
           tem_receita?: boolean
           updated_at?: string
