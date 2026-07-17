@@ -46,7 +46,7 @@ const App = () => (
               <Route path="/motorcycle-rentals" element={<AdminRoute><MotorcycleRentals /></AdminRoute>} />
               <Route path="/motorcycle-expenses" element={<AdminRoute><MotorcycleExpenses /></AdminRoute>} />
               <Route path="/deletion-logs" element={<AdminRoute><DeletionLogs /></AdminRoute>} />
-              <Route path="/ultra" element={<AdminRoute><Ultra /></AdminRoute>} />
+              <Route path="/ultra" element={<ProtectedRoute allowEmployee><Ultra /></ProtectedRoute>} />
               <Route path="/ultra-registro" element={<ProtectedRoute allowEmployee allowUltra><UltraRegistro /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
