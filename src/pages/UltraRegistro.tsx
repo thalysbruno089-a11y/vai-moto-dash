@@ -31,7 +31,7 @@ const UltraRegistro = () => {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-4">
-        <UltraDeliveriesBoard />
+        <UltraDeliveriesBoard editable allowDateChange />
       </main>
     </div>
   );
