@@ -21,7 +21,11 @@ const Auth = () => {
     setLoading(true);
 
     // Convert username to email format
-    const email = `${username.toLowerCase().trim()}@vaimoto.app`;
+    const cleanUser = username.toLowerCase().trim();
+    const email = `${cleanUser}@vaimoto.app`;
+    // Remember pending user so the loading splash can pick the right image
+    // before the profile finishes loading.
+    try { sessionStorage.setItem('pendingUser', cleanUser); } catch {}
     const { error } = await signIn(email, password);
 
     if (error) {

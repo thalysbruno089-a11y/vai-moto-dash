@@ -97,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setSession(null);
     setProfile(null);
+    try { sessionStorage.removeItem('pendingUser'); } catch {}
   };
 
   // Only admin can access settings
