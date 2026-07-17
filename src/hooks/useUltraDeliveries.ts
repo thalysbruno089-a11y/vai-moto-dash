@@ -15,6 +15,9 @@ export interface UltraDelivery {
   ok: boolean;
   tem_receita: boolean;
   receita_ok: boolean;
+  payment_method: string | null;
+  sent_to_central: boolean;
+  sent_at: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -22,12 +25,13 @@ export interface UltraDelivery {
 
 export type UltraDeliveryInput = Partial<Omit<UltraDelivery, "id" | "created_at" | "updated_at" | "created_by">>;
 
-export const useUltraDeliveries = (date?: string) => {
+export const useUltraDeliveries = (date?: string, opts?: { sentOnly?: boolean }) => {
   return useQuery({
-    queryKey: ["ultra-deliveries", date ?? "all"],
+    queryKey: ["ultra-deliveries", date ?? "all", opts?.sentOnly ? "sent" : "any"],
     queryFn: async () => {
       let q = supabase.from("ultra_deliveries" as any).select("*");
       if (date) q = q.eq("delivery_date", date);
+      if (opts?.sentOnly) q = q.eq("sent_to_central", true);
       q = q.order("delivery_date", { ascending: false }).order("position", { ascending: true });
       const { data, error } = await q;
       if (error) throw error;
@@ -67,6 +71,24 @@ export const useUpdateUltraDelivery = () => {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ultra-deliveries"] }),
+    onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+};
+
+export const useSendUltraDayToCentral = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (date: string) => {
+      const { error } = await supabase
+        .from("ultra_deliveries" as any)
+        .update({ sent_to_central: true, sent_at: new Date().toISOString() })
+        .eq("delivery_date", date);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ultra-deliveries"] });
+      toast.success("Relatório enviado para a central");
+    },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
 };
