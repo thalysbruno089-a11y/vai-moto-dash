@@ -3,8 +3,8 @@ import { UltraDeliveriesBoard } from "@/components/ultra/UltraDeliveriesBoard";
 
 const Ultra = () => {
   return (
-    <MainLayout title="ULTRA" subtitle="Entregas registradas pelo ULTRA">
-      <UltraDeliveriesBoard allowDateChange />
+    <MainLayout title="ULTRA" subtitle="Relatórios recebidos da equipe ULTRA">
+      <UltraDeliveriesBoard editable={false} allowDateChange sentOnly />
     </MainLayout>
   );
 };
