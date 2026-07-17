@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import LoadingScreen from '@/components/LoadingScreen';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,18 +13,18 @@ const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false }:
   const location = useLocation();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen variant="auto" />;
   }
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Profile still loading (user authenticated but profile not yet fetched):
+  // show branded splash instead of rendering the child route (avoids flashing
+  // the Carlos dashboard while an ULTRA user is being redirected).
+  if (!profile) {
+    return <LoadingScreen variant="auto" />;
   }
 
   // ULTRA user can only access /ultra-registro
