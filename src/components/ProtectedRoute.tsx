@@ -1,4 +1,5 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingScreen from '@/components/LoadingScreen';
 
@@ -8,11 +9,20 @@ interface ProtectedRouteProps {
   allowUltra?: boolean;
 }
 
+const MIN_SPLASH_MS = 1500;
+
 const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
-  const location = useLocation();
+  const [splashElapsed, setSplashElapsed] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    const timer = setTimeout(() => setSplashElapsed(true), MIN_SPLASH_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Keep the branded splash visible for at least MIN_SPLASH_MS so the images
+  // are actually seen on login, instead of flashing by instantly.
+  if (loading || !splashElapsed) {
     return <LoadingScreen variant="auto" />;
   }
 
