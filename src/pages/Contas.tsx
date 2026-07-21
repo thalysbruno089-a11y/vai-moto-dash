@@ -494,14 +494,54 @@ const Contas = () => {
           </div>
         </div>
 
-        {/* Group Tabs */}
-        <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central" | "both")}>
-          <TabsList className="w-full h-10">
-            <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-emerald-500 data-[state=active]:text-white">Carlos</TabsTrigger>
-            <TabsTrigger value="central" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Central</TabsTrigger>
-            <TabsTrigger value="both" className="flex-1 font-semibold text-sm data-[state=active]:bg-foreground data-[state=active]:text-background">Ambos</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Group Tabs + category filter */}
+        <div className="flex items-center gap-2">
+          <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central" | "both")} className="flex-1">
+            <TabsList className="w-full h-10">
+              <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-emerald-500 data-[state=active]:text-white">Carlos</TabsTrigger>
+              <TabsTrigger value="central" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Central</TabsTrigger>
+              <TabsTrigger value="both" className="flex-1 font-semibold text-sm data-[state=active]:bg-foreground data-[state=active]:text-background">Ambos</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-10 px-3 whitespace-nowrap">
+                <Filter className="h-4 w-4 mr-1.5" />
+                {selectedCategoryFilter.size > 0 ? `${selectedCategoryFilter.size} categoria(s)` : "Categorias"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-y-auto">
+              <DropdownMenuLabel>Filtrar por categoria</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {catOptions.length === 0 ? (
+                <div className="px-2 py-2 text-xs text-muted-foreground">Nenhuma categoria.</div>
+              ) : catOptions.map(c => (
+                <DropdownMenuCheckboxItem
+                  key={c.id}
+                  checked={selectedCategoryFilter.has(c.id)}
+                  onCheckedChange={(checked) => {
+                    setSelectedCategoryFilter(prev => {
+                      const next = new Set(prev);
+                      if (checked) next.add(c.id); else next.delete(c.id);
+                      return next;
+                    });
+                  }}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {c.name}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {selectedCategoryFilter.size > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSelectedCategoryFilter(new Set())}>
+                    <XCircle className="mr-2 h-4 w-4" /> Limpar filtro
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Period Filter */}
         <div className="space-y-2">
