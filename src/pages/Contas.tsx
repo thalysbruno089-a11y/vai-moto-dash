@@ -467,6 +467,13 @@ const Contas = () => {
 
   const isFuncionariosCategory = (cat: Category) => cat.name.toLowerCase().includes("funcion");
 
+  const catOptions = useMemo(() =>
+    groupCategories
+      .filter(c => (bills || []).some(b => b.category_id === c.id))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [groupCategories, bills]
+  );
+
   return (
     <MainLayout title="Contas" subtitle="">
       <div className="w-full pb-24 space-y-5">
