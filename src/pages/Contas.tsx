@@ -679,47 +679,7 @@ const Contas = () => {
             <div className="rounded-2xl border-2 border-border bg-card p-5 space-y-3 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xl font-bold text-foreground">Contas no período</h3>
-                <div className="flex items-center gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8 text-xs">
-                        <Filter className="h-3 w-3 mr-1" />
-                        {selectedCategoryFilter.size > 0 ? `${selectedCategoryFilter.size} categoria(s)` : "Categorias"}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-y-auto">
-                      <DropdownMenuLabel>Filtrar por categoria</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {catOptions.length === 0 ? (
-                        <div className="px-2 py-2 text-xs text-muted-foreground">Nenhuma categoria.</div>
-                      ) : catOptions.map(c => (
-                        <DropdownMenuCheckboxItem
-                          key={c.id}
-                          checked={selectedCategoryFilter.has(c.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedCategoryFilter(prev => {
-                              const next = new Set(prev);
-                              if (checked) next.add(c.id); else next.delete(c.id);
-                              return next;
-                            });
-                          }}
-                          onSelect={(e) => e.preventDefault()}
-                        >
-                          {c.name}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                      {selectedCategoryFilter.size > 0 && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setSelectedCategoryFilter(new Set())}>
-                            <XCircle className="mr-2 h-4 w-4" /> Limpar filtro
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Badge variant="secondary" className="text-sm h-7 px-3 font-semibold">{periodBills.length}</Badge>
-                </div>
+                <Badge variant="secondary" className="text-sm h-7 px-3 font-semibold">{periodBills.length}</Badge>
               </div>
               <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                 {periodBills.map(b => {
