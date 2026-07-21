@@ -671,10 +671,6 @@ const Contas = () => {
           });
           if (periodBills.length === 0) return null;
           const totalPeriod = periodBills.reduce((s, b) => s + Number(b.value) - getVale(b), 0);
-          // Build category options from bills in this group across the period (so user sees relevant options)
-          const catOptions = groupCategories
-            .filter(c => (bills || []).some(b => b.category_id === c.id))
-            .sort((a, b) => a.name.localeCompare(b.name));
           return (
             <div className="rounded-2xl border-2 border-border bg-card p-5 space-y-3 shadow-sm">
               <div className="flex items-center justify-between mb-2">
