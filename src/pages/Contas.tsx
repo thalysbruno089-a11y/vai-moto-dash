@@ -10,6 +10,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Collapsible,
@@ -104,6 +107,8 @@ const Contas = () => {
   const [activeGroup, setActiveGroup] = useState<"carlos" | "central" | "both">("carlos");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showCategories, setShowCategories] = useState(false);
+  // Multi-category filter for "Contas no período" summary
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<Set<string>>(new Set());
 
   // Custom date range
   const [customStart, setCustomStart] = useState<Date | undefined>(undefined);
@@ -612,17 +617,62 @@ const Contas = () => {
           const groupCatIds = new Set(groupCategories.map(c => c.id));
           const periodBills = (bills || []).filter(b => {
             if (!b.category_id || !groupCatIds.has(b.category_id)) return false;
+            if (selectedCategoryFilter.size > 0 && !selectedCategoryFilter.has(b.category_id)) return false;
             if (b.is_fixed && period === "month") return true;
             const dueDate = getEffectiveDueDate(b);
             return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
           });
           if (periodBills.length === 0) return null;
           const totalPeriod = periodBills.reduce((s, b) => s + Number(b.value) - getVale(b), 0);
+          // Build category options from bills in this group across the period (so user sees relevant options)
+          const catOptions = groupCategories
+            .filter(c => (bills || []).some(b => b.category_id === c.id))
+            .sort((a, b) => a.name.localeCompare(b.name));
           return (
             <div className="rounded-2xl border-2 border-border bg-card p-5 space-y-3 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xl font-bold text-foreground">Contas no período</h3>
-                <Badge variant="secondary" className="text-sm h-7 px-3 font-semibold">{periodBills.length}</Badge>
+                <div className="flex items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8 text-xs">
+                        <Filter className="h-3 w-3 mr-1" />
+                        {selectedCategoryFilter.size > 0 ? `${selectedCategoryFilter.size} categoria(s)` : "Categorias"}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-y-auto">
+                      <DropdownMenuLabel>Filtrar por categoria</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {catOptions.length === 0 ? (
+                        <div className="px-2 py-2 text-xs text-muted-foreground">Nenhuma categoria.</div>
+                      ) : catOptions.map(c => (
+                        <DropdownMenuCheckboxItem
+                          key={c.id}
+                          checked={selectedCategoryFilter.has(c.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedCategoryFilter(prev => {
+                              const next = new Set(prev);
+                              if (checked) next.add(c.id); else next.delete(c.id);
+                              return next;
+                            });
+                          }}
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          {c.name}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                      {selectedCategoryFilter.size > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setSelectedCategoryFilter(new Set())}>
+                            <XCircle className="mr-2 h-4 w-4" /> Limpar filtro
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Badge variant="secondary" className="text-sm h-7 px-3 font-semibold">{periodBills.length}</Badge>
+                </div>
               </div>
               <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                 {periodBills.map(b => {
@@ -649,9 +699,23 @@ const Contas = () => {
                         <span className={cn("text-base font-semibold truncate", tone.text)}>{b.name}</span>
                         <span className="text-xs text-muted-foreground shrink-0">({dueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
                       </div>
-                      <span className={cn("text-base font-bold ml-2 shrink-0", tone.text)}>
-                        {formatCurrency(Number(b.value) - getVale(b))}
-                      </span>
+                      <div className="flex items-center gap-2 ml-2 shrink-0">
+                        <span className={cn("text-base font-bold", tone.text)}>
+                          {formatCurrency(Number(b.value) - getVale(b))}
+                        </span>
+                        {effectiveStatus !== "paid" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-[11px] border-emerald-500/40 text-emerald-600 hover:bg-emerald-500 hover:text-white"
+                            onClick={() => handleMarkPaid(b)}
+                            disabled={markAsPaid.isPending}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                            Pagar
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
