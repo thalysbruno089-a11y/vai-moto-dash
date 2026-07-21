@@ -467,6 +467,13 @@ const Contas = () => {
 
   const isFuncionariosCategory = (cat: Category) => cat.name.toLowerCase().includes("funcion");
 
+  const catOptions = useMemo(() =>
+    groupCategories
+      .filter(c => (bills || []).some(b => b.category_id === c.id))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    [groupCategories, bills]
+  );
+
   return (
     <MainLayout title="Contas" subtitle="">
       <div className="w-full pb-24 space-y-5">
@@ -487,14 +494,54 @@ const Contas = () => {
           </div>
         </div>
 
-        {/* Group Tabs */}
-        <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central" | "both")}>
-          <TabsList className="w-full h-10">
-            <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-emerald-500 data-[state=active]:text-white">Carlos</TabsTrigger>
-            <TabsTrigger value="central" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Central</TabsTrigger>
-            <TabsTrigger value="both" className="flex-1 font-semibold text-sm data-[state=active]:bg-foreground data-[state=active]:text-background">Ambos</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Group Tabs + category filter */}
+        <div className="flex items-center gap-2">
+          <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central" | "both")} className="flex-1">
+            <TabsList className="w-full h-10">
+              <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-emerald-500 data-[state=active]:text-white">Carlos</TabsTrigger>
+              <TabsTrigger value="central" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Central</TabsTrigger>
+              <TabsTrigger value="both" className="flex-1 font-semibold text-sm data-[state=active]:bg-foreground data-[state=active]:text-background">Ambos</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-10 px-3 whitespace-nowrap">
+                <Filter className="h-4 w-4 mr-1.5" />
+                {selectedCategoryFilter.size > 0 ? `${selectedCategoryFilter.size} categoria(s)` : "Categorias"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-y-auto">
+              <DropdownMenuLabel>Filtrar por categoria</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {catOptions.length === 0 ? (
+                <div className="px-2 py-2 text-xs text-muted-foreground">Nenhuma categoria.</div>
+              ) : catOptions.map(c => (
+                <DropdownMenuCheckboxItem
+                  key={c.id}
+                  checked={selectedCategoryFilter.has(c.id)}
+                  onCheckedChange={(checked) => {
+                    setSelectedCategoryFilter(prev => {
+                      const next = new Set(prev);
+                      if (checked) next.add(c.id); else next.delete(c.id);
+                      return next;
+                    });
+                  }}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {c.name}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {selectedCategoryFilter.size > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSelectedCategoryFilter(new Set())}>
+                    <XCircle className="mr-2 h-4 w-4" /> Limpar filtro
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Period Filter */}
         <div className="space-y-2">
@@ -624,55 +671,11 @@ const Contas = () => {
           });
           if (periodBills.length === 0) return null;
           const totalPeriod = periodBills.reduce((s, b) => s + Number(b.value) - getVale(b), 0);
-          // Build category options from bills in this group across the period (so user sees relevant options)
-          const catOptions = groupCategories
-            .filter(c => (bills || []).some(b => b.category_id === c.id))
-            .sort((a, b) => a.name.localeCompare(b.name));
           return (
             <div className="rounded-2xl border-2 border-border bg-card p-5 space-y-3 shadow-sm">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xl font-bold text-foreground">Contas no período</h3>
-                <div className="flex items-center gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-8 text-xs">
-                        <Filter className="h-3 w-3 mr-1" />
-                        {selectedCategoryFilter.size > 0 ? `${selectedCategoryFilter.size} categoria(s)` : "Categorias"}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-y-auto">
-                      <DropdownMenuLabel>Filtrar por categoria</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {catOptions.length === 0 ? (
-                        <div className="px-2 py-2 text-xs text-muted-foreground">Nenhuma categoria.</div>
-                      ) : catOptions.map(c => (
-                        <DropdownMenuCheckboxItem
-                          key={c.id}
-                          checked={selectedCategoryFilter.has(c.id)}
-                          onCheckedChange={(checked) => {
-                            setSelectedCategoryFilter(prev => {
-                              const next = new Set(prev);
-                              if (checked) next.add(c.id); else next.delete(c.id);
-                              return next;
-                            });
-                          }}
-                          onSelect={(e) => e.preventDefault()}
-                        >
-                          {c.name}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                      {selectedCategoryFilter.size > 0 && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setSelectedCategoryFilter(new Set())}>
-                            <XCircle className="mr-2 h-4 w-4" /> Limpar filtro
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  <Badge variant="secondary" className="text-sm h-7 px-3 font-semibold">{periodBills.length}</Badge>
-                </div>
+                <Badge variant="secondary" className="text-sm h-7 px-3 font-semibold">{periodBills.length}</Badge>
               </div>
               <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
                 {periodBills.map(b => {
