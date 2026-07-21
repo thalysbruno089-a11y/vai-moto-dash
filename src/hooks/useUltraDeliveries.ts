@@ -8,6 +8,7 @@ export interface UltraDelivery {
   delivery_date: string;
   position: number;
   horario: string | null;
+  numero: string | null;
   entregador: string | null;
   endereco: string | null;
   pagamento: number | null;

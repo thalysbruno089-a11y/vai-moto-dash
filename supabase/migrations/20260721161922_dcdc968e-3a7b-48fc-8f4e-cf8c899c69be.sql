@@ -1,0 +1,1 @@
+ALTER TABLE public.ultra_deliveries ADD COLUMN IF NOT EXISTS numero TEXT;

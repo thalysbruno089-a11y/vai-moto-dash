@@ -75,6 +75,7 @@ function DeliveryRow({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState({
     horario: delivery.horario ?? "",
+    numero: delivery.numero ?? "",
     entregador: delivery.entregador ?? "",
     endereco: delivery.endereco ?? "",
     pagamento: delivery.pagamento?.toString() ?? "",
@@ -86,6 +87,7 @@ function DeliveryRow({
   useEffect(() => {
     setDraft((prev) => ({
       horario: focusedRef.current === "horario" ? prev.horario : delivery.horario ?? "",
+      numero: focusedRef.current === "numero" ? prev.numero : delivery.numero ?? "",
       entregador: focusedRef.current === "entregador" ? prev.entregador : delivery.entregador ?? "",
       endereco: focusedRef.current === "endereco" ? prev.endereco : delivery.endereco ?? "",
       pagamento: focusedRef.current === "pagamento" ? prev.pagamento : delivery.pagamento?.toString() ?? "",
@@ -106,6 +108,7 @@ function DeliveryRow({
 
   const summary = [
     delivery.horario,
+    delivery.numero ? `Nº ${delivery.numero}` : null,
     delivery.entregador,
     delivery.endereco,
   ]
@@ -181,6 +184,18 @@ function DeliveryRow({
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <Label className="text-xs">Número</Label>
+              <Input
+                value={draft.numero}
+                disabled={!editable || locked}
+                onFocus={() => (focusedRef.current = "numero")}
+                onChange={(e) => setDraft((d) => ({ ...d, numero: e.target.value }))}
+                onBlur={() => commit("numero")}
+                placeholder="Nº do motoboy"
+                inputMode="numeric"
+              />
+            </div>
             <div>
               <Label className="text-xs">Entregador</Label>
               <Input

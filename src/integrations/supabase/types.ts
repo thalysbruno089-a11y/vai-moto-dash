@@ -1059,6 +1059,7 @@ export type Database = {
           entregador: string | null
           horario: string | null
           id: string
+          numero: string | null
           ok: boolean
           pagamento: number | null
           payment_method: string | null
@@ -1079,6 +1080,7 @@ export type Database = {
           entregador?: string | null
           horario?: string | null
           id?: string
+          numero?: string | null
           ok?: boolean
           pagamento?: number | null
           payment_method?: string | null
@@ -1099,6 +1101,7 @@ export type Database = {
           entregador?: string | null
           horario?: string | null
           id?: string
+          numero?: string | null
           ok?: boolean
           pagamento?: number | null
           payment_method?: string | null
