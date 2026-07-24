@@ -20,6 +20,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -271,6 +278,39 @@ function DeliveryRow({
           </div>
 
           <div className="flex flex-wrap gap-3 pt-1 border-t">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={delivery.saiu_maquina}
+                disabled={!editable || locked}
+                onCheckedChange={(v) =>
+                  onPatch(delivery.id, {
+                    saiu_maquina: !!v,
+                    ...(v ? {} : { devolveu_maquina: false }),
+                  } as any)
+                }
+              />
+              Saiu com a maquininha
+            </label>
+            {delivery.saiu_maquina && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={delivery.devolveu_maquina}
+                  disabled={!editable || locked}
+                  onCheckedChange={(v) => onPatch(delivery.id, { devolveu_maquina: !!v } as any)}
+                />
+                Devolveu a maquininha
+              </label>
+            )}
+            {delivery.payment_method === "dinheiro" && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={delivery.dinheiro_devolvido}
+                  disabled={!editable || locked}
+                  onCheckedChange={(v) => onPatch(delivery.id, { dinheiro_devolvido: !!v } as any)}
+                />
+                Dinheiro devolvido
+              </label>
+            )}
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <Checkbox
                 checked={delivery.tem_receita}
