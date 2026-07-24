@@ -184,3 +184,10 @@
     text-wrap: balance;
   }
 }
+
+/* Hide "Edit with Lovable" badge on published site */
+#lovable-badge,
+a[href*="lovable.dev"][target="_blank"],
+iframe[src*="lovable.dev/badge"] {
+  display: none !important;
+}
