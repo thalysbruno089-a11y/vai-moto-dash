@@ -1055,6 +1055,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           delivery_date: string
+          devolveu_maquina: boolean
+          dinheiro_devolvido: boolean
           endereco: string | null
           entregador: string | null
           horario: string | null
@@ -1065,6 +1067,7 @@ export type Database = {
           payment_method: string | null
           position: number
           receita_ok: boolean
+          saiu_maquina: boolean
           sent_at: string | null
           sent_to_central: boolean
           taxa: number | null
@@ -1076,6 +1079,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           delivery_date?: string
+          devolveu_maquina?: boolean
+          dinheiro_devolvido?: boolean
           endereco?: string | null
           entregador?: string | null
           horario?: string | null
@@ -1086,6 +1091,7 @@ export type Database = {
           payment_method?: string | null
           position?: number
           receita_ok?: boolean
+          saiu_maquina?: boolean
           sent_at?: string | null
           sent_to_central?: boolean
           taxa?: number | null
@@ -1097,6 +1103,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           delivery_date?: string
+          devolveu_maquina?: boolean
+          dinheiro_devolvido?: boolean
           endereco?: string | null
           entregador?: string | null
           horario?: string | null
@@ -1107,6 +1115,7 @@ export type Database = {
           payment_method?: string | null
           position?: number
           receita_ok?: boolean
+          saiu_maquina?: boolean
           sent_at?: string | null
           sent_to_central?: boolean
           taxa?: number | null
