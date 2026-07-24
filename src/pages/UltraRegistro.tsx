@@ -18,7 +18,7 @@ const UltraRegistro = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-card border-b">
+      <header className="sticky top-0 z-10 bg-card border-b print:hidden">
         <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Vai Moto" className="h-9 w-auto" />
@@ -33,7 +33,7 @@ const UltraRegistro = () => {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-4">
-        <div className="flex justify-end mb-3">
+        <div className="flex justify-end mb-3 print:hidden">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm">
