@@ -19,6 +19,9 @@ export interface UltraDelivery {
   payment_method: string | null;
   sent_to_central: boolean;
   sent_at: string | null;
+  saiu_maquina: boolean;
+  devolveu_maquina: boolean;
+  dinheiro_devolvido: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
