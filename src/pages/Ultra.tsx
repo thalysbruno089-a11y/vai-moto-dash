@@ -7,7 +7,7 @@ import { Archive } from "lucide-react";
 const Ultra = () => {
   return (
     <MainLayout title="ULTRA" subtitle="Relatórios recebidos da equipe ULTRA">
-      <div className="flex justify-end mb-3">
+      <div className="flex justify-end mb-3 print:hidden">
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="sm">
