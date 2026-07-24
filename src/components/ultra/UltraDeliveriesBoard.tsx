@@ -156,6 +156,16 @@ function DeliveryRow({
                 <Receipt className="h-3 w-3" /> Receita{delivery.receita_ok ? " ✓" : ""}
               </Badge>
             )}
+            {delivery.saiu_maquina && (
+              <Badge variant="outline" className="h-5 text-[10px]">
+                Maq{delivery.devolveu_maquina ? " ✓" : ""}
+              </Badge>
+            )}
+            {delivery.payment_method === "dinheiro" && delivery.dinheiro_devolvido && (
+              <Badge variant="outline" className="h-5 text-[10px]">
+                Dinheiro ✓
+              </Badge>
+            )}
             {locked && (
               <Badge variant="outline" className="h-5 text-[10px] gap-0.5 border-primary/50 text-primary">
                 <Lock className="h-3 w-3" /> Enviado
@@ -370,6 +380,22 @@ export const UltraDeliveriesBoard = ({
   const deleteMut = useDeleteUltraDelivery();
   const sendMut = useSendUltraDayToCentral();
   const [toDelete, setToDelete] = useState<string | null>(null);
+  const [newOpen, setNewOpen] = useState(false);
+  const emptyForm = {
+    horario: "",
+    numero: "",
+    entregador: "",
+    endereco: "",
+    pagamento: "",
+    taxa: "",
+    payment_method: "",
+    tem_receita: false,
+    receita_ok: false,
+    saiu_maquina: false,
+    devolveu_maquina: false,
+    dinheiro_devolvido: false,
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const nextPos = useMemo(
     () => (deliveries.length ? Math.max(...deliveries.map((d) => d.position)) + 1 : 1),
@@ -390,13 +416,32 @@ export const UltraDeliveriesBoard = ({
   const alreadySent = deliveries.length > 0 && deliveries.every((d) => d.sent_to_central);
   const canSend = editable && deliveries.length > 0 && !alreadySent;
 
-  const addRow = () => {
-    const now = new Date();
-    createMut.mutate({
-      delivery_date: selectedDate,
-      position: nextPos,
-      horario: format(now, "HH:mm"),
-    });
+  const openNew = () => {
+    setForm({ ...emptyForm, horario: format(new Date(), "HH:mm") });
+    setNewOpen(true);
+  };
+
+  const saveNew = () => {
+    createMut.mutate(
+      {
+        delivery_date: selectedDate,
+        position: nextPos,
+        horario: form.horario || null,
+        numero: form.numero || null,
+        entregador: form.entregador || null,
+        endereco: form.endereco || null,
+        pagamento: form.pagamento === "" ? null : Number(form.pagamento),
+        taxa: form.taxa === "" ? null : Number(form.taxa),
+        payment_method: form.payment_method || null,
+        tem_receita: form.tem_receita,
+        receita_ok: form.tem_receita ? form.receita_ok : false,
+        saiu_maquina: form.saiu_maquina,
+        devolveu_maquina: form.saiu_maquina ? form.devolveu_maquina : false,
+        dinheiro_devolvido:
+          form.payment_method === "dinheiro" ? form.dinheiro_devolvido : false,
+      } as any,
+      { onSuccess: () => setNewOpen(false) }
+    );
   };
 
   const patch = (id: string, p: Partial<UltraDelivery>) => updateMut.mutate({ id, patch: p });
@@ -437,7 +482,7 @@ export const UltraDeliveriesBoard = ({
         </div>
         <div className="flex gap-2">
           {editable && !alreadySent && (
-            <Button onClick={addRow} disabled={createMut.isPending} size="sm">
+            <Button onClick={openNew} disabled={createMut.isPending} size="sm">
               <Plus className="h-4 w-4 mr-1" /> Nova entrega
             </Button>
           )}
@@ -547,6 +592,158 @@ export const UltraDeliveriesBoard = ({
         description="Tem certeza que deseja remover esta entrega?"
         isLoading={deleteMut.isPending}
       />
+
+      {/* New delivery dialog */}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nova entrega #{nextPos}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Horário</Label>
+                <Input
+                  type="time"
+                  value={form.horario}
+                  onChange={(e) => setForm((f) => ({ ...f, horario: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Número</Label>
+                <Input
+                  value={form.numero}
+                  inputMode="numeric"
+                  onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
+                  placeholder="Nº motoboy"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Entregador</Label>
+              <Input
+                value={form.entregador}
+                onChange={(e) => setForm((f) => ({ ...f, entregador: e.target.value }))}
+                placeholder="Nome"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Endereço</Label>
+              <Input
+                value={form.endereco}
+                onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
+                placeholder="Rua, número, bairro"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Pagamento (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={form.pagamento}
+                  onChange={(e) => setForm((f) => ({ ...f, pagamento: e.target.value }))}
+                  placeholder="0,00"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Taxa (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={form.taxa}
+                  onChange={(e) => setForm((f) => ({ ...f, taxa: e.target.value }))}
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Forma de pagamento</Label>
+              <Select
+                value={form.payment_method}
+                onValueChange={(v) => setForm((f) => ({ ...f, payment_method: v }))}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="credito">Crédito</SelectItem>
+                  <SelectItem value="debito">Débito</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="pix">Pix</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {form.payment_method === "dinheiro" && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={form.dinheiro_devolvido}
+                  onCheckedChange={(v) => setForm((f) => ({ ...f, dinheiro_devolvido: !!v }))}
+                />
+                Dinheiro devolvido
+              </label>
+            )}
+            <div className="border-t pt-2 space-y-2">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={form.saiu_maquina}
+                  onCheckedChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      saiu_maquina: !!v,
+                      devolveu_maquina: v ? f.devolveu_maquina : false,
+                    }))
+                  }
+                />
+                Saiu com a maquininha
+              </label>
+              {form.saiu_maquina && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer pl-6">
+                  <Checkbox
+                    checked={form.devolveu_maquina}
+                    onCheckedChange={(v) =>
+                      setForm((f) => ({ ...f, devolveu_maquina: !!v }))
+                    }
+                  />
+                  Devolveu a maquininha
+                </label>
+              )}
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={form.tem_receita}
+                  onCheckedChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      tem_receita: !!v,
+                      receita_ok: v ? f.receita_ok : false,
+                    }))
+                  }
+                />
+                <Receipt className="h-4 w-4 text-primary" /> Tem receita
+              </label>
+              {form.tem_receita && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer pl-6">
+                  <Checkbox
+                    checked={form.receita_ok}
+                    onCheckedChange={(v) => setForm((f) => ({ ...f, receita_ok: !!v }))}
+                  />
+                  Receita entregue
+                </label>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={saveNew} disabled={createMut.isPending}>
+              Salvar entrega
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
