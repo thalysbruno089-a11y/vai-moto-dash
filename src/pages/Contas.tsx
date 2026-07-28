@@ -110,6 +110,8 @@ const Contas = () => {
   const [showCategories, setShowCategories] = useState(false);
   // Multi-category filter for "Contas no período" summary
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<Set<string>>(new Set());
+  // Status filter: pagas / vencidas / a pagar / fixas
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<Set<string>>(new Set());
 
   // Custom date range
   const [customStart, setCustomStart] = useState<Date | undefined>(undefined);
