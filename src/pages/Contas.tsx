@@ -56,6 +56,7 @@ import {
   Briefcase,
   CalendarIcon,
   Filter,
+  Repeat,
 } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
 import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from "@/hooks/useBills";
