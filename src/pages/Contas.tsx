@@ -544,6 +544,47 @@ const Contas = () => {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-10 px-3 whitespace-nowrap">
+                <Filter className="h-4 w-4 mr-1.5" />
+                {selectedStatusFilter.size > 0 ? `${selectedStatusFilter.size} status` : "Status"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Filtrar por situação</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {[
+                { key: "paid", label: "Pagas" },
+                { key: "overdue", label: "Vencidas / atrasadas" },
+                { key: "pending", label: "A pagar" },
+                { key: "fixed", label: "Fixas" },
+              ].map(opt => (
+                <DropdownMenuCheckboxItem
+                  key={opt.key}
+                  checked={selectedStatusFilter.has(opt.key)}
+                  onCheckedChange={(checked) => {
+                    setSelectedStatusFilter(prev => {
+                      const next = new Set(prev);
+                      if (checked) next.add(opt.key); else next.delete(opt.key);
+                      return next;
+                    });
+                  }}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {opt.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {selectedStatusFilter.size > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSelectedStatusFilter(new Set())}>
+                    <XCircle className="mr-2 h-4 w-4" /> Limpar filtro
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Period Filter */}
