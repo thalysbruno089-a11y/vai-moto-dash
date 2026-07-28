@@ -56,6 +56,7 @@ import {
   Briefcase,
   CalendarIcon,
   Filter,
+  Repeat,
 } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
 import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from "@/hooks/useBills";
@@ -109,6 +110,8 @@ const Contas = () => {
   const [showCategories, setShowCategories] = useState(false);
   // Multi-category filter for "Contas no período" summary
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<Set<string>>(new Set());
+  // Status filter: pagas / vencidas / a pagar / fixas
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<Set<string>>(new Set());
 
   // Custom date range
   const [customStart, setCustomStart] = useState<Date | undefined>(undefined);
@@ -541,6 +544,47 @@ const Contas = () => {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-10 px-3 whitespace-nowrap">
+                <Filter className="h-4 w-4 mr-1.5" />
+                {selectedStatusFilter.size > 0 ? `${selectedStatusFilter.size} status` : "Status"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>Filtrar por situação</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {[
+                { key: "paid", label: "Pagas" },
+                { key: "overdue", label: "Vencidas / atrasadas" },
+                { key: "pending", label: "A pagar" },
+                { key: "fixed", label: "Fixas" },
+              ].map(opt => (
+                <DropdownMenuCheckboxItem
+                  key={opt.key}
+                  checked={selectedStatusFilter.has(opt.key)}
+                  onCheckedChange={(checked) => {
+                    setSelectedStatusFilter(prev => {
+                      const next = new Set(prev);
+                      if (checked) next.add(opt.key); else next.delete(opt.key);
+                      return next;
+                    });
+                  }}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {opt.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {selectedStatusFilter.size > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSelectedStatusFilter(new Set())}>
+                    <XCircle className="mr-2 h-4 w-4" /> Limpar filtro
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Period Filter */}
@@ -662,9 +706,23 @@ const Contas = () => {
         {/* Period Bills Summary Card */}
         {!showCategories && (() => {
           const groupCatIds = new Set(groupCategories.map(c => c.id));
+          const today0 = new Date();
+          today0.setHours(0, 0, 0, 0);
+          const matchesStatusFilter = (b: Bill) => {
+            if (selectedStatusFilter.size === 0) return true;
+            const st = getEffectiveStatus(b);
+            const dd = getEffectiveDueDate(b);
+            const overdue = st !== "paid" && isBefore(dd, today0) && !isToday(dd);
+            if (selectedStatusFilter.has("paid") && st === "paid") return true;
+            if (selectedStatusFilter.has("overdue") && overdue) return true;
+            if (selectedStatusFilter.has("pending") && st !== "paid" && !overdue) return true;
+            if (selectedStatusFilter.has("fixed") && b.is_fixed) return true;
+            return false;
+          };
           const periodBills = (bills || []).filter(b => {
             if (!b.category_id || !groupCatIds.has(b.category_id)) return false;
             if (selectedCategoryFilter.size > 0 && !selectedCategoryFilter.has(b.category_id)) return false;
+            if (!matchesStatusFilter(b)) return false;
             if (b.is_fixed && period === "month") return true;
             const dueDate = getEffectiveDueDate(b);
             return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
@@ -692,7 +750,9 @@ const Contas = () => {
                   return (
                     <div key={b.id} className={cn("flex items-center justify-between py-3.5 px-4 rounded-lg border", tone.wrap)}>
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        {effectiveStatus === "paid" ? (
+                        {b.is_fixed ? (
+                          <Repeat className="h-5 w-5 shrink-0 text-blue-500" />
+                        ) : effectiveStatus === "paid" ? (
                           <CheckCircle2 className={cn("h-5 w-5 shrink-0", tone.icon)} />
                         ) : isOverdue ? (
                           <AlertTriangle className={cn("h-5 w-5 shrink-0", tone.icon)} />
