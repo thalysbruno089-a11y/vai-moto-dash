@@ -106,8 +106,34 @@ export const useDeleteUltraDelivery = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ultra-deliveries"] });
+      qc.invalidateQueries({ queryKey: ["ultra-deletion-logs"] });
       toast.success("Removido");
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
+  });
+};
+
+export interface UltraDeletionLog {
+  id: string;
+  record_id: string | null;
+  record_label: string | null;
+  record_data: Record<string, unknown> | null;
+  deleted_by_name: string | null;
+  deleted_at: string;
+}
+
+export const useUltraDeletionLogs = () => {
+  return useQuery({
+    queryKey: ["ultra-deletion-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deletion_logs" as any)
+        .select("id, record_id, record_label, record_data, deleted_by_name, deleted_at")
+        .eq("table_name", "ultra_deliveries")
+        .order("deleted_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return (data || []) as unknown as UltraDeletionLog[];
+    },
   });
 };
