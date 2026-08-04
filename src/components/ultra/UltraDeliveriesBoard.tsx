@@ -12,6 +12,7 @@ import {
   Send,
   Printer,
   Lock,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,9 +40,9 @@ import {
   useUpdateUltraDelivery,
   useDeleteUltraDelivery,
   useSendUltraDayToCentral,
+  useUltraDeletionLogs,
   type UltraDelivery,
 } from "@/hooks/useUltraDeliveries";
-import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { toast } from "sonner";
 import ultraLogo from "@/assets/ultra-logo.png.asset.json";
 
@@ -51,11 +52,24 @@ const fmtMoney = (v: number | null) =>
     : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 const PAYMENT_LABELS: Record<string, string> = {
+  credito_debito: "Crédito/Débito",
   credito: "Crédito",
   debito: "Débito",
   dinheiro: "Dinheiro",
   pix: "Pix",
+  so_entregar: "Só entregar",
 };
+
+const MANAGER_DELETE_PASSWORD = "090807";
+
+const PaymentOptions = () => (
+  <>
+    <SelectItem value="credito_debito">Crédito/Débito</SelectItem>
+    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+    <SelectItem value="pix">Pix</SelectItem>
+    <SelectItem value="so_entregar">Só entregar</SelectItem>
+  </>
+);
 
 interface Props {
   /** Editing (ULTRA user). If false: read-only report view for Carlos/Secretaria. */
