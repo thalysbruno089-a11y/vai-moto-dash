@@ -106,6 +106,7 @@ export const useDeleteUltraDelivery = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ultra-deliveries"] });
+      qc.invalidateQueries({ queryKey: ["ultra-deletion-logs"] });
       toast.success("Removido");
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
