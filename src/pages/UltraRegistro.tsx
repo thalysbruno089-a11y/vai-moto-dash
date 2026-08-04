@@ -16,11 +16,7 @@ const UltraRegistro = () => {
     navigate("/auth");
   };
 
-  const handleWhatsApp = () => {
-    const phone = "5535998884393";
-    const message = encodeURIComponent("quero uma moto");
-    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
-  };
+  const whatsappUrl = `https://wa.me/5535998884393?text=${encodeURIComponent("quero uma moto")}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -35,12 +31,14 @@ const UltraRegistro = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button
+              asChild
               variant="outline"
               size="sm"
               className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:text-white"
-              onClick={handleWhatsApp}
             >
-              <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
+              </a>
             </Button>
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-1" /> Sair
