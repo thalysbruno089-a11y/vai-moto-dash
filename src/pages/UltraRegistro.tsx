@@ -16,6 +16,12 @@ const UltraRegistro = () => {
     navigate("/auth");
   };
 
+  const handleWhatsApp = () => {
+    const phone = "5535998884393";
+    const message = encodeURIComponent("quero uma moto");
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 bg-card border-b print:hidden">
