@@ -391,6 +391,9 @@ export const UltraDeliveriesBoard = ({
   const deleteMut = useDeleteUltraDelivery();
   const sendMut = useSendUltraDayToCentral();
   const [toDelete, setToDelete] = useState<string | null>(null);
+  const [deletePwd, setDeletePwd] = useState("");
+  const [logsOpen, setLogsOpen] = useState(false);
+  const { data: deletionLogs = [], isLoading: logsLoading } = useUltraDeletionLogs();
   const [newOpen, setNewOpen] = useState(false);
   const emptyForm = {
     horario: "",
@@ -590,19 +593,116 @@ export const UltraDeliveriesBoard = ({
         </div>
       )}
 
-      <DeleteConfirmDialog
+      {/* Delete with manager password */}
+      <Dialog
         open={!!toDelete}
-        onOpenChange={(o) => !o && setToDelete(null)}
-        onConfirm={async () => {
-          if (toDelete) {
-            await deleteMut.mutateAsync(toDelete);
+        onOpenChange={(o) => {
+          if (!o) {
             setToDelete(null);
+            setDeletePwd("");
           }
         }}
-        title="Remover entrega"
-        description="Tem certeza que deseja remover esta entrega?"
-        isLoading={deleteMut.isPending}
-      />
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remover entrega</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Somente o gerente pode apagar. Digite a senha para confirmar.
+            </p>
+            <Label className="text-xs">Senha do gerente</Label>
+            <Input
+              type="password"
+              inputMode="numeric"
+              value={deletePwd}
+              onChange={(e) => setDeletePwd(e.target.value)}
+              placeholder="••••••"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setToDelete(null);
+                setDeletePwd("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMut.isPending}
+              onClick={async () => {
+                if (deletePwd !== MANAGER_DELETE_PASSWORD) {
+                  toast.error("Senha incorreta");
+                  return;
+                }
+                if (toDelete) {
+                  await deleteMut.mutateAsync(toDelete);
+                  setToDelete(null);
+                  setDeletePwd("");
+                }
+              }}
+            >
+              {deleteMut.isPending ? "Excluindo..." : "Excluir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deleted history */}
+      <Dialog open={logsOpen} onOpenChange={setLogsOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Entregas apagadas</DialogTitle>
+          </DialogHeader>
+          {logsLoading ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">Carregando...</p>
+          ) : deletionLogs.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              Nenhuma entrega apagada.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {deletionLogs.map((log) => {
+                const d = (log.record_data || {}) as Record<string, any>;
+                return (
+                  <Card key={log.id}>
+                    <CardContent className="p-3 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">
+                          #{d.position ?? "-"} {d.entregador || d.endereco || "Entrega"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(log.deleted_at), "dd/MM/yyyy HH:mm")}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {[d.horario, d.numero ? `Nº ${d.numero}` : null, d.endereco]
+                          .filter(Boolean)
+                          .join(" • ")}
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {d.pagamento != null && <span>{fmtMoney(Number(d.pagamento))}</span>}
+                        {d.payment_method && (
+                          <Badge variant="outline" className="h-5 text-[10px]">
+                            {PAYMENT_LABELS[d.payment_method] ?? d.payment_method}
+                          </Badge>
+                        )}
+                        <span className="text-muted-foreground">
+                          Apagado por: {log.deleted_by_name || "—"}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* New delivery dialog */}
       <Dialog open={newOpen} onOpenChange={setNewOpen}>
