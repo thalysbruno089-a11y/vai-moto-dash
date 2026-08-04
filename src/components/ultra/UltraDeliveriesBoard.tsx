@@ -293,10 +293,7 @@ function DeliveryRow({
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="credito">Crédito</SelectItem>
-                <SelectItem value="debito">Débito</SelectItem>
-                <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                <SelectItem value="pix">Pix</SelectItem>
+                <PaymentOptions />
               </SelectContent>
             </Select>
           </div>
@@ -683,10 +680,7 @@ export const UltraDeliveriesBoard = ({
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="credito">Crédito</SelectItem>
-                  <SelectItem value="debito">Débito</SelectItem>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                  <SelectItem value="pix">Pix</SelectItem>
+                  <PaymentOptions />
                 </SelectContent>
               </Select>
             </div>
