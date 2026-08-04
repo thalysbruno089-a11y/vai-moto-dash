@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, MessageCircle } from "lucide-react";
 import { UltraDeliveriesBoard } from "@/components/ultra/UltraDeliveriesBoard";
 import logo from "@/assets/logo.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -16,6 +16,12 @@ const UltraRegistro = () => {
     navigate("/auth");
   };
 
+  const handleWhatsApp = () => {
+    const phone = "5535998884393";
+    const message = encodeURIComponent("quero uma moto");
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 bg-card border-b print:hidden">
@@ -27,9 +33,19 @@ const UltraRegistro = () => {
               <p className="text-xs text-muted-foreground">Registro de entregas</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-1" /> Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:text-white"
+              onClick={handleWhatsApp}
+            >
+              <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-1" /> Sair
+            </Button>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-4">
