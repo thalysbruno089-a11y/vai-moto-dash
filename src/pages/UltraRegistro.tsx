@@ -33,9 +33,19 @@ const UltraRegistro = () => {
               <p className="text-xs text-muted-foreground">Registro de entregas</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-1" /> Sair
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:text-white"
+              onClick={handleWhatsApp}
+            >
+              <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-1" /> Sair
+            </Button>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-4">
