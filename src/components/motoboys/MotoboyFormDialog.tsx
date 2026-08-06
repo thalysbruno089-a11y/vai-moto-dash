@@ -35,6 +35,8 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
   const [weeklyPayment, setWeeklyPayment] = useState('');
   const [number, setNumber] = useState('');
   const [pixKey, setPixKey] = useState('');
+  const [renavam, setRenavam] = useState('');
+  const [plate, setPlate] = useState('');
 
   const createMotoboy = useCreateMotoboy();
   const updateMotoboy = useUpdateMotoboy();
@@ -52,6 +54,8 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
       setWeeklyPayment((motoboy as any).weekly_payment?.toString() || '');
       setNumber((motoboy as any).number || '');
       setPixKey((motoboy as any).pix_key || '');
+      setRenavam((motoboy as any).renavam || '');
+      setPlate((motoboy as any).plate || '');
     } else {
       setName('');
       setCpf('');
@@ -62,6 +66,8 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
       setWeeklyPayment('');
       setNumber('');
       setPixKey('');
+      setRenavam('');
+      setPlate('');
     }
   }, [motoboy, open]);
 
@@ -78,6 +84,8 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
       weekly_payment: weeklyPayment ? parseFloat(weeklyPayment) : 0,
       number: number || null,
       pix_key: pixKey || null,
+      renavam: renavam || null,
+      plate: plate ? plate.toUpperCase() : null,
     };
     
     try {
@@ -171,6 +179,31 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
 
           <div className="space-y-2">
             <Label htmlFor="address">Endereço</Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="renavam">RENAVAM</Label>
+            <Input
+              id="renavam"
+              value={renavam}
+              onChange={(e) => setRenavam(e.target.value)}
+              placeholder="00000000000"
+              maxLength={20}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="plate">Placa da moto</Label>
+            <Input
+              id="plate"
+              value={plate}
+              onChange={(e) => setPlate(e.target.value.toUpperCase())}
+              placeholder="ABC1D23"
+              maxLength={10}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Input
               id="address"
               value={address}

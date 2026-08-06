@@ -93,6 +93,8 @@ export const motoboySchema = z.object({
   shift: z.enum(['day', 'night', 'weekend', 'star', 'free']),
   status: z.enum(['active', 'inactive']),
   weekly_payment: optionalFinancialValueSchema,
+  renavam: z.string().max(20, 'RENAVAM muito longo').optional().nullable(),
+  plate: z.string().max(10, 'Placa muito longa').optional().nullable(),
 });
 
 // Cash flow validation schema
