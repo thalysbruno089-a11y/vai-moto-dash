@@ -179,6 +179,13 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
 
           <div className="space-y-2">
             <Label htmlFor="address">Endereço</Label>
+            <Input
+              id="address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Rua, número, bairro, cidade"
+              maxLength={200}
+            />
           </div>
 
           <div className="space-y-2">
@@ -200,16 +207,6 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDi
               onChange={(e) => setPlate(e.target.value.toUpperCase())}
               placeholder="ABC1D23"
               maxLength={10}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Input
-              id="address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Rua, número, bairro, cidade"
-              maxLength={200}
             />
           </div>
 

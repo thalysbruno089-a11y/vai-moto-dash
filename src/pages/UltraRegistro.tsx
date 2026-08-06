@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, MessageCircle } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { UltraDeliveriesBoard } from "@/components/ultra/UltraDeliveriesBoard";
 import logo from "@/assets/logo.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -16,8 +16,6 @@ const UltraRegistro = () => {
     navigate("/auth");
   };
 
-  const whatsappUrl = `https://wa.me/5535998884393?text=${encodeURIComponent("quero uma moto")}`;
-
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 bg-card border-b print:hidden">
@@ -30,16 +28,6 @@ const UltraRegistro = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:text-white"
-            >
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="h-4 w-4 mr-1" /> WhatsApp
-              </a>
-            </Button>
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-1" /> Sair
             </Button>
