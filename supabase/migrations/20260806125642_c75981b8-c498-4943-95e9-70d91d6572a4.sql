@@ -1,0 +1,1 @@
+ALTER TABLE public.motoboys ADD COLUMN IF NOT EXISTS renavam text, ADD COLUMN IF NOT EXISTS plate text;

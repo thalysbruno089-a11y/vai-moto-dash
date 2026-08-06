@@ -650,6 +650,8 @@ export type Database = {
           payment_status: string | null
           phone: string | null
           pix_key: string | null
+          plate: string | null
+          renavam: string | null
           shift: Database["public"]["Enums"]["shift_type"]
           status: Database["public"]["Enums"]["status_type"]
           updated_at: string
@@ -666,6 +668,8 @@ export type Database = {
           payment_status?: string | null
           phone?: string | null
           pix_key?: string | null
+          plate?: string | null
+          renavam?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["status_type"]
           updated_at?: string
@@ -682,6 +686,8 @@ export type Database = {
           payment_status?: string | null
           phone?: string | null
           pix_key?: string | null
+          plate?: string | null
+          renavam?: string | null
           shift?: Database["public"]["Enums"]["shift_type"]
           status?: Database["public"]["Enums"]["status_type"]
           updated_at?: string
