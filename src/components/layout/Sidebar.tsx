@@ -39,6 +39,11 @@ const employeeNavigation = [
   { name: "ULTRA", href: "/ultra", icon: Zap },
 ];
 
+const financeNavigation = [
+  { name: "Motoboys", href: "/motorcyclists", icon: Bike },
+  { name: "Clientes", href: "/clients", icon: CreditCard },
+];
+
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
   manager: 'Gerente',
