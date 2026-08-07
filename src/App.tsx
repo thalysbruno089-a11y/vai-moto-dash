@@ -35,11 +35,11 @@ const App = () => (
           <BrowserRouter>
             <Routes>
             <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/motorcyclists" element={<ProtectedRoute><Motorcyclists /></ProtectedRoute>} />
-              <Route path="/clients" element={<ProtectedRoute allowEmployee><Clients /></ProtectedRoute>} />
-              <Route path="/contas" element={<ProtectedRoute><Contas /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute allowFinance={false}><Dashboard /></ProtectedRoute>} />
+              <Route path="/motorcyclists" element={<ProtectedRoute allowFinance><Motorcyclists /></ProtectedRoute>} />
+              <Route path="/clients" element={<ProtectedRoute allowEmployee allowFinance><Clients /></ProtectedRoute>} />
+              <Route path="/contas" element={<ProtectedRoute allowFinance={false}><Contas /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute allowFinance={false}><Reports /></ProtectedRoute>} />
               <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
               <Route path="/loans-lent" element={<AdminRoute><LoansLent /></AdminRoute>} />
               <Route path="/loans-borrowed" element={<AdminRoute><LoansBorrowed /></AdminRoute>} />

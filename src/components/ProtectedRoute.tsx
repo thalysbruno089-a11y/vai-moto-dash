@@ -7,11 +7,12 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   allowEmployee?: boolean;
   allowUltra?: boolean;
+  allowFinance?: boolean;
 }
 
 const MIN_SPLASH_MS = 1500;
 
-const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, allowFinance = true }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
   const [splashElapsed, setSplashElapsed] = useState(false);
 
@@ -44,6 +45,11 @@ const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false }:
 
   // Employees can only access /clients
   if (profile?.role === 'employee' && !allowEmployee) {
+    return <Navigate to="/clients" replace />;
+  }
+
+  // Finance users can only access allowed routes (Motoboys and Clientes by default)
+  if (profile?.role === 'finance' && !allowFinance) {
     return <Navigate to="/clients" replace />;
   }
 
