@@ -164,7 +164,11 @@ const MobileSidebar = () => {
                   {profile?.name || 'Usuário'}
                 </p>
                 <p className="text-xs text-sidebar-muted truncate">
-                  {profile?.role ? roleLabels[profile.role] : 'Carregando...'}
+                  {profile?.role
+                    ? (profile.name === 'Pedro' || profile.name === 'Gabriel'
+                        ? 'Secretário'
+                        : roleLabels[profile.role])
+                    : 'Carregando...'}
                 </p>
               </div>
             </div>
