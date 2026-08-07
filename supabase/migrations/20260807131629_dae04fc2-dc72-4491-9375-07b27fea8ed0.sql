@@ -1,0 +1,1 @@
+UPDATE public.profiles SET role = 'finance' WHERE name = 'Pedro';
