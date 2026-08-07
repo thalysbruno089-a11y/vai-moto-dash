@@ -102,7 +102,11 @@ const MobileSidebar = () => {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
-            {(profile?.role === 'employee' ? employeeNavigation : fullNavigation).map((item) => {
+            {(() => {
+              if (profile?.role === 'employee') return employeeNavigation;
+              if (profile?.role === 'finance') return financeNavigation;
+              return fullNavigation;
+            })().map((item) => {
               const isActive = location.pathname === item.href;
               return (
                 <button
