@@ -427,8 +427,9 @@ export const UltraDeliveriesBoard = ({
     return t;
   }, [deliveries]);
 
-  const alreadySent = deliveries.length > 0 && deliveries.every((d) => d.sent_to_central);
-  const canSend = editable && deliveries.length > 0 && !alreadySent;
+  const pending = useMemo(() => deliveries.filter((d) => !d.sent_to_central), [deliveries]);
+  const sentCount = deliveries.length - pending.length;
+  const canSend = editable && pending.length > 0;
 
   const openNew = () => {
     setForm({ ...emptyForm, horario: format(new Date(), "HH:mm") });
@@ -461,7 +462,7 @@ export const UltraDeliveriesBoard = ({
   const patch = (id: string, p: Partial<UltraDelivery>) => updateMut.mutate({ id, patch: p });
 
   const sendToCentral = () => {
-    const missingOk = deliveries.filter((d) => !d.ok).length;
+    const missingOk = pending.filter((d) => !d.ok).length;
     if (missingOk > 0) {
       toast.warning(`${missingOk} pedido(s) sem OK`, {
         description: "Confirme todos os pedidos antes de enviar.",
@@ -495,7 +496,7 @@ export const UltraDeliveriesBoard = ({
           )}
         </div>
         <div className="flex gap-2">
-          {editable && !alreadySent && (
+          {editable && (
             <Button onClick={openNew} disabled={createMut.isPending} size="sm">
               <Plus className="h-4 w-4 mr-1" /> Nova entrega
             </Button>
@@ -546,11 +547,14 @@ export const UltraDeliveriesBoard = ({
         </CardContent></Card>
       </div>
 
-      {alreadySent && (
+      {sentCount > 0 && (
         <Card className="border-primary/40 bg-primary/5">
           <CardContent className="p-3 flex items-center gap-2 text-sm">
             <Lock className="h-4 w-4 text-primary" />
-            <span>Relatório do dia já foi enviado para a central. Registros bloqueados.</span>
+            <span>
+              {sentCount} corrida(s) já enviada(s) para a central (bloqueadas).
+              {pending.length > 0 && ` ${pending.length} pendente(s) de envio.`}
+            </span>
           </CardContent>
         </Card>
       )}
@@ -588,10 +592,12 @@ export const UltraDeliveriesBoard = ({
             disabled={!canSend || sendMut.isPending}
           >
             <Send className="h-5 w-5 mr-2" />
-            {alreadySent ? "Já enviado" : "Enviar para a central"}
+            {pending.length > 0
+              ? `Enviar ${pending.length} corrida(s) para a central`
+              : "Tudo enviado"}
           </Button>
           <p className="text-xs text-muted-foreground text-center mt-2">
-            Após o envio, o relatório fica disponível para Carlos e Secretaria.
+            Pode enviar quantas vezes quiser durante o dia — só vão as corridas ainda não enviadas.
           </p>
         </div>
       )}
