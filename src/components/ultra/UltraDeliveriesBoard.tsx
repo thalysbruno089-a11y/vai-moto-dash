@@ -394,6 +394,46 @@ function DeliveryRow({
           )}
         </CardContent>
       )}
+
+      <Dialog open={pwdOpen} onOpenChange={setPwdOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar entrega enviada</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Esta entrega já foi enviada para a central. Digite a senha para liberar a edição.
+            </p>
+            <Label className="text-xs">Senha</Label>
+            <Input
+              type="password"
+              inputMode="numeric"
+              value={pwd}
+              onChange={(e) => setPwd(e.target.value)}
+              placeholder="******"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPwdOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (pwd !== EDIT_SENT_PASSWORD) {
+                  toast.error("Senha incorreta");
+                  return;
+                }
+                setUnlocked(true);
+                setPwdOpen(false);
+                setPwd("");
+                toast.success("Edição liberada");
+              }}
+            >
+              Liberar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
