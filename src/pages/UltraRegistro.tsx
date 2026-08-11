@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, Phone } from "lucide-react";
 import { UltraDeliveriesBoard } from "@/components/ultra/UltraDeliveriesBoard";
 import logo from "@/assets/logo.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -35,7 +35,16 @@ const UltraRegistro = () => {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-4">
-        <div className="flex justify-end mb-3 print:hidden">
+        <div className="flex justify-end gap-2 mb-3 print:hidden">
+          <Button variant="outline" size="sm" asChild>
+            <a
+              href="https://wa.me/5535997609456?text=Preciso%20de%20uma%20moto."
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Phone className="h-4 w-4 mr-2" /> WhatsApp
+            </a>
+          </Button>
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm">
