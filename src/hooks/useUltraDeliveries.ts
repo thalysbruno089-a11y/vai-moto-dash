@@ -83,15 +83,19 @@ export const useSendUltraDayToCentral = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (date: string) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("ultra_deliveries" as any)
         .update({ sent_to_central: true, sent_at: new Date().toISOString() })
-        .eq("delivery_date", date);
+        .eq("delivery_date", date)
+        .eq("sent_to_central", false)
+        .select("id");
       if (error) throw error;
+      return (data || []).length;
     },
-    onSuccess: () => {
+    onSuccess: (count) => {
       qc.invalidateQueries({ queryKey: ["ultra-deliveries"] });
-      toast.success("Relatório enviado para a central");
+      if (count === 0) toast.info("Nenhuma corrida nova para enviar");
+      else toast.success(`${count} corrida(s) enviada(s) para a central`);
     },
     onError: (e: Error) => toast.error("Erro", { description: e.message }),
   });
