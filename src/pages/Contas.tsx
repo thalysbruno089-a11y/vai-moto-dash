@@ -735,7 +735,7 @@ const Contas = () => {
                 <h3 className="text-xl font-bold text-foreground">Contas no período</h3>
                 <Badge variant="secondary" className="text-sm h-7 px-3 font-semibold">{periodBills.length}</Badge>
               </div>
-              <div className="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+              <div className="space-y-2.5 max-h-[calc(100vh-260px)] min-h-[520px] overflow-y-auto pr-1">
                 {periodBills.map(b => {
                   const effectiveStatus = getEffectiveStatus(b);
                   const dueDate = getEffectiveDueDate(b);
@@ -778,6 +778,33 @@ const Contas = () => {
                             Pagar
                           </Button>
                         )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-7 w-7">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {effectiveStatus === "paid" ? (
+                              <DropdownMenuItem onClick={() => handleMarkUnpaid(b)}>
+                                <XCircle className="mr-2 h-4 w-4 text-destructive" /> Marcar Não Pago
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => handleMarkPaid(b)}>
+                                <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" /> Marcar Pago
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem onClick={() => handleEditEntry(b)}>
+                              <Edit className="mr-2 h-4 w-4" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditEntry(b)}>
+                              <Package className="mr-2 h-4 w-4" /> Trocar Categoria
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEntryClick(b.id)}>
+                              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   );
