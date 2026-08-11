@@ -47,6 +47,11 @@ const employeeNavigation = [
   { name: "ULTRA", href: "/ultra", icon: Zap },
 ];
 
+const managerNavigation = [
+  ...fullNavigation,
+  { name: "ULTRA", href: "/ultra", icon: Zap },
+];
+
 const financeNavigation = [
   { name: "Motoboys", href: "/motorcyclists", icon: Bike },
   { name: "Clientes", href: "/clients", icon: CreditCard },
@@ -105,6 +110,7 @@ const MobileSidebar = () => {
             {(() => {
               if (profile?.role === 'employee') return employeeNavigation;
               if (profile?.role === 'finance') return financeNavigation;
+              if (profile?.role === 'manager') return managerNavigation;
               return fullNavigation;
             })().map((item) => {
               const isActive = location.pathname === item.href;
