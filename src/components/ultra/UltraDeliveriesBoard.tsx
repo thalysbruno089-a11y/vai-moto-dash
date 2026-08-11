@@ -61,6 +61,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 const MANAGER_DELETE_PASSWORD = "090807";
+const EDIT_SENT_PASSWORD = "010203";
 
 const PaymentOptions = () => (
   <>
@@ -94,6 +95,9 @@ function DeliveryRow({
   onDelete: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwdOpen, setPwdOpen] = useState(false);
+  const [pwd, setPwd] = useState("");
   const [draft, setDraft] = useState({
     horario: delivery.horario ?? "",
     numero: delivery.numero ?? "",
@@ -136,7 +140,7 @@ function DeliveryRow({
     .filter(Boolean)
     .join(" • ") || "Toque para preencher";
 
-  const locked = delivery.sent_to_central;
+  const locked = delivery.sent_to_central && !unlocked;
 
   return (
     <Card className={delivery.ok ? "border-success/50" : locked ? "border-primary/40" : ""}>
@@ -185,6 +189,11 @@ function DeliveryRow({
                 <Lock className="h-3 w-3" /> Enviado
               </Badge>
             )}
+            {delivery.sent_to_central && unlocked && (
+              <Badge variant="outline" className="h-5 text-[10px] gap-0.5 border-success/50 text-success">
+                Edição liberada
+              </Badge>
+            )}
           </div>
         </div>
         {open ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
@@ -192,6 +201,19 @@ function DeliveryRow({
 
       {open && (
         <CardContent className="pt-0 pb-3 space-y-3">
+          {editable && delivery.sent_to_central && !unlocked && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setPwd("");
+                setPwdOpen(true);
+              }}
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              Editar (senha)
+            </Button>
+          )}
           <div className="flex items-center justify-between">
             <Input
               type="time"
@@ -372,6 +394,46 @@ function DeliveryRow({
           )}
         </CardContent>
       )}
+
+      <Dialog open={pwdOpen} onOpenChange={setPwdOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar entrega enviada</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Esta entrega já foi enviada para a central. Digite a senha para liberar a edição.
+            </p>
+            <Label className="text-xs">Senha</Label>
+            <Input
+              type="password"
+              inputMode="numeric"
+              value={pwd}
+              onChange={(e) => setPwd(e.target.value)}
+              placeholder="******"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPwdOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (pwd !== EDIT_SENT_PASSWORD) {
+                  toast.error("Senha incorreta");
+                  return;
+                }
+                setUnlocked(true);
+                setPwdOpen(false);
+                setPwd("");
+                toast.success("Edição liberada");
+              }}
+            >
+              Liberar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
