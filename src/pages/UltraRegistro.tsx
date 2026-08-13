@@ -15,6 +15,22 @@ import { useMemo } from "react";
 const UltraRegistro = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const today = format(new Date(), "yyyy-MM-dd");
+  const { data: deliveries = [] } = useUltraDeliveries(today, { sentOnly: false });
+
+  const totals = useMemo(() => {
+    const t = { pagamento: 0, taxa: 0, corridas: 0, entregues: 0 };
+    for (const d of deliveries) {
+      t.pagamento += Number(d.pagamento || 0);
+      t.taxa += Number(d.taxa || 0);
+      if (d.ok) t.entregues += 1;
+    }
+    t.corridas = deliveries.length;
+    return t;
+  }, [deliveries]);
+
+  const fmtMoney = (v: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   const handleSignOut = async () => {
     await signOut();
