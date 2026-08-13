@@ -8,7 +8,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Archive } from "lucide-react";
 import { useUltraDeliveries } from "@/hooks/useUltraDeliveries";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMemo } from "react";
 
