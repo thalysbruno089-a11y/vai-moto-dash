@@ -36,7 +36,11 @@ const UltraRegistro = () => {
       </header>
       <main className="mx-auto max-w-3xl px-4 py-4">
         <div className="flex justify-end gap-2 mb-3 print:hidden">
-          <Button variant="outline" size="sm" asChild>
+          <Button
+            size="sm"
+            asChild
+            className="bg-[#25D366] hover:bg-[#1ebe57] text-white transition-all duration-200 hover:scale-105 shadow-sm"
+          >
             <a
               href="https://wa.me/5535997609456?text=Preciso%20de%20uma%20moto."
               target="_blank"
