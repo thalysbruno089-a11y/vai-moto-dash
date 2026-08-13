@@ -73,6 +73,44 @@ const UltraRegistro = () => {
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm">
+                <Wallet className="h-4 w-4 mr-2" /> Pagamentos
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Totais do dia</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <Card>
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground">Corridas</p>
+                    <p className="text-xl font-bold">{totals.corridas}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground">Entregues (OK)</p>
+                    <p className="text-xl font-bold text-success">{totals.entregues}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground">Total pagamento</p>
+                    <p className="text-lg font-bold">{fmtMoney(totals.pagamento)}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3">
+                    <p className="text-xs text-muted-foreground">Total taxa</p>
+                    <p className="text-lg font-bold">{fmtMoney(totals.taxa)}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </SheetContent>
+          </Sheet>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm">
                 <Archive className="h-4 w-4 mr-2" /> Salvos
               </Button>
             </SheetTrigger>
