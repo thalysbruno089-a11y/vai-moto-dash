@@ -456,7 +456,6 @@ export const UltraDeliveriesBoard = ({
   const [toDelete, setToDelete] = useState<string | null>(null);
   const [deletePwd, setDeletePwd] = useState("");
   const [logsOpen, setLogsOpen] = useState(false);
-  const [showTotalPagamento, setShowTotalPagamento] = useState(false);
   const { data: deletionLogs = [], isLoading: logsLoading } = useUltraDeletionLogs();
   const [newOpen, setNewOpen] = useState(false);
   const emptyForm = {
