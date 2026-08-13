@@ -1,11 +1,16 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Phone } from "lucide-react";
+import { LogOut, Phone, Wallet } from "lucide-react";
 import { UltraDeliveriesBoard } from "@/components/ultra/UltraDeliveriesBoard";
 import logo from "@/assets/logo.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Archive } from "lucide-react";
+import { useUltraDeliveries } from "@/hooks/useUltraDeliveries";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Card, CardContent } from "@/components/ui/card";
+import { useMemo } from "react";
 
 const UltraRegistro = () => {
   const { signOut } = useAuth();
