@@ -603,7 +603,18 @@ export const UltraDeliveriesBoard = ({
         </CardContent></Card>
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">Total pagamento</p>
-          <p className="text-lg font-bold">{fmtMoney(totals.pagamento)}</p>
+          {showTotalPagamento ? (
+            <p className="text-lg font-bold">{fmtMoney(totals.pagamento)}</p>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-1 h-7 text-xs w-full"
+              onClick={() => setShowTotalPagamento(true)}
+            >
+              <Calculator className="h-3 w-3 mr-1" /> Calcular
+            </Button>
+          )}
         </CardContent></Card>
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">Total taxa</p>
