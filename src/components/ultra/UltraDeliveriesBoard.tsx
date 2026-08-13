@@ -13,7 +13,7 @@ import {
   Printer,
   Lock,
   History,
-  Calculator,
+
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -456,7 +456,6 @@ export const UltraDeliveriesBoard = ({
   const [toDelete, setToDelete] = useState<string | null>(null);
   const [deletePwd, setDeletePwd] = useState("");
   const [logsOpen, setLogsOpen] = useState(false);
-  const [showTotalPagamento, setShowTotalPagamento] = useState(false);
   const { data: deletionLogs = [], isLoading: logsLoading } = useUltraDeletionLogs();
   const [newOpen, setNewOpen] = useState(false);
   const emptyForm = {
@@ -592,7 +591,7 @@ export const UltraDeliveriesBoard = ({
       </div>
 
       {/* Totals */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">Corridas</p>
           <p className="text-xl font-bold">{deliveries.length}</p>
@@ -600,21 +599,6 @@ export const UltraDeliveriesBoard = ({
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">Entregues (OK)</p>
           <p className="text-xl font-bold text-success">{totals.entregues}</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-3">
-          <p className="text-xs text-muted-foreground">Total pagamento</p>
-          {showTotalPagamento ? (
-            <p className="text-lg font-bold">{fmtMoney(totals.pagamento)}</p>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-1 h-7 text-xs w-full"
-              onClick={() => setShowTotalPagamento(true)}
-            >
-              <Calculator className="h-3 w-3 mr-1" /> Calcular
-            </Button>
-          )}
         </CardContent></Card>
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">Total taxa</p>
