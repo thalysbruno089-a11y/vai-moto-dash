@@ -564,7 +564,7 @@ export const UltraDeliveriesBoard = ({
     <div className="space-y-4 print:space-y-2">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm flex-wrap">
           <CalendarIcon className="h-4 w-4 text-primary" />
           {allowDateChange ? (
             <Input
@@ -587,7 +587,7 @@ export const UltraDeliveriesBoard = ({
               <Plus className="h-4 w-4 mr-1" /> Nova entrega
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={handlePrint} disabled={!deliveries.length}>
+          <Button variant="outline" size="sm" onClick={handlePrint} disabled={!filteredDeliveries.length}>
             <Printer className="h-4 w-4 mr-1" /> Imprimir
           </Button>
           <Button variant="outline" size="sm" onClick={() => setLogsOpen(true)}>
@@ -595,6 +595,33 @@ export const UltraDeliveriesBoard = ({
           </Button>
         </div>
       </div>
+
+      {/* Motoboy filter (Carlos/Secretaria view only) */}
+      {!editable && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 print:hidden">
+          <span className="text-sm font-medium">Filtrar por motoboy:</span>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex-1 sm:flex-initial sm:min-w-[260px]">
+              <MotoboyCombobox
+                motoboys={motoboys}
+                value={selectedMotoboyId}
+                onValueChange={(v) => setSelectedMotoboyId(v)}
+              />
+            </div>
+            {selectedMotoboyId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() => setSelectedMotoboyId("")}
+                title="Limpar filtro"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Print header */}
       <div className="hidden print:flex print:flex-col print:items-center print:gap-2 print:mb-3">
