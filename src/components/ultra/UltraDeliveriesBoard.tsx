@@ -490,11 +490,30 @@ export const UltraDeliveriesBoard = ({
 
   const filteredDeliveries = useMemo(() => {
     if (!selectedMotoboyId || !selectedMotoboy) return deliveries;
-    return deliveries.filter(
-      (d) =>
-        d.entregador?.trim().toLowerCase() === selectedMotoboy.name.trim().toLowerCase() ||
-        d.numero?.trim() === selectedMotoboy.number?.trim()
-    );
+    const norm = (s: string) =>
+      s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    const target = norm(selectedMotoboy.name);
+    const targetTokens = target.split(" ").filter(Boolean);
+    const num = selectedMotoboy.number?.trim();
+
+    return deliveries.filter((d) => {
+      if (num && d.numero?.trim() === num) return true;
+      const name = norm(d.entregador ?? "");
+      if (!name) return false;
+      if (name === target || name.includes(target) || target.includes(name)) return true;
+      const tokens = name.split(" ").filter(Boolean);
+      // match if they share the first name plus any other name part
+      if (tokens[0] && targetTokens[0] && tokens[0] === targetTokens[0]) {
+        if (tokens.length === 1 || targetTokens.length === 1) return true;
+        return tokens.some((t, i) => i > 0 && targetTokens.includes(t));
+      }
+      return false;
+    });
   }, [deliveries, selectedMotoboyId, selectedMotoboy]);
 
   const nextPos = useMemo(
