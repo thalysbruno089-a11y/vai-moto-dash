@@ -13,7 +13,7 @@ import {
   Printer,
   Lock,
   History,
-
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,8 @@ import {
   useUltraDeletionLogs,
   type UltraDelivery,
 } from "@/hooks/useUltraDeliveries";
+import { useMotoboys } from "@/hooks/useMotoboys";
+import { MotoboyCombobox } from "@/components/clients/MotoboyCombobox";
 import { toast } from "sonner";
 import ultraLogo from "@/assets/ultra-logo.png.asset.json";
 
@@ -448,7 +450,9 @@ export const UltraDeliveriesBoard = ({
 }: Props) => {
   const today = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedMotoboyId, setSelectedMotoboyId] = useState("");
   const { data: deliveries = [], isLoading } = useUltraDeliveries(selectedDate, { sentOnly });
+  const { data: motoboys = [] } = useMotoboys();
   const createMut = useCreateUltraDelivery();
   const updateMut = useUpdateUltraDelivery();
   const deleteMut = useDeleteUltraDelivery();
@@ -474,6 +478,25 @@ export const UltraDeliveriesBoard = ({
   };
   const [form, setForm] = useState(emptyForm);
 
+  // Reset motoboy filter when date changes
+  useEffect(() => {
+    setSelectedMotoboyId("");
+  }, [selectedDate]);
+
+  const selectedMotoboy = useMemo(
+    () => motoboys.find((m) => m.id === selectedMotoboyId),
+    [motoboys, selectedMotoboyId]
+  );
+
+  const filteredDeliveries = useMemo(() => {
+    if (!selectedMotoboyId || !selectedMotoboy) return deliveries;
+    return deliveries.filter(
+      (d) =>
+        d.entregador?.trim().toLowerCase() === selectedMotoboy.name.trim().toLowerCase() ||
+        d.numero?.trim() === selectedMotoboy.number?.trim()
+    );
+  }, [deliveries, selectedMotoboyId, selectedMotoboy]);
+
   const nextPos = useMemo(
     () => (deliveries.length ? Math.max(...deliveries.map((d) => d.position)) + 1 : 1),
     [deliveries]
@@ -481,17 +504,17 @@ export const UltraDeliveriesBoard = ({
 
   const totals = useMemo(() => {
     const t = { pagamento: 0, taxa: 0, entregues: 0, receitas: 0 };
-    for (const d of deliveries) {
+    for (const d of filteredDeliveries) {
       t.pagamento += Number(d.pagamento || 0);
       t.taxa += Number(d.taxa || 0);
       if (d.ok) t.entregues += 1;
       if (d.tem_receita) t.receitas += 1;
     }
     return t;
-  }, [deliveries]);
+  }, [filteredDeliveries]);
 
-  const pending = useMemo(() => deliveries.filter((d) => !d.sent_to_central), [deliveries]);
-  const sentCount = deliveries.length - pending.length;
+  const pending = useMemo(() => filteredDeliveries.filter((d) => !d.sent_to_central), [filteredDeliveries]);
+  const sentCount = filteredDeliveries.length - pending.length;
   const canSend = editable && pending.length > 0;
 
   const openNew = () => {
@@ -541,7 +564,7 @@ export const UltraDeliveriesBoard = ({
     <div className="space-y-4 print:space-y-2">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm flex-wrap">
           <CalendarIcon className="h-4 w-4 text-primary" />
           {allowDateChange ? (
             <Input
@@ -564,7 +587,7 @@ export const UltraDeliveriesBoard = ({
               <Plus className="h-4 w-4 mr-1" /> Nova entrega
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={handlePrint} disabled={!deliveries.length}>
+          <Button variant="outline" size="sm" onClick={handlePrint} disabled={!filteredDeliveries.length}>
             <Printer className="h-4 w-4 mr-1" /> Imprimir
           </Button>
           <Button variant="outline" size="sm" onClick={() => setLogsOpen(true)}>
@@ -572,6 +595,33 @@ export const UltraDeliveriesBoard = ({
           </Button>
         </div>
       </div>
+
+      {/* Motoboy filter (Carlos/Secretaria view only) */}
+      {!editable && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 print:hidden">
+          <span className="text-sm font-medium">Filtrar por motoboy:</span>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex-1 sm:flex-initial sm:min-w-[260px]">
+              <MotoboyCombobox
+                motoboys={motoboys}
+                value={selectedMotoboyId}
+                onValueChange={(v) => setSelectedMotoboyId(v)}
+              />
+            </div>
+            {selectedMotoboyId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() => setSelectedMotoboyId("")}
+                title="Limpar filtro"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Print header */}
       <div className="hidden print:flex print:flex-col print:items-center print:gap-2 print:mb-3">
@@ -594,7 +644,7 @@ export const UltraDeliveriesBoard = ({
       <div className="grid grid-cols-3 gap-2">
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">Corridas</p>
-          <p className="text-xl font-bold">{deliveries.length}</p>
+          <p className="text-xl font-bold">{filteredDeliveries.length}</p>
         </CardContent></Card>
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">Entregues (OK)</p>
@@ -621,15 +671,17 @@ export const UltraDeliveriesBoard = ({
       {/* Rows */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-      ) : deliveries.length === 0 ? (
+      ) : filteredDeliveries.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">
-          {editable
+          {selectedMotoboyId
+            ? "Nenhuma corrida encontrada para este motoboy na data selecionada."
+            : editable
             ? <>Nenhuma entrega registrada. Toque em <span className="font-medium">Nova entrega</span>.</>
             : "Nenhum relatório recebido para esta data."}
         </CardContent></Card>
       ) : (
         <div className="space-y-2">
-          {deliveries.map((d) => (
+          {filteredDeliveries.map((d) => (
             <DeliveryRow
               key={d.id}
               delivery={d}
