@@ -644,7 +644,7 @@ export const UltraDeliveriesBoard = ({
       <div className="grid grid-cols-3 gap-2">
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">Corridas</p>
-          <p className="text-xl font-bold">{deliveries.length}</p>
+          <p className="text-xl font-bold">{filteredDeliveries.length}</p>
         </CardContent></Card>
         <Card><CardContent className="p-3">
           <p className="text-xs text-muted-foreground">Entregues (OK)</p>
