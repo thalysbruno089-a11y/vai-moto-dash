@@ -671,15 +671,17 @@ export const UltraDeliveriesBoard = ({
       {/* Rows */}
       {isLoading ? (
         <div className="text-center py-8 text-muted-foreground">Carregando...</div>
-      ) : deliveries.length === 0 ? (
+      ) : filteredDeliveries.length === 0 ? (
         <Card><CardContent className="py-10 text-center text-muted-foreground">
-          {editable
+          {selectedMotoboyId
+            ? "Nenhuma corrida encontrada para este motoboy na data selecionada."
+            : editable
             ? <>Nenhuma entrega registrada. Toque em <span className="font-medium">Nova entrega</span>.</>
             : "Nenhum relatório recebido para esta data."}
         </CardContent></Card>
       ) : (
         <div className="space-y-2">
-          {deliveries.map((d) => (
+          {filteredDeliveries.map((d) => (
             <DeliveryRow
               key={d.id}
               delivery={d}
