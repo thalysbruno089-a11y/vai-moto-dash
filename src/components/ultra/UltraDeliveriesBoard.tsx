@@ -450,7 +450,9 @@ export const UltraDeliveriesBoard = ({
 }: Props) => {
   const today = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedMotoboyId, setSelectedMotoboyId] = useState("");
   const { data: deliveries = [], isLoading } = useUltraDeliveries(selectedDate, { sentOnly });
+  const { data: motoboys = [] } = useMotoboys();
   const createMut = useCreateUltraDelivery();
   const updateMut = useUpdateUltraDelivery();
   const deleteMut = useDeleteUltraDelivery();
@@ -476,6 +478,25 @@ export const UltraDeliveriesBoard = ({
   };
   const [form, setForm] = useState(emptyForm);
 
+  // Reset motoboy filter when date changes
+  useEffect(() => {
+    setSelectedMotoboyId("");
+  }, [selectedDate]);
+
+  const selectedMotoboy = useMemo(
+    () => motoboys.find((m) => m.id === selectedMotoboyId),
+    [motoboys, selectedMotoboyId]
+  );
+
+  const filteredDeliveries = useMemo(() => {
+    if (!selectedMotoboyId || !selectedMotoboy) return deliveries;
+    return deliveries.filter(
+      (d) =>
+        d.entregador?.trim().toLowerCase() === selectedMotoboy.name.trim().toLowerCase() ||
+        d.numero?.trim() === selectedMotoboy.number?.trim()
+    );
+  }, [deliveries, selectedMotoboyId, selectedMotoboy]);
+
   const nextPos = useMemo(
     () => (deliveries.length ? Math.max(...deliveries.map((d) => d.position)) + 1 : 1),
     [deliveries]
@@ -483,17 +504,17 @@ export const UltraDeliveriesBoard = ({
 
   const totals = useMemo(() => {
     const t = { pagamento: 0, taxa: 0, entregues: 0, receitas: 0 };
-    for (const d of deliveries) {
+    for (const d of filteredDeliveries) {
       t.pagamento += Number(d.pagamento || 0);
       t.taxa += Number(d.taxa || 0);
       if (d.ok) t.entregues += 1;
       if (d.tem_receita) t.receitas += 1;
     }
     return t;
-  }, [deliveries]);
+  }, [filteredDeliveries]);
 
-  const pending = useMemo(() => deliveries.filter((d) => !d.sent_to_central), [deliveries]);
-  const sentCount = deliveries.length - pending.length;
+  const pending = useMemo(() => filteredDeliveries.filter((d) => !d.sent_to_central), [filteredDeliveries]);
+  const sentCount = filteredDeliveries.length - pending.length;
   const canSend = editable && pending.length > 0;
 
   const openNew = () => {
