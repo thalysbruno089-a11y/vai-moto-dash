@@ -148,8 +148,24 @@ function DeliveryRow({
 
   const locked = delivery.sent_to_central && !unlocked;
 
+  // Pendências: receita não entregue ou dinheiro não devolvido -> vermelho.
+  // Confirmada (OK) sem pendências -> verde.
+  const pendenteReceita = delivery.tem_receita && !delivery.receita_ok;
+  const pendenteDinheiro = delivery.payment_method === "dinheiro" && !delivery.dinheiro_devolvido;
+  const hasPendency = pendenteReceita || pendenteDinheiro;
+
   return (
-    <Card className={delivery.ok ? "border-success/50" : locked ? "border-primary/40" : ""}>
+    <Card
+      className={cn(
+        hasPendency
+          ? "border-destructive/60 bg-destructive/10"
+          : delivery.ok
+            ? "border-success/60 bg-success/10"
+            : locked
+              ? "border-primary/40"
+              : ""
+      )}
+    >
       {/* Header (always visible, click to toggle) */}
       <button
         type="button"
