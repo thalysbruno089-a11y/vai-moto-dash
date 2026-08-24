@@ -359,12 +359,12 @@ const Contas = () => {
 
   const totalPaid = useMemo(() =>
     groupCategories.reduce((acc, cat) => acc + getCategoryPaidTotal(cat.id), 0),
-    [groupCategories, bills, currentRange]
+    [groupCategories, bills, currentRange, paidMonthsByBill, viewedMonthKey]
   );
 
   const totalPending = useMemo(() =>
     groupCategories.reduce((acc, cat) => acc + getCategoryPendingTotal(cat.id), 0),
-    [groupCategories, bills, currentRange]
+    [groupCategories, bills, currentRange, paidMonthsByBill, viewedMonthKey]
   );
 
   const savedCategoryIds = useMemo(
@@ -375,7 +375,7 @@ const Contas = () => {
   const openBillsFromSavedCategories = useMemo(() => {
     if (!bills) return [];
     return bills.filter(b => getEffectiveStatus(b) !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
-  }, [bills, savedCategoryIds]);
+  }, [bills, savedCategoryIds, paidMonthsByBill, viewedMonthKey]);
 
   // Overdue bills - last 30 days, filtered by active group (includes fixed bills with stale paid status)
   const overdueBills = useMemo(() => {
@@ -392,7 +392,7 @@ const Contas = () => {
         return isBefore(dueDate, today) && !isToday(dueDate) && dueDate >= thirtyDaysAgo;
       })
       .sort((a, b) => a.due_date.localeCompare(b.due_date));
-  }, [bills, groupCategories]);
+  }, [bills, groupCategories, paidMonthsByBill, viewedMonthKey]);
 
   // Get urgency level for progressive styling
   const getUrgencyLevel = (daysLate: number): { bg: string; text: string; border: string } => {
