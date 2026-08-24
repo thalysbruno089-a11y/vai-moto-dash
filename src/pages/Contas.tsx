@@ -441,7 +441,7 @@ const Contas = () => {
     if (valeNow > 0) {
       toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow });
+    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow, paid_month: viewedMonthKey });
   };
   const handleBalanceConfirm = async (source: string) => {
     if (!balanceBillPending) return;
@@ -462,11 +462,13 @@ const Contas = () => {
     if (valeNow > 0) {
       toast.warning(`⚠️ ${balanceBillPending.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync({ ...balanceBillPending, vale_amount: valeNow });
+    await markAsPaid.mutateAsync({ ...balanceBillPending, vale_amount: valeNow, paid_month: viewedMonthKey });
     setBalanceDialogOpen(false);
     setBalanceBillPending(null);
   };
-  const handleMarkUnpaid = async (entry: Bill) => { await updateBill.mutateAsync({ id: entry.id, status: "pending", paid_at: null }); };
+  const handleMarkUnpaid = async (entry: Bill) => {
+    await unmarkPaid.mutateAsync({ bill: entry, paidMonth: viewedMonthKey });
+  };
   const handleOpenVale = (entry: Bill) => { setValeEntry(entry); setValeDialogOpen(true); };
 
   const handleApplyCustomRange = () => {
