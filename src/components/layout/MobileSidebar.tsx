@@ -57,6 +57,10 @@ const financeNavigation = [
   { name: "Clientes", href: "/clients", icon: CreditCard },
 ];
 
+const secretarioNavigation = [
+  { name: "Clientes", href: "/clients", icon: CreditCard },
+];
+
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
   manager: 'Gerente',
