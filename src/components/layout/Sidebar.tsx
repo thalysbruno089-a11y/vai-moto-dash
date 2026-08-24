@@ -49,6 +49,10 @@ const financeNavigation = [
   { name: "Clientes", href: "/clients", icon: CreditCard },
 ];
 
+const secretarioNavigation = [
+  { name: "Clientes", href: "/clients", icon: CreditCard },
+];
+
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
   manager: 'Gerente',
@@ -87,6 +91,7 @@ const Sidebar = () => {
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {(() => {
             if (profile?.role === 'employee') return employeeNavigation;
+            if (profile?.name === 'Pedro' || profile?.name === 'Gabriel') return secretarioNavigation;
             if (profile?.role === 'finance') return financeNavigation;
             if (profile?.role === 'manager') return managerNavigation;
             return fullNavigation;
