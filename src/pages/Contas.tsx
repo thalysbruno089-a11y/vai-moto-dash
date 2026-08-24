@@ -151,6 +151,7 @@ const Contas = () => {
   const deleteCategory = useDeleteCategory();
   const deleteBill = useDeleteBill();
   const markAsPaid = useMarkBillAsPaid();
+  const unmarkPaid = useUnmarkBillPaid();
   const updateBill = useUpdateBill();
   const createBalanceDifference = useCreateBalanceDifference();
 
@@ -305,18 +306,14 @@ const Contas = () => {
     [groupCategories, searchTerm]
   );
 
-  // Get effective status: fixed bills should only show "paid" if paid_at falls within the viewed period
+  // Month key (YYYY-MM) of the period being viewed — fixed bills are paid "per month"
+  const viewedMonthKey = format(currentRange.start, "yyyy-MM");
+
+  // Get effective status: fixed bills count as paid only if there's a payment
+  // recorded for the viewed month (survives the monthly reset cron)
   const getEffectiveStatus = (bill: Bill): string => {
     if (!bill.is_fixed) return bill.status;
-    if (bill.status !== "paid" || !bill.paid_at) return bill.status;
-    const paidDate = new Date(bill.paid_at + (bill.paid_at.includes("T") ? "" : "T12:00:00"));
-    const viewedMonth = currentRange.start.getMonth();
-    const viewedYear = currentRange.start.getFullYear();
-    // Fixed bill only counts as "paid" if it was paid in the same month being viewed
-    if (paidDate.getMonth() !== viewedMonth || paidDate.getFullYear() !== viewedYear) {
-      return "pending";
-    }
-    return bill.status;
+    return paidMonthsByBill.get(bill.id)?.has(viewedMonthKey) ? "paid" : "pending";
   };
 
   // For fixed bills viewed in month mode, anchor the due date to the viewed month/year
