@@ -65,6 +65,51 @@ export type Database = {
           },
         ]
       }
+      bill_payments: {
+        Row: {
+          amount: number | null
+          bill_id: string
+          company_id: string
+          created_at: string
+          id: string
+          paid_at: string
+          paid_month: string
+        }
+        Insert: {
+          amount?: number | null
+          bill_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          paid_at?: string
+          paid_month: string
+        }
+        Update: {
+          amount?: number | null
+          bill_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          paid_at?: string
+          paid_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_payments_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bill_vales: {
         Row: {
           amount: number

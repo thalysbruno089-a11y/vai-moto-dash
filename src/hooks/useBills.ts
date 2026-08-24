@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { format } from 'date-fns';
 import { financialValueSchema, dateSchema } from '@/lib/validation';
 
 // Bill types (manual since types.ts is read-only and auto-generated)
@@ -176,9 +177,9 @@ export const useUpdateBill = () => {
 
 export const useMarkBillAsPaid = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async (bill: Bill) => {
+    mutationFn: async (bill: Bill & { paid_month?: string }) => {
       // Each bill row represents a single payable item (even if it's an installment)
       const updateData: Record<string, unknown> = {
         status: 'paid',
@@ -190,7 +191,7 @@ export const useMarkBillAsPaid = () => {
         .from('bills')
         .update(updateData)
         .eq('id', bill.id);
-      
+
       if (billError) throw billError;
 
       // 2. Register payment in cash_flow as expense
@@ -202,7 +203,7 @@ export const useMarkBillAsPaid = () => {
         .select('company_id')
         .eq('id', user.id)
         .maybeSingle();
-      
+
       if (!profile?.company_id) throw new Error('Empresa não encontrada');
 
       const netValue = bill.value - (bill.vale_amount || 0);
@@ -216,8 +217,21 @@ export const useMarkBillAsPaid = () => {
           flow_date: new Date().toISOString().split('T')[0],
           category_id: bill.category_id,
         });
-      
+
       if (cfError) throw cfError;
+
+      // 3. Record which month this payment belongs to (fixed bills reset monthly)
+      const paidMonth = bill.paid_month ?? format(new Date(), 'yyyy-MM');
+      const { error: bpError } = await supabase
+        .from('bill_payments' as any)
+        .upsert({
+          company_id: profile.company_id,
+          bill_id: bill.id,
+          paid_month: paidMonth,
+          amount: netValue,
+        }, { onConflict: 'bill_id,paid_month' });
+
+      if (bpError) throw bpError;
 
       return { success: true };
     },
@@ -225,10 +239,68 @@ export const useMarkBillAsPaid = () => {
       queryClient.invalidateQueries({ queryKey: ['bills'] });
       queryClient.invalidateQueries({ queryKey: ['cash_flow'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['bill_payments'] });
       toast.success('Conta marcada como paga e registrada no fluxo de caixa!');
     },
     onError: (error) => {
       toast.error('Erro ao processar pagamento', { description: error.message });
+    },
+  });
+};
+
+export const useUnmarkBillPaid = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ bill, paidMonth }: { bill: Bill; paidMonth?: string }) => {
+      // Remove the monthly payment record
+      if (paidMonth) {
+        await supabase
+          .from('bill_payments' as any)
+          .delete()
+          .eq('bill_id', bill.id)
+          .eq('paid_month', paidMonth);
+      }
+
+      // Remove the cash_flow expense — prefer entries inside the paid month,
+      // fallback to all matches (legacy behavior) if none found there
+      let removed = 0;
+      if (paidMonth) {
+        const [y, m] = paidMonth.split('-').map(Number);
+        const lastDay = new Date(y, m, 0).getDate();
+        const { data } = await supabase
+          .from('cash_flow')
+          .delete()
+          .eq('description', bill.name)
+          .eq('type', 'expense')
+          .gte('flow_date', `${paidMonth}-01`)
+          .lte('flow_date', `${paidMonth}-${String(lastDay).padStart(2, '0')}`)
+          .select('id');
+        removed = (data || []).length;
+      }
+      if (removed === 0) {
+        await supabase
+          .from('cash_flow')
+          .delete()
+          .eq('description', bill.name)
+          .eq('type', 'expense');
+      }
+
+      const { error } = await supabase
+        .from('bills')
+        .update({ status: 'pending', paid_at: null })
+        .eq('id', bill.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bills'] });
+      queryClient.invalidateQueries({ queryKey: ['cash_flow'] });
+      queryClient.invalidateQueries({ queryKey: ['bill_payments'] });
+      toast.success('Conta marcada como não paga!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao atualizar conta', { description: error.message });
     },
   });
 };

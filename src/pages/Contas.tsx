@@ -59,7 +59,7 @@ import {
   Repeat,
 } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
-import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from "@/hooks/useBills";
+import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, useUnmarkBillPaid, Bill } from "@/hooks/useBills";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useWeeklyClosings } from "@/hooks/useWeeklyClosings";
@@ -151,6 +151,7 @@ const Contas = () => {
   const deleteCategory = useDeleteCategory();
   const deleteBill = useDeleteBill();
   const markAsPaid = useMarkBillAsPaid();
+  const unmarkPaid = useUnmarkBillPaid();
   const updateBill = useUpdateBill();
   const createBalanceDifference = useCreateBalanceDifference();
 
@@ -177,6 +178,27 @@ const Contas = () => {
 
   // Returns vale only for current month (ignores stale prior-month totals on bills.vale_amount)
   const getVale = (b: Bill) => currentMonthVales[b.id] || 0;
+
+  // Monthly payment records — source of truth for "was this fixed bill paid in month X?"
+  const { data: billPayments = [] } = useQuery({
+    queryKey: ["bill_payments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bill_payments" as any)
+        .select("bill_id, paid_month");
+      if (error) throw error;
+      return (data || []) as unknown as { bill_id: string; paid_month: string }[];
+    },
+  });
+
+  const paidMonthsByBill = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const p of billPayments) {
+      if (!m.has(p.bill_id)) m.set(p.bill_id, new Set());
+      m.get(p.bill_id)!.add(p.paid_month);
+    }
+    return m;
+  }, [billPayments]);
 
   // Calculate current week balance for insufficient balance check
   const weekBalance = useMemo(() => {
@@ -284,18 +306,14 @@ const Contas = () => {
     [groupCategories, searchTerm]
   );
 
-  // Get effective status: fixed bills should only show "paid" if paid_at falls within the viewed period
+  // Month key (YYYY-MM) of the period being viewed — fixed bills are paid "per month"
+  const viewedMonthKey = format(currentRange.start, "yyyy-MM");
+
+  // Get effective status: fixed bills count as paid only if there's a payment
+  // recorded for the viewed month (survives the monthly reset cron)
   const getEffectiveStatus = (bill: Bill): string => {
     if (!bill.is_fixed) return bill.status;
-    if (bill.status !== "paid" || !bill.paid_at) return bill.status;
-    const paidDate = new Date(bill.paid_at + (bill.paid_at.includes("T") ? "" : "T12:00:00"));
-    const viewedMonth = currentRange.start.getMonth();
-    const viewedYear = currentRange.start.getFullYear();
-    // Fixed bill only counts as "paid" if it was paid in the same month being viewed
-    if (paidDate.getMonth() !== viewedMonth || paidDate.getFullYear() !== viewedYear) {
-      return "pending";
-    }
-    return bill.status;
+    return paidMonthsByBill.get(bill.id)?.has(viewedMonthKey) ? "paid" : "pending";
   };
 
   // For fixed bills viewed in month mode, anchor the due date to the viewed month/year
@@ -341,12 +359,12 @@ const Contas = () => {
 
   const totalPaid = useMemo(() =>
     groupCategories.reduce((acc, cat) => acc + getCategoryPaidTotal(cat.id), 0),
-    [groupCategories, bills, currentRange]
+    [groupCategories, bills, currentRange, paidMonthsByBill, viewedMonthKey]
   );
 
   const totalPending = useMemo(() =>
     groupCategories.reduce((acc, cat) => acc + getCategoryPendingTotal(cat.id), 0),
-    [groupCategories, bills, currentRange]
+    [groupCategories, bills, currentRange, paidMonthsByBill, viewedMonthKey]
   );
 
   const savedCategoryIds = useMemo(
@@ -357,7 +375,7 @@ const Contas = () => {
   const openBillsFromSavedCategories = useMemo(() => {
     if (!bills) return [];
     return bills.filter(b => getEffectiveStatus(b) !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
-  }, [bills, savedCategoryIds]);
+  }, [bills, savedCategoryIds, paidMonthsByBill, viewedMonthKey]);
 
   // Overdue bills - last 30 days, filtered by active group (includes fixed bills with stale paid status)
   const overdueBills = useMemo(() => {
@@ -374,7 +392,7 @@ const Contas = () => {
         return isBefore(dueDate, today) && !isToday(dueDate) && dueDate >= thirtyDaysAgo;
       })
       .sort((a, b) => a.due_date.localeCompare(b.due_date));
-  }, [bills, groupCategories]);
+  }, [bills, groupCategories, paidMonthsByBill, viewedMonthKey]);
 
   // Get urgency level for progressive styling
   const getUrgencyLevel = (daysLate: number): { bg: string; text: string; border: string } => {
@@ -423,7 +441,7 @@ const Contas = () => {
     if (valeNow > 0) {
       toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow });
+    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow, paid_month: viewedMonthKey });
   };
   const handleBalanceConfirm = async (source: string) => {
     if (!balanceBillPending) return;
@@ -444,11 +462,13 @@ const Contas = () => {
     if (valeNow > 0) {
       toast.warning(`⚠️ ${balanceBillPending.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync({ ...balanceBillPending, vale_amount: valeNow });
+    await markAsPaid.mutateAsync({ ...balanceBillPending, vale_amount: valeNow, paid_month: viewedMonthKey });
     setBalanceDialogOpen(false);
     setBalanceBillPending(null);
   };
-  const handleMarkUnpaid = async (entry: Bill) => { await updateBill.mutateAsync({ id: entry.id, status: "pending", paid_at: null }); };
+  const handleMarkUnpaid = async (entry: Bill) => {
+    await unmarkPaid.mutateAsync({ bill: entry, paidMonth: viewedMonthKey });
+  };
   const handleOpenVale = (entry: Bill) => { setValeEntry(entry); setValeDialogOpen(true); };
 
   const handleApplyCustomRange = () => {

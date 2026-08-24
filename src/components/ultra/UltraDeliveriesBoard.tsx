@@ -35,6 +35,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import {
   useUltraDeliveries,
   useCreateUltraDelivery,
@@ -145,8 +148,24 @@ function DeliveryRow({
 
   const locked = delivery.sent_to_central && !unlocked;
 
+  // Pendências: receita não entregue ou dinheiro não devolvido -> vermelho.
+  // Confirmada (OK) sem pendências -> verde.
+  const pendenteReceita = delivery.tem_receita && !delivery.receita_ok;
+  const pendenteDinheiro = delivery.payment_method === "dinheiro" && !delivery.dinheiro_devolvido;
+  const hasPendency = pendenteReceita || pendenteDinheiro;
+
   return (
-    <Card className={delivery.ok ? "border-success/50" : locked ? "border-primary/40" : ""}>
+    <Card
+      className={cn(
+        hasPendency
+          ? "border-destructive/60 bg-destructive/10"
+          : delivery.ok
+            ? "border-success/60 bg-success/10"
+            : locked
+              ? "border-primary/40"
+              : ""
+      )}
+    >
       {/* Header (always visible, click to toggle) */}
       <button
         type="button"
@@ -584,20 +603,36 @@ export const UltraDeliveriesBoard = ({
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-2 text-sm flex-wrap">
-          <CalendarIcon className="h-4 w-4 text-primary" />
           {allowDateChange ? (
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-auto"
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="justify-start font-medium">
+                  <CalendarIcon className="h-4 w-4 mr-2 text-primary" />
+                  {format(new Date(selectedDate + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", {
+                    locale: ptBR,
+                  })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={new Date(selectedDate + "T12:00:00")}
+                  onSelect={(d) => d && setSelectedDate(format(d, "yyyy-MM-dd"))}
+                  locale={ptBR}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           ) : (
-            <span className="font-medium">
-              {format(new Date(selectedDate + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", {
-                locale: ptBR,
-              })}
-            </span>
+            <>
+              <CalendarIcon className="h-4 w-4 text-primary" />
+              <span className="font-medium">
+                {format(new Date(selectedDate + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", {
+                  locale: ptBR,
+                })}
+              </span>
+            </>
           )}
         </div>
         <div className="flex gap-2">
