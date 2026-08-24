@@ -59,7 +59,7 @@ import {
   Repeat,
 } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
-import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, Bill } from "@/hooks/useBills";
+import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, useUnmarkBillPaid, Bill } from "@/hooks/useBills";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useWeeklyClosings } from "@/hooks/useWeeklyClosings";
@@ -177,6 +177,27 @@ const Contas = () => {
 
   // Returns vale only for current month (ignores stale prior-month totals on bills.vale_amount)
   const getVale = (b: Bill) => currentMonthVales[b.id] || 0;
+
+  // Monthly payment records — source of truth for "was this fixed bill paid in month X?"
+  const { data: billPayments = [] } = useQuery({
+    queryKey: ["bill_payments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bill_payments" as any)
+        .select("bill_id, paid_month");
+      if (error) throw error;
+      return (data || []) as { bill_id: string; paid_month: string }[];
+    },
+  });
+
+  const paidMonthsByBill = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const p of billPayments) {
+      if (!m.has(p.bill_id)) m.set(p.bill_id, new Set());
+      m.get(p.bill_id)!.add(p.paid_month);
+    }
+    return m;
+  }, [billPayments]);
 
   // Calculate current week balance for insufficient balance check
   const weekBalance = useMemo(() => {
