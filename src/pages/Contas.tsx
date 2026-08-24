@@ -187,7 +187,7 @@ const Contas = () => {
         .from("bill_payments" as any)
         .select("bill_id, paid_month");
       if (error) throw error;
-      return (data || []) as { bill_id: string; paid_month: string }[];
+      return (data || []) as unknown as { bill_id: string; paid_month: string }[];
     },
   });
 
