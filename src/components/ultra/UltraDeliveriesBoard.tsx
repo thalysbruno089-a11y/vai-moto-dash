@@ -603,20 +603,36 @@ export const UltraDeliveriesBoard = ({
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-2 text-sm flex-wrap">
-          <CalendarIcon className="h-4 w-4 text-primary" />
           {allowDateChange ? (
-            <Input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-auto"
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="justify-start font-medium">
+                  <CalendarIcon className="h-4 w-4 mr-2 text-primary" />
+                  {format(new Date(selectedDate + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", {
+                    locale: ptBR,
+                  })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={new Date(selectedDate + "T12:00:00")}
+                  onSelect={(d) => d && setSelectedDate(format(d, "yyyy-MM-dd"))}
+                  locale={ptBR}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           ) : (
-            <span className="font-medium">
-              {format(new Date(selectedDate + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", {
-                locale: ptBR,
-              })}
-            </span>
+            <>
+              <CalendarIcon className="h-4 w-4 text-primary" />
+              <span className="font-medium">
+                {format(new Date(selectedDate + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", {
+                  locale: ptBR,
+                })}
+              </span>
+            </>
           )}
         </div>
         <div className="flex gap-2">
