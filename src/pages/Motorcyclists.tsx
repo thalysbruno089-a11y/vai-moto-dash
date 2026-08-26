@@ -143,6 +143,10 @@ const Motorcyclists = () => {
     return acc;
   }, {} as Record<ShiftType, { count: number; total: number }>);
 
+  // Grand total across all shifts (active motoboys only)
+  const grandTotal = Object.values(shiftTotals).reduce((s, d) => s + d.total, 0);
+  const grandCount = Object.values(shiftTotals).reduce((s, d) => s + d.count, 0);
+
   // Calculate filtered totals
   const filteredTotal = filteredMotoboys
     .filter(m => m.status === 'active')
@@ -291,7 +295,7 @@ const Motorcyclists = () => {
       </div>
 
       {/* Shift Totals Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-4">
         {Object.entries(shiftLabels).map(([shift, label]) => {
           const data = shiftTotals[shift as ShiftType] || { count: 0, total: 0 };
           const isSelected = shiftFilter === shift;
@@ -318,6 +322,25 @@ const Motorcyclists = () => {
             </button>
           );
         })}
+
+        {/* Total geral de todos os motoboys */}
+        <button
+          onClick={() => setShiftFilter("all")}
+          className={`p-3 rounded-lg border text-left transition-all bg-foreground/5 text-foreground ${
+            shiftFilter === "all" ? 'ring-2 ring-primary' : 'hover:opacity-80'
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <DollarSign className="h-4 w-4" />
+            <span className="text-xs font-medium">Total Motoboys</span>
+          </div>
+          <div className="text-lg font-bold">
+            {grandTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </div>
+          <div className="text-xs opacity-75">
+            {grandCount} motoboy{grandCount !== 1 ? 's' : ''} ativo{grandCount !== 1 ? 's' : ''}
+          </div>
+        </button>
       </div>
 
       {/* Table */}

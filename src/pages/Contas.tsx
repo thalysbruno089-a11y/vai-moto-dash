@@ -330,6 +330,7 @@ const Contas = () => {
   };
 
   // Entries for category - fixed bills only bypass date filter in month view
+  // Sorted by effective due date so fixed bills land on their correct day
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
       if (b.category_id !== categoryId) return false;
@@ -337,7 +338,7 @@ const Contas = () => {
       if (b.is_fixed && period === "month") return true;
       const dueDate = getEffectiveDueDate(b);
       return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
-    });
+    }).sort((a, b) => getEffectiveDueDate(a).getTime() - getEffectiveDueDate(b).getTime());
   };
 
   const getCategoryPaidTotal = (categoryId: string) => {
@@ -746,7 +747,7 @@ const Contas = () => {
             if (b.is_fixed && period === "month") return true;
             const dueDate = getEffectiveDueDate(b);
             return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
-          });
+          }).sort((a, b) => getEffectiveDueDate(a).getTime() - getEffectiveDueDate(b).getTime());
           if (periodBills.length === 0) return null;
           const totalPeriod = periodBills.reduce((s, b) => s + Number(b.value) - getVale(b), 0);
           return (
