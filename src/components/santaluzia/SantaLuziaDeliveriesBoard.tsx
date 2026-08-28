@@ -1,0 +1,1031 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  Plus,
+  Trash2,
+  Calendar as CalendarIcon,
+  Receipt,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Send,
+  Printer,
+  Lock,
+  History,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import {
+  useSantaLuziaDeliveries,
+  useCreateSantaLuziaDelivery,
+  useUpdateSantaLuziaDelivery,
+  useDeleteSantaLuziaDelivery,
+  useSendSantaLuziaDayToCentral,
+  useSantaLuziaDeletionLogs,
+  type SantaLuziaDelivery,
+} from "@/hooks/useSantaLuziaDeliveries";
+import { useMotoboys } from "@/hooks/useMotoboys";
+import { MotoboyCombobox } from "@/components/clients/MotoboyCombobox";
+import { toast } from "sonner";
+import logo from "@/assets/logo.png";
+
+const fmtMoney = (v: number | null) =>
+  v == null
+    ? "-"
+    : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
+const PAYMENT_LABELS: Record<string, string> = {
+  credito_debito: "Crédito/Débito",
+  credito: "Crédito",
+  debito: "Débito",
+  dinheiro: "Dinheiro",
+  pix: "Pix",
+  so_entregar: "Só entregar",
+};
+
+const MANAGER_DELETE_PASSWORD = "090807";
+const EDIT_SENT_PASSWORD = "010203";
+
+const PaymentOptions = () => (
+  <>
+    <SelectItem value="credito_debito">Crédito/Débito</SelectItem>
+    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+    <SelectItem value="pix">Pix</SelectItem>
+    <SelectItem value="so_entregar">Só entregar</SelectItem>
+  </>
+);
+
+interface Props {
+  /** Editing (usuário Santa Luzia). If false: read-only report view for Carlos/Secretaria. */
+  editable?: boolean;
+  /** Show date picker (admin/read-only history). */
+  allowDateChange?: boolean;
+  /** When true (read-only), only show rows that were sent to central. */
+  sentOnly?: boolean;
+}
+
+/* ---------------- Row (isolated local state to eliminate typing lag) ---------------- */
+
+function DeliveryRow({
+  delivery,
+  editable,
+  onPatch,
+  onDelete,
+}: {
+  delivery: SantaLuziaDelivery;
+  editable: boolean;
+  onPatch: (id: string, patch: Partial<SantaLuziaDelivery>) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwdOpen, setPwdOpen] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [draft, setDraft] = useState({
+    horario: delivery.horario ?? "",
+    numero: delivery.numero ?? "",
+    entregador: delivery.entregador ?? "",
+    endereco: delivery.endereco ?? "",
+    pagamento: delivery.pagamento?.toString() ?? "",
+    taxa: delivery.taxa?.toString() ?? "",
+  });
+
+  // Keep draft in sync when server data changes and this field is not being edited
+  const focusedRef = useRef<string | null>(null);
+  useEffect(() => {
+    setDraft((prev) => ({
+      horario: focusedRef.current === "horario" ? prev.horario : delivery.horario ?? "",
+      numero: focusedRef.current === "numero" ? prev.numero : delivery.numero ?? "",
+      entregador: focusedRef.current === "entregador" ? prev.entregador : delivery.entregador ?? "",
+      endereco: focusedRef.current === "endereco" ? prev.endereco : delivery.endereco ?? "",
+      pagamento: focusedRef.current === "pagamento" ? prev.pagamento : delivery.pagamento?.toString() ?? "",
+      taxa: focusedRef.current === "taxa" ? prev.taxa : delivery.taxa?.toString() ?? "",
+    }));
+  }, [delivery]);
+
+  const commit = (field: keyof typeof draft) => {
+    focusedRef.current = null;
+    const val = draft[field];
+    if (field === "pagamento" || field === "taxa") {
+      const num = val === "" ? null : Number(val);
+      if (num !== (delivery[field] ?? null)) onPatch(delivery.id, { [field]: num } as any);
+    } else {
+      if (val !== (delivery[field] ?? "")) onPatch(delivery.id, { [field]: val || null } as any);
+    }
+  };
+
+  const summary = [
+    delivery.horario,
+    delivery.numero ? `Nº ${delivery.numero}` : null,
+    delivery.entregador,
+    delivery.endereco,
+  ]
+    .filter(Boolean)
+    .join(" • ") || "Toque para preencher";
+
+  const locked = delivery.sent_to_central && !unlocked;
+
+  // Pendências: comprovante não entregue ou dinheiro não devolvido -> vermelho.
+  // Confirmada (OK) sem pendências -> verde.
+  const pendenteReceita = delivery.tem_comprovante && !delivery.comprovante_ok;
+  const pendenteDinheiro = delivery.payment_method === "dinheiro" && !delivery.dinheiro_devolvido;
+  const hasPendency = pendenteReceita || pendenteDinheiro;
+
+  return (
+    <Card
+      className={cn(
+        hasPendency
+          ? "border-destructive/60 bg-destructive/10"
+          : delivery.ok
+            ? "border-success/60 bg-success/10"
+            : locked
+              ? "border-primary/40"
+              : ""
+      )}
+    >
+      {/* Header (always visible, click to toggle) */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full text-left p-3 flex items-center gap-2"
+      >
+        <Badge variant="outline" className="h-6 min-w-6 justify-center px-2 shrink-0">
+          #{delivery.position}
+        </Badge>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{summary}</p>
+          <div className="flex flex-wrap items-center gap-1 mt-0.5">
+            {delivery.ok && (
+              <Badge variant="secondary" className="h-5 text-[10px] gap-0.5">
+                <CheckCircle2 className="h-3 w-3 text-success" /> OK
+              </Badge>
+            )}
+            {delivery.payment_method && (
+              <Badge variant="outline" className="h-5 text-[10px]">
+                {PAYMENT_LABELS[delivery.payment_method] ?? delivery.payment_method}
+              </Badge>
+            )}
+            {delivery.pagamento != null && (
+              <span className="text-xs text-muted-foreground">{fmtMoney(delivery.pagamento)}</span>
+            )}
+            {delivery.tem_comprovante && (
+              <Badge variant="outline" className="h-5 text-[10px] gap-0.5">
+                <Receipt className="h-3 w-3" /> Comprovante{delivery.comprovante_ok ? " ✓" : ""}
+              </Badge>
+            )}
+            {delivery.saiu_maquina && (
+              <Badge variant="outline" className="h-5 text-[10px]">
+                Maq{delivery.devolveu_maquina ? " ✓" : ""}
+              </Badge>
+            )}
+            {delivery.payment_method === "dinheiro" && delivery.dinheiro_devolvido && (
+              <Badge variant="outline" className="h-5 text-[10px]">
+                Dinheiro ✓
+              </Badge>
+            )}
+            {locked && (
+              <Badge variant="outline" className="h-5 text-[10px] gap-0.5 border-primary/50 text-primary">
+                <Lock className="h-3 w-3" /> Enviado
+              </Badge>
+            )}
+            {delivery.sent_to_central && unlocked && (
+              <Badge variant="outline" className="h-5 text-[10px] gap-0.5 border-success/50 text-success">
+                Edição liberada
+              </Badge>
+            )}
+          </div>
+        </div>
+        {open ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+      </button>
+
+      {open && (
+        <CardContent className="pt-0 pb-3 space-y-3">
+          {editable && delivery.sent_to_central && !unlocked && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setPwd("");
+                setPwdOpen(true);
+              }}
+            >
+              <Lock className="h-4 w-4 mr-2" />
+              Editar (senha)
+            </Button>
+          )}
+          <div className="flex items-center justify-between">
+            <Input
+              type="time"
+              value={draft.horario}
+              disabled={!editable || locked}
+              onFocus={() => (focusedRef.current = "horario")}
+              onChange={(e) => setDraft((d) => ({ ...d, horario: e.target.value }))}
+              onBlur={() => commit("horario")}
+              className="h-8 w-28"
+            />
+            {editable && !locked && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => onDelete(delivery.id)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            )}
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div>
+              <Label className="text-xs">Número</Label>
+              <Input
+                value={draft.numero}
+                disabled={!editable || locked}
+                onFocus={() => (focusedRef.current = "numero")}
+                onChange={(e) => setDraft((d) => ({ ...d, numero: e.target.value }))}
+                onBlur={() => commit("numero")}
+                placeholder="Nº do motoboy"
+                inputMode="numeric"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Entregador</Label>
+              <Input
+                value={draft.entregador}
+                disabled={!editable || locked}
+                onFocus={() => (focusedRef.current = "entregador")}
+                onChange={(e) => setDraft((d) => ({ ...d, entregador: e.target.value }))}
+                onBlur={() => commit("entregador")}
+                placeholder="Nome"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Endereço</Label>
+              <Input
+                value={draft.endereco}
+                disabled={!editable || locked}
+                onFocus={() => (focusedRef.current = "endereco")}
+                onChange={(e) => setDraft((d) => ({ ...d, endereco: e.target.value }))}
+                onBlur={() => commit("endereco")}
+                placeholder="Rua, número, bairro"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Pagamento (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                inputMode="decimal"
+                value={draft.pagamento}
+                disabled={!editable || locked}
+                onFocus={() => (focusedRef.current = "pagamento")}
+                onChange={(e) => setDraft((d) => ({ ...d, pagamento: e.target.value }))}
+                onBlur={() => commit("pagamento")}
+                placeholder="0,00"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Taxa (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                inputMode="decimal"
+                value={draft.taxa}
+                disabled={!editable || locked}
+                onFocus={() => (focusedRef.current = "taxa")}
+                onChange={(e) => setDraft((d) => ({ ...d, taxa: e.target.value }))}
+                onBlur={() => commit("taxa")}
+                placeholder="0,00"
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-xs">Forma de pagamento</Label>
+            <Select
+              value={delivery.payment_method ?? ""}
+              disabled={!editable || locked}
+              onValueChange={(v) => onPatch(delivery.id, { payment_method: v } as any)}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <PaymentOptions />
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-wrap gap-3 pt-1 border-t">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={delivery.saiu_maquina}
+                disabled={!editable || locked}
+                onCheckedChange={(v) =>
+                  onPatch(delivery.id, {
+                    saiu_maquina: !!v,
+                    ...(v ? {} : { devolveu_maquina: false }),
+                  } as any)
+                }
+              />
+              Saiu com a maquininha
+            </label>
+            {delivery.saiu_maquina && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={delivery.devolveu_maquina}
+                  disabled={!editable || locked}
+                  onCheckedChange={(v) => onPatch(delivery.id, { devolveu_maquina: !!v } as any)}
+                />
+                Devolveu a maquininha
+              </label>
+            )}
+            {delivery.payment_method === "dinheiro" && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={delivery.dinheiro_devolvido}
+                  disabled={!editable || locked}
+                  onCheckedChange={(v) => onPatch(delivery.id, { dinheiro_devolvido: !!v } as any)}
+                />
+                Dinheiro devolvido
+              </label>
+            )}
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <Checkbox
+                checked={delivery.tem_comprovante}
+                disabled={!editable || locked}
+                onCheckedChange={(v) =>
+                  onPatch(delivery.id, {
+                    tem_comprovante: !!v,
+                    ...(v ? {} : { comprovante_ok: false }),
+                  } as any)
+                }
+              />
+              <Receipt className="h-4 w-4 text-primary" /> Tem comprovante assinado
+            </label>
+            {delivery.tem_comprovante && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={delivery.comprovante_ok}
+                  disabled={!editable || locked}
+                  onCheckedChange={(v) => onPatch(delivery.id, { comprovante_ok: !!v } as any)}
+                />
+                Comprovante assinado entregue
+              </label>
+            )}
+          </div>
+
+          {editable && !locked && (
+            <Button
+              className="w-full"
+              variant={delivery.ok ? "outline" : "default"}
+              onClick={() => {
+                onPatch(delivery.id, { ok: !delivery.ok } as any);
+                if (!delivery.ok) setOpen(false);
+              }}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              {delivery.ok ? "Desmarcar OK" : "Confirmar pedido (OK)"}
+            </Button>
+          )}
+        </CardContent>
+      )}
+
+      <Dialog open={pwdOpen} onOpenChange={setPwdOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar entrega enviada</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Esta entrega já foi enviada para a central. Digite a senha para liberar a edição.
+            </p>
+            <Label className="text-xs">Senha</Label>
+            <Input
+              type="password"
+              inputMode="numeric"
+              value={pwd}
+              onChange={(e) => setPwd(e.target.value)}
+              placeholder="******"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPwdOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (pwd !== EDIT_SENT_PASSWORD) {
+                  toast.error("Senha incorreta");
+                  return;
+                }
+                setUnlocked(true);
+                setPwdOpen(false);
+                setPwd("");
+                toast.success("Edição liberada");
+              }}
+            >
+              Liberar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+/* ---------------- Board ---------------- */
+
+export const SantaLuziaDeliveriesBoard = ({
+  editable = true,
+  allowDateChange = false,
+  sentOnly = false,
+}: Props) => {
+  const today = format(new Date(), "yyyy-MM-dd");
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedMotoboyId, setSelectedMotoboyId] = useState("");
+  const { data: deliveries = [], isLoading } = useSantaLuziaDeliveries(selectedDate, { sentOnly });
+  const { data: motoboys = [] } = useMotoboys();
+  const createMut = useCreateSantaLuziaDelivery();
+  const updateMut = useUpdateSantaLuziaDelivery();
+  const deleteMut = useDeleteSantaLuziaDelivery();
+  const sendMut = useSendSantaLuziaDayToCentral();
+  const [toDelete, setToDelete] = useState<string | null>(null);
+  const [deletePwd, setDeletePwd] = useState("");
+  const [logsOpen, setLogsOpen] = useState(false);
+  const { data: deletionLogs = [], isLoading: logsLoading } = useSantaLuziaDeletionLogs();
+  const [newOpen, setNewOpen] = useState(false);
+  const emptyForm = {
+    horario: "",
+    numero: "",
+    entregador: "",
+    endereco: "",
+    pagamento: "",
+    taxa: "",
+    payment_method: "",
+    tem_comprovante: false,
+    comprovante_ok: false,
+    saiu_maquina: false,
+    devolveu_maquina: false,
+    dinheiro_devolvido: false,
+  };
+  const [form, setForm] = useState(emptyForm);
+
+  // Reset motoboy filter when date changes
+  useEffect(() => {
+    setSelectedMotoboyId("");
+  }, [selectedDate]);
+
+  const selectedMotoboy = useMemo(
+    () => motoboys.find((m) => m.id === selectedMotoboyId),
+    [motoboys, selectedMotoboyId]
+  );
+
+  const filteredDeliveries = useMemo(() => {
+    if (!selectedMotoboyId || !selectedMotoboy) return deliveries;
+    const norm = (s: string) =>
+      s
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    const target = norm(selectedMotoboy.name);
+    const targetTokens = target.split(" ").filter(Boolean);
+    const num = selectedMotoboy.number?.trim();
+
+    return deliveries.filter((d) => {
+      if (num && d.numero?.trim() === num) return true;
+      const name = norm(d.entregador ?? "");
+      if (!name) return false;
+      if (name === target || name.includes(target) || target.includes(name)) return true;
+      const tokens = name.split(" ").filter(Boolean);
+      // match if they share the first name plus any other name part
+      if (tokens[0] && targetTokens[0] && tokens[0] === targetTokens[0]) {
+        if (tokens.length === 1 || targetTokens.length === 1) return true;
+        return tokens.some((t, i) => i > 0 && targetTokens.includes(t));
+      }
+      return false;
+    });
+  }, [deliveries, selectedMotoboyId, selectedMotoboy]);
+
+  const nextPos = useMemo(
+    () => (deliveries.length ? Math.max(...deliveries.map((d) => d.position)) + 1 : 1),
+    [deliveries]
+  );
+
+  const totals = useMemo(() => {
+    const t = { pagamento: 0, taxa: 0, entregues: 0, comprovantes: 0 };
+    for (const d of filteredDeliveries) {
+      t.pagamento += Number(d.pagamento || 0);
+      t.taxa += Number(d.taxa || 0);
+      if (d.ok) t.entregues += 1;
+      if (d.tem_comprovante) t.comprovantes += 1;
+    }
+    return t;
+  }, [filteredDeliveries]);
+
+  const pending = useMemo(() => filteredDeliveries.filter((d) => !d.sent_to_central), [filteredDeliveries]);
+  const sentCount = filteredDeliveries.length - pending.length;
+  const canSend = editable && pending.length > 0;
+
+  const openNew = () => {
+    setForm({ ...emptyForm, horario: format(new Date(), "HH:mm") });
+    setNewOpen(true);
+  };
+
+  const saveNew = () => {
+    createMut.mutate(
+      {
+        delivery_date: selectedDate,
+        position: nextPos,
+        horario: form.horario || null,
+        numero: form.numero || null,
+        entregador: form.entregador || null,
+        endereco: form.endereco || null,
+        pagamento: form.pagamento === "" ? null : Number(form.pagamento),
+        taxa: form.taxa === "" ? null : Number(form.taxa),
+        payment_method: form.payment_method || null,
+        tem_comprovante: form.tem_comprovante,
+        comprovante_ok: form.tem_comprovante ? form.comprovante_ok : false,
+        saiu_maquina: form.saiu_maquina,
+        devolveu_maquina: form.saiu_maquina ? form.devolveu_maquina : false,
+        dinheiro_devolvido:
+          form.payment_method === "dinheiro" ? form.dinheiro_devolvido : false,
+      } as any,
+      { onSuccess: () => setNewOpen(false) }
+    );
+  };
+
+  const patch = (id: string, p: Partial<SantaLuziaDelivery>) => updateMut.mutate({ id, patch: p });
+
+  const sendToCentral = () => {
+    const missingOk = pending.filter((d) => !d.ok).length;
+    if (missingOk > 0) {
+      toast.warning(`${missingOk} pedido(s) sem OK`, {
+        description: "Confirme todos os pedidos antes de enviar.",
+      });
+      return;
+    }
+    sendMut.mutate(selectedDate);
+  };
+
+  const handlePrint = () => window.print();
+
+  return (
+    <div className="space-y-4 print:space-y-2">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <div className="flex items-center gap-2 text-sm flex-wrap">
+          {allowDateChange ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="justify-start font-medium">
+                  <CalendarIcon className="h-4 w-4 mr-2 text-primary" />
+                  {format(new Date(selectedDate + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", {
+                    locale: ptBR,
+                  })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={new Date(selectedDate + "T12:00:00")}
+                  onSelect={(d) => d && setSelectedDate(format(d, "yyyy-MM-dd"))}
+                  locale={ptBR}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <>
+              <CalendarIcon className="h-4 w-4 text-primary" />
+              <span className="font-medium">
+                {format(new Date(selectedDate + "T12:00:00"), "dd 'de' MMMM 'de' yyyy", {
+                  locale: ptBR,
+                })}
+              </span>
+            </>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {editable && (
+            <Button onClick={openNew} disabled={createMut.isPending} size="sm">
+              <Plus className="h-4 w-4 mr-1" /> Nova entrega
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={handlePrint} disabled={!filteredDeliveries.length}>
+            <Printer className="h-4 w-4 mr-1" /> Imprimir
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setLogsOpen(true)}>
+            <History className="h-4 w-4 mr-1" /> Apagados
+          </Button>
+        </div>
+      </div>
+
+      {/* Motoboy filter (Carlos/Secretaria view only) */}
+      {!editable && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 print:hidden">
+          <span className="text-sm font-medium">Filtrar por motoboy:</span>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex-1 sm:flex-initial sm:min-w-[260px]">
+              <MotoboyCombobox
+                motoboys={motoboys}
+                value={selectedMotoboyId}
+                onValueChange={(v) => setSelectedMotoboyId(v)}
+              />
+            </div>
+            {selectedMotoboyId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() => setSelectedMotoboyId("")}
+                title="Limpar filtro"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Print header */}
+      <div className="hidden print:flex print:flex-col print:items-center print:gap-2 print:mb-3">
+        <img src={logo} alt="Santa Luzia" className="h-16 w-auto" />
+        <h2 className="text-xl font-bold">
+          Relatório Santa Luzia — {format(new Date(selectedDate + "T12:00:00"), "dd/MM/yyyy")}
+        </h2>
+      </div>
+
+      {/* On-screen small centered logo */}
+      <div className="flex justify-center print:hidden">
+        <img
+          src={logo}
+          alt="Santa Luzia"
+          className="h-14 w-14 rounded-lg shadow-sm object-cover"
+        />
+      </div>
+
+      {/* Totals */}
+      <div className="grid grid-cols-3 gap-2">
+        <Card><CardContent className="p-3">
+          <p className="text-xs text-muted-foreground">Corridas</p>
+          <p className="text-xl font-bold">{filteredDeliveries.length}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3">
+          <p className="text-xs text-muted-foreground">Entregues (OK)</p>
+          <p className="text-xl font-bold text-success">{totals.entregues}</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3">
+          <p className="text-xs text-muted-foreground">Total taxa</p>
+          <p className="text-lg font-bold">{fmtMoney(totals.taxa)}</p>
+        </CardContent></Card>
+      </div>
+
+      {sentCount > 0 && (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="p-3 flex items-center gap-2 text-sm">
+            <Lock className="h-4 w-4 text-primary" />
+            <span>
+              {sentCount} corrida(s) já enviada(s) para a central (bloqueadas).
+              {pending.length > 0 && ` ${pending.length} pendente(s) de envio.`}
+            </span>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Rows */}
+      {isLoading ? (
+        <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+      ) : filteredDeliveries.length === 0 ? (
+        <Card><CardContent className="py-10 text-center text-muted-foreground">
+          {selectedMotoboyId
+            ? "Nenhuma corrida encontrada para este motoboy na data selecionada."
+            : editable
+            ? <>Nenhuma entrega registrada. Toque em <span className="font-medium">Nova entrega</span>.</>
+            : "Nenhum relatório recebido para esta data."}
+        </CardContent></Card>
+      ) : (
+        <div className="space-y-2">
+          {filteredDeliveries.map((d) => (
+            <DeliveryRow
+              key={d.id}
+              delivery={d}
+              editable={editable}
+              onPatch={patch}
+              onDelete={(id) => setToDelete(id)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Send to central */}
+      {editable && (
+        <div className="print:hidden pt-2">
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={sendToCentral}
+            disabled={!canSend || sendMut.isPending}
+          >
+            <Send className="h-5 w-5 mr-2" />
+            {pending.length > 0
+              ? `Enviar ${pending.length} corrida(s) para a central`
+              : "Tudo enviado"}
+          </Button>
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Pode enviar quantas vezes quiser durante o dia — só vão as corridas ainda não enviadas.
+          </p>
+        </div>
+      )}
+
+      {/* Delete with manager password */}
+      <Dialog
+        open={!!toDelete}
+        onOpenChange={(o) => {
+          if (!o) {
+            setToDelete(null);
+            setDeletePwd("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remover entrega</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Somente o gerente pode apagar. Digite a senha para confirmar.
+            </p>
+            <Label className="text-xs">Senha do gerente</Label>
+            <Input
+              type="password"
+              inputMode="numeric"
+              value={deletePwd}
+              onChange={(e) => setDeletePwd(e.target.value)}
+              placeholder="••••••"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setToDelete(null);
+                setDeletePwd("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMut.isPending}
+              onClick={async () => {
+                if (deletePwd !== MANAGER_DELETE_PASSWORD) {
+                  toast.error("Senha incorreta");
+                  return;
+                }
+                if (toDelete) {
+                  await deleteMut.mutateAsync(toDelete);
+                  setToDelete(null);
+                  setDeletePwd("");
+                }
+              }}
+            >
+              {deleteMut.isPending ? "Excluindo..." : "Excluir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deleted history */}
+      <Dialog open={logsOpen} onOpenChange={setLogsOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Entregas apagadas</DialogTitle>
+          </DialogHeader>
+          {logsLoading ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">Carregando...</p>
+          ) : deletionLogs.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-6 text-center">
+              Nenhuma entrega apagada.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {deletionLogs.map((log) => {
+                const d = (log.record_data || {}) as Record<string, any>;
+                return (
+                  <Card key={log.id}>
+                    <CardContent className="p-3 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">
+                          #{d.position ?? "-"} {d.entregador || d.endereco || "Entrega"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(log.deleted_at), "dd/MM/yyyy HH:mm")}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {[d.horario, d.numero ? `Nº ${d.numero}` : null, d.endereco]
+                          .filter(Boolean)
+                          .join(" • ")}
+                      </p>
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {d.pagamento != null && <span>{fmtMoney(Number(d.pagamento))}</span>}
+                        {d.payment_method && (
+                          <Badge variant="outline" className="h-5 text-[10px]">
+                            {PAYMENT_LABELS[d.payment_method] ?? d.payment_method}
+                          </Badge>
+                        )}
+                        <span className="text-muted-foreground">
+                          Apagado por: {log.deleted_by_name || "—"}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* New delivery dialog */}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nova entrega #{nextPos}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Horário</Label>
+                <Input
+                  type="time"
+                  value={form.horario}
+                  onChange={(e) => setForm((f) => ({ ...f, horario: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Número</Label>
+                <Input
+                  value={form.numero}
+                  inputMode="numeric"
+                  onChange={(e) => setForm((f) => ({ ...f, numero: e.target.value }))}
+                  placeholder="Nº motoboy"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Entregador</Label>
+              <Input
+                value={form.entregador}
+                onChange={(e) => setForm((f) => ({ ...f, entregador: e.target.value }))}
+                placeholder="Nome"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Endereço</Label>
+              <Input
+                value={form.endereco}
+                onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
+                placeholder="Rua, número, bairro"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">Pagamento (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={form.pagamento}
+                  onChange={(e) => setForm((f) => ({ ...f, pagamento: e.target.value }))}
+                  placeholder="0,00"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Taxa (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={form.taxa}
+                  onChange={(e) => setForm((f) => ({ ...f, taxa: e.target.value }))}
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Forma de pagamento</Label>
+              <Select
+                value={form.payment_method}
+                onValueChange={(v) => setForm((f) => ({ ...f, payment_method: v }))}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <PaymentOptions />
+                </SelectContent>
+              </Select>
+            </div>
+            {form.payment_method === "dinheiro" && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={form.dinheiro_devolvido}
+                  onCheckedChange={(v) => setForm((f) => ({ ...f, dinheiro_devolvido: !!v }))}
+                />
+                Dinheiro devolvido
+              </label>
+            )}
+            <div className="border-t pt-2 space-y-2">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={form.saiu_maquina}
+                  onCheckedChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      saiu_maquina: !!v,
+                      devolveu_maquina: v ? f.devolveu_maquina : false,
+                    }))
+                  }
+                />
+                Saiu com a maquininha
+              </label>
+              {form.saiu_maquina && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer pl-6">
+                  <Checkbox
+                    checked={form.devolveu_maquina}
+                    onCheckedChange={(v) =>
+                      setForm((f) => ({ ...f, devolveu_maquina: !!v }))
+                    }
+                  />
+                  Devolveu a maquininha
+                </label>
+              )}
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={form.tem_comprovante}
+                  onCheckedChange={(v) =>
+                    setForm((f) => ({
+                      ...f,
+                      tem_comprovante: !!v,
+                      comprovante_ok: v ? f.comprovante_ok : false,
+                    }))
+                  }
+                />
+                <Receipt className="h-4 w-4 text-primary" /> Tem comprovante assinado
+              </label>
+              {form.tem_comprovante && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer pl-6">
+                  <Checkbox
+                    checked={form.comprovante_ok}
+                    onCheckedChange={(v) => setForm((f) => ({ ...f, comprovante_ok: !!v }))}
+                  />
+                  Comprovante assinado entregue
+                </label>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNewOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={saveNew} disabled={createMut.isPending}>
+              Salvar entrega
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
