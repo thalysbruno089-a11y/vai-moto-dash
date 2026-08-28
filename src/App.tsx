@@ -51,7 +51,7 @@ const App = () => (
               <Route path="/ultra" element={<ProtectedRoute allowEmployee><Ultra /></ProtectedRoute>} />
               <Route path="/ultra-registro" element={<ProtectedRoute allowEmployee allowUltra><UltraRegistro /></ProtectedRoute>} />
               <Route path="/santa-luzia" element={<ProtectedRoute allowEmployee><SantaLuzia /></ProtectedRoute>} />
-              <Route path="/santa-luzia-registro" element={<ProtectedRoute allowEmployee allowSantaLuzia><SantaLuziaRegistro /></ProtectedRoute>} />ic
+              <Route path="/santa-luzia-registro" element={<ProtectedRoute allowEmployee allowSantaLuzia><SantaLuziaRegistro /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
