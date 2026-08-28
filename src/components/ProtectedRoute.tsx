@@ -7,12 +7,13 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   allowEmployee?: boolean;
   allowUltra?: boolean;
+  allowSantaLuzia?: boolean;
   allowFinance?: boolean;
 }
 
 const MIN_SPLASH_MS = 1500;
 
-const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, allowFinance = true }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, allowSantaLuzia = false, allowFinance = true }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
   const [splashElapsed, setSplashElapsed] = useState(false);
 
@@ -41,6 +42,11 @@ const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, a
   // ULTRA user can only access /ultra-registro
   if (profile?.name === 'ULTRA' && !allowUltra) {
     return <Navigate to="/ultra-registro" replace />;
+  }
+
+  // SANTA LUZIA user can only access /santa-luzia-registro
+  if (profile?.name === 'SANTA LUZIA' && !allowSantaLuzia) {
+    return <Navigate to="/santa-luzia-registro" replace />;
   }
 
   // Employees can only access /clients
