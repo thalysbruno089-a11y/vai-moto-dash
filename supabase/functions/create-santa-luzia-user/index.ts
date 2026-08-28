@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
     );
 
     const email = "santaluzia@vaimoto.app";
-    const password = "748596";
+    const password = "415263";
 
     // Get any existing company
     const { data: companyRow } = await supabase.from("profiles").select("company_id").not("company_id", "is", null).limit(1).maybeSingle();
