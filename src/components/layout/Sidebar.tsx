@@ -13,6 +13,7 @@ import {
   Wrench,
   Trash2,
   Zap,
+  Store,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
@@ -29,6 +30,7 @@ const adminNavigation = [
   { name: "Emprestei", href: "/loans-lent", icon: HandCoins },
   { name: "Peguei Emprestado", href: "/loans-borrowed", icon: Landmark },
   { name: "ULTRA", href: "/ultra", icon: Zap },
+  { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
   { name: "Aluguel Moto", href: "/motorcycle-rentals", icon: CarFront },
   { name: "Despesa Moto", href: "/motorcycle-expenses", icon: Wrench },
   { name: "Histórico Exclusões", href: "/deletion-logs", icon: Trash2 },
@@ -37,11 +39,13 @@ const adminNavigation = [
 const employeeNavigation = [
   { name: "Clientes", href: "/clients", icon: CreditCard },
   { name: "ULTRA", href: "/ultra", icon: Zap },
+  { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
 ];
 
 const managerNavigation = [
   ...fullNavigation,
   { name: "ULTRA", href: "/ultra", icon: Zap },
+  { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
 ];
 
 const financeNavigation = [
