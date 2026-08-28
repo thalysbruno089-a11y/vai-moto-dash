@@ -21,6 +21,8 @@ import MotorcycleExpenses from "./pages/MotorcycleExpenses";
 import DeletionLogs from "./pages/DeletionLogs";
 import Ultra from "./pages/Ultra";
 import UltraRegistro from "./pages/UltraRegistro";
+import SantaLuzia from "./pages/SantaLuzia";
+import SantaLuziaRegistro from "./pages/SantaLuziaRegistro";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +50,8 @@ const App = () => (
               <Route path="/deletion-logs" element={<AdminRoute><DeletionLogs /></AdminRoute>} />
               <Route path="/ultra" element={<ProtectedRoute allowEmployee><Ultra /></ProtectedRoute>} />
               <Route path="/ultra-registro" element={<ProtectedRoute allowEmployee allowUltra><UltraRegistro /></ProtectedRoute>} />
+              <Route path="/santa-luzia" element={<ProtectedRoute allowEmployee><SantaLuzia /></ProtectedRoute>} />
+              <Route path="/santa-luzia-registro" element={<ProtectedRoute allowEmployee allowSantaLuzia><SantaLuziaRegistro /></ProtectedRoute>} />ic
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
