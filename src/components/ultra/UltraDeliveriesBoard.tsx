@@ -586,15 +586,19 @@ export const UltraDeliveriesBoard = ({
   const patch = (id: string, p: Partial<UltraDelivery>) => updateMut.mutate({ id, patch: p });
 
   const sendToCentral = () => {
-    const missingOk = pending.filter((d) => !d.ok).length;
-    if (missingOk > 0) {
-      const ok = window.confirm(
-        `${missingOk} pedido(s) ainda estão sem OK. Deseja enviar mesmo assim para a central?`
-      );
-      if (!ok) return;
-    }
+    const missing = pending.filter((d) => !d.ok);
     sendMut.mutate(selectedDate);
+    if (missing.length > 0) {
+      const nomes = missing
+        .map((d) => d.numero || d.entregador || "sem nome")
+        .join(", ");
+      toast.warning(
+        `${missing.length} pedido(s) foram enviados sem OK: ${nomes}. Eles continuam na lista do dia.`,
+        { duration: 10000 }
+      );
+    }
   };
+
 
 
   const handlePrint = () => window.print();
