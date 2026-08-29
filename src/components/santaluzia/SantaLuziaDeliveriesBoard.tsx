@@ -590,7 +590,7 @@ export const SantaLuziaDeliveriesBoard = ({
     sendMut.mutate(selectedDate);
     if (missing.length > 0) {
       const nomes = missing
-        .map((d) => d.numero || d.motoboy_name || "sem nome")
+        .map((d) => d.numero || d.entregador || "sem nome")
         .join(", ");
       toast.warning(
         `${missing.length} pedido(s) foram enviados sem OK: ${nomes}. Eles continuam na lista do dia.`,
