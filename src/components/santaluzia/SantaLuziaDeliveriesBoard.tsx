@@ -588,13 +588,14 @@ export const SantaLuziaDeliveriesBoard = ({
   const sendToCentral = () => {
     const missingOk = pending.filter((d) => !d.ok).length;
     if (missingOk > 0) {
-      toast.warning(`${missingOk} pedido(s) sem OK`, {
-        description: "Confirme todos os pedidos antes de enviar.",
-      });
-      return;
+      const ok = window.confirm(
+        `${missingOk} pedido(s) ainda estão sem OK. Deseja enviar mesmo assim para a central?`
+      );
+      if (!ok) return;
     }
     sendMut.mutate(selectedDate);
   };
+
 
   const handlePrint = () => window.print();
 
