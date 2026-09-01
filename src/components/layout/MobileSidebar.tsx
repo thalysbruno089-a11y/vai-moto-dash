@@ -39,6 +39,7 @@ const adminNavigation = [
   { name: "Peguei Emprestado", href: "/loans-borrowed", icon: Landmark },
   { name: "ULTRA", href: "/ultra", icon: Zap },
   { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
+  { name: "Panificadora Lagoinha", href: "/lagoinha", icon: Store },
   { name: "Aluguel Moto", href: "/motorcycle-rentals", icon: CarFront },
   { name: "Despesa Moto", href: "/motorcycle-expenses", icon: Wrench },
   { name: "Histórico Exclusões", href: "/deletion-logs", icon: Trash2 },
@@ -48,12 +49,14 @@ const employeeNavigation = [
   { name: "Clientes", href: "/clients", icon: CreditCard },
   { name: "ULTRA", href: "/ultra", icon: Zap },
   { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
+  { name: "Panificadora Lagoinha", href: "/lagoinha", icon: Store },
 ];
 
 const managerNavigation = [
   ...fullNavigation,
   { name: "ULTRA", href: "/ultra", icon: Zap },
   { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
+  { name: "Panificadora Lagoinha", href: "/lagoinha", icon: Store },
 ];
 
 const financeNavigation = [
