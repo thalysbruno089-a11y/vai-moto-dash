@@ -8,12 +8,13 @@ interface ProtectedRouteProps {
   allowEmployee?: boolean;
   allowUltra?: boolean;
   allowSantaLuzia?: boolean;
+  allowLagoinha?: boolean;
   allowFinance?: boolean;
 }
 
 const MIN_SPLASH_MS = 1500;
 
-const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, allowSantaLuzia = false, allowFinance = true }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, allowSantaLuzia = false, allowLagoinha = false, allowFinance = true }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
   const [splashElapsed, setSplashElapsed] = useState(false);
 
@@ -47,6 +48,11 @@ const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, a
   // SANTA LUZIA user can only access /santa-luzia-registro
   if (profile?.name === 'SANTA LUZIA' && !allowSantaLuzia) {
     return <Navigate to="/santa-luzia-registro" replace />;
+  }
+
+  // PANIFICADORA LAGOINHA user can only access /lagoinha-registro
+  if (profile?.name === 'PANIFICADORA LAGOINHA' && !allowLagoinha) {
+    return <Navigate to="/lagoinha-registro" replace />;
   }
 
   // Employees can only access /clients

@@ -23,6 +23,8 @@ import Ultra from "./pages/Ultra";
 import UltraRegistro from "./pages/UltraRegistro";
 import SantaLuzia from "./pages/SantaLuzia";
 import SantaLuziaRegistro from "./pages/SantaLuziaRegistro";
+import Lagoinha from "./pages/Lagoinha";
+import LagoinhaRegistro from "./pages/LagoinhaRegistro";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +54,8 @@ const App = () => (
               <Route path="/ultra-registro" element={<ProtectedRoute allowEmployee allowUltra><UltraRegistro /></ProtectedRoute>} />
               <Route path="/santa-luzia" element={<ProtectedRoute allowEmployee><SantaLuzia /></ProtectedRoute>} />
               <Route path="/santa-luzia-registro" element={<ProtectedRoute allowEmployee allowSantaLuzia><SantaLuziaRegistro /></ProtectedRoute>} />
+              <Route path="/lagoinha" element={<ProtectedRoute allowEmployee><Lagoinha /></ProtectedRoute>} />
+              <Route path="/lagoinha-registro" element={<ProtectedRoute allowEmployee allowLagoinha><LagoinhaRegistro /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
