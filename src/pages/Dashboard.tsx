@@ -211,7 +211,7 @@ const Dashboard = () => {
   };
 
   return (
-    <MainLayout title="Dashboard" subtitle="Controle financeiro semanal e mensal" showLogo>
+    <MainLayout title="Dashboard" subtitle="Controle financeiro semanal e mensal">
       <Tabs defaultValue="week" className="w-full">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
           <TabsList>

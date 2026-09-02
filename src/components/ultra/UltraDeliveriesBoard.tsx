@@ -690,12 +690,12 @@ export const UltraDeliveriesBoard = ({
         </h2>
       </div>
 
-      {/* On-screen small centered logo */}
+      {/* On-screen centered logo */}
       <div className="flex justify-center print:hidden">
         <img
           src={ultraLogo.url}
           alt="ULTRA"
-          className="h-14 w-14 rounded-lg shadow-sm object-cover"
+          className="h-24 w-24 rounded-lg object-cover shadow-sm sm:h-28 sm:w-28"
         />
       </div>
 
