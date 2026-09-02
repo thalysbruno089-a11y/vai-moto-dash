@@ -8,9 +8,10 @@ interface MainLayoutProps {
   children: ReactNode;
   title: string;
   subtitle?: string;
+  showLogo?: boolean;
 }
 
-const MainLayout = ({ children, title, subtitle }: MainLayoutProps) => {
+const MainLayout = ({ children, title, subtitle, showLogo }: MainLayoutProps) => {
   const isMobile = useIsMobile();
 
   return (
