@@ -34,7 +34,7 @@ const MainLayout = ({ children, title, subtitle, showLogo }: MainLayoutProps) =>
         )}
         
         {/* Desktop Header */}
-        {!isMobile && <Header title={title} subtitle={subtitle} />}
+        {!isMobile && <Header title={title} subtitle={subtitle} showLogo={showLogo} />}
         
         <main className={`animate-fade-in ${isMobile ? "p-4" : "p-6"}`}>
           {children}
