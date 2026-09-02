@@ -1,4 +1,5 @@
 import MainLayout from "@/components/layout/MainLayout";
+import logoHero from "@/assets/logo-hero.jpg.asset.json";
 import StatCard from "@/components/dashboard/StatCard";
 import { Wallet, TrendingUp, TrendingDown, RotateCcw, ChevronLeft, ChevronRight, Save, History, Trash2, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
