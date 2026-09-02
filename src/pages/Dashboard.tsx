@@ -213,6 +213,13 @@ const Dashboard = () => {
 
   return (
     <MainLayout title="Dashboard" subtitle="Controle financeiro semanal e mensal">
+      <div className="mb-6 flex justify-center print:hidden">
+        <img
+          src={logoHero.url}
+          alt="Vai Moto"
+          className="h-24 w-auto object-contain drop-shadow-sm sm:h-28"
+        />
+      </div>
       <Tabs defaultValue="week" className="w-full">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
           <TabsList>
