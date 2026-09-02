@@ -17,7 +17,7 @@ import {
   Store,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import logo from "@/assets/logo.png";
+import logoHero from "@/assets/logo-hero.jpg.asset.json";
 import {
   Sheet,
   SheetContent,
@@ -112,8 +112,8 @@ const MobileSidebar = () => {
       <SheetContent side="left" className="w-72 p-0 bg-sidebar">
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex h-16 items-center justify-center px-4 border-b border-sidebar-border bg-white">
-            <img src={logo} alt="Vai Moto" className="h-12 w-auto object-contain" />
+          <div className="flex h-20 items-center justify-center border-b border-sidebar-border bg-white px-2">
+            <img src={logoHero.url} alt="Vai Moto" className="h-16 w-full object-contain" />
           </div>
 
           {/* Navigation */}
