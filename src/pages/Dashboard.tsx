@@ -1,4 +1,5 @@
 import MainLayout from "@/components/layout/MainLayout";
+import logoHero from "@/assets/logo-hero.jpg.asset.json";
 import StatCard from "@/components/dashboard/StatCard";
 import { Wallet, TrendingUp, TrendingDown, RotateCcw, ChevronLeft, ChevronRight, Save, History, Trash2, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -212,6 +213,13 @@ const Dashboard = () => {
 
   return (
     <MainLayout title="Dashboard" subtitle="Controle financeiro semanal e mensal">
+      <div className="mb-6 flex justify-center print:hidden">
+        <img
+          src={logoHero.url}
+          alt="Vai Moto"
+          className="h-24 w-auto object-contain drop-shadow-sm sm:h-28"
+        />
+      </div>
       <Tabs defaultValue="week" className="w-full">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
           <TabsList>
