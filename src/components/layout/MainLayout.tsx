@@ -8,9 +8,10 @@ interface MainLayoutProps {
   children: ReactNode;
   title: string;
   subtitle?: string;
+  showLogo?: boolean;
 }
 
-const MainLayout = ({ children, title, subtitle }: MainLayoutProps) => {
+const MainLayout = ({ children, title, subtitle, showLogo }: MainLayoutProps) => {
   const isMobile = useIsMobile();
 
   return (
@@ -33,7 +34,7 @@ const MainLayout = ({ children, title, subtitle }: MainLayoutProps) => {
         )}
         
         {/* Desktop Header */}
-        {!isMobile && <Header title={title} subtitle={subtitle} />}
+        {!isMobile && <Header title={title} subtitle={subtitle} showLogo={showLogo} />}
         
         <main className={`animate-fade-in ${isMobile ? "p-4" : "p-6"}`}>
           {children}
