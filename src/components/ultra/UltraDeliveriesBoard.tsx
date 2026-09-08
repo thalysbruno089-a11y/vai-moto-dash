@@ -147,6 +147,7 @@ function DeliveryRow({
     .join(" • ") || "Toque para preencher";
 
   const locked = delivery.sent_to_central && !unlocked;
+  const canEdit = editable || unlocked;
 
   // Pendências: receita não entregue ou dinheiro não devolvido -> vermelho.
   // Confirmada (OK) sem pendências -> verde.
@@ -223,7 +224,7 @@ function DeliveryRow({
 
       {open && (
         <CardContent className="pt-0 pb-3 space-y-3">
-          {editable && delivery.sent_to_central && !unlocked && (
+          {delivery.sent_to_central && !unlocked && (
             <Button
               variant="outline"
               className="w-full"
@@ -240,13 +241,13 @@ function DeliveryRow({
             <Input
               type="time"
               value={draft.horario}
-              disabled={!editable || locked}
+              disabled={!canEdit || locked}
               onFocus={() => (focusedRef.current = "horario")}
               onChange={(e) => setDraft((d) => ({ ...d, horario: e.target.value }))}
               onBlur={() => commit("horario")}
               className="h-8 w-28"
             />
-            {editable && !locked && (
+            {canEdit && !locked && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -263,7 +264,7 @@ function DeliveryRow({
               <Label className="text-xs">Número</Label>
               <Input
                 value={draft.numero}
-                disabled={!editable || locked}
+                disabled={!canEdit || locked}
                 onFocus={() => (focusedRef.current = "numero")}
                 onChange={(e) => setDraft((d) => ({ ...d, numero: e.target.value }))}
                 onBlur={() => commit("numero")}
@@ -275,7 +276,7 @@ function DeliveryRow({
               <Label className="text-xs">Entregador</Label>
               <Input
                 value={draft.entregador}
-                disabled={!editable || locked}
+                disabled={!canEdit || locked}
                 onFocus={() => (focusedRef.current = "entregador")}
                 onChange={(e) => setDraft((d) => ({ ...d, entregador: e.target.value }))}
                 onBlur={() => commit("entregador")}
@@ -286,7 +287,7 @@ function DeliveryRow({
               <Label className="text-xs">Endereço</Label>
               <Input
                 value={draft.endereco}
-                disabled={!editable || locked}
+                disabled={!canEdit || locked}
                 onFocus={() => (focusedRef.current = "endereco")}
                 onChange={(e) => setDraft((d) => ({ ...d, endereco: e.target.value }))}
                 onBlur={() => commit("endereco")}
@@ -303,7 +304,7 @@ function DeliveryRow({
                 step="0.01"
                 inputMode="decimal"
                 value={draft.pagamento}
-                disabled={!editable || locked}
+                disabled={!canEdit || locked}
                 onFocus={() => (focusedRef.current = "pagamento")}
                 onChange={(e) => setDraft((d) => ({ ...d, pagamento: e.target.value }))}
                 onBlur={() => commit("pagamento")}
@@ -317,7 +318,7 @@ function DeliveryRow({
                 step="0.01"
                 inputMode="decimal"
                 value={draft.taxa}
-                disabled={!editable || locked}
+                disabled={!canEdit || locked}
                 onFocus={() => (focusedRef.current = "taxa")}
                 onChange={(e) => setDraft((d) => ({ ...d, taxa: e.target.value }))}
                 onBlur={() => commit("taxa")}
@@ -330,7 +331,7 @@ function DeliveryRow({
             <Label className="text-xs">Forma de pagamento</Label>
             <Select
               value={delivery.payment_method ?? ""}
-              disabled={!editable || locked}
+              disabled={!canEdit || locked}
               onValueChange={(v) => onPatch(delivery.id, { payment_method: v } as any)}
             >
               <SelectTrigger className="h-9">
@@ -346,7 +347,7 @@ function DeliveryRow({
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <Checkbox
                 checked={delivery.saiu_maquina}
-                disabled={!editable || locked}
+                disabled={!canEdit || locked}
                 onCheckedChange={(v) =>
                   onPatch(delivery.id, {
                     saiu_maquina: !!v,
@@ -360,7 +361,7 @@ function DeliveryRow({
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox
                   checked={delivery.devolveu_maquina}
-                  disabled={!editable || locked}
+                  disabled={!canEdit || locked}
                   onCheckedChange={(v) => onPatch(delivery.id, { devolveu_maquina: !!v } as any)}
                 />
                 Devolveu a maquininha
@@ -370,7 +371,7 @@ function DeliveryRow({
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox
                   checked={delivery.dinheiro_devolvido}
-                  disabled={!editable || locked}
+                  disabled={!canEdit || locked}
                   onCheckedChange={(v) => onPatch(delivery.id, { dinheiro_devolvido: !!v } as any)}
                 />
                 Dinheiro devolvido
@@ -379,7 +380,7 @@ function DeliveryRow({
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <Checkbox
                 checked={delivery.tem_receita}
-                disabled={!editable || locked}
+                disabled={!canEdit || locked}
                 onCheckedChange={(v) =>
                   onPatch(delivery.id, {
                     tem_receita: !!v,
@@ -393,7 +394,7 @@ function DeliveryRow({
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox
                   checked={delivery.receita_ok}
-                  disabled={!editable || locked}
+                  disabled={!canEdit || locked}
                   onCheckedChange={(v) => onPatch(delivery.id, { receita_ok: !!v } as any)}
                 />
                 Receita entregue
@@ -401,7 +402,7 @@ function DeliveryRow({
             )}
           </div>
 
-          {editable && !locked && (
+          {canEdit && !locked && (
             <Button
               className="w-full"
               variant={delivery.ok ? "outline" : "default"}
