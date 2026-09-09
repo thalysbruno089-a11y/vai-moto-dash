@@ -86,6 +86,21 @@ const Reports = () => {
     return format(parseISO(dateStr), "dd/MM/yyyy", { locale: ptBR });
   };
 
+
+  const esc = (v: unknown): string =>
+    String(v ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+  const csv = (v: unknown): string => {
+    const raw = String(v ?? '');
+    const safe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+    return safe.replace(/"/g, '""');
+  };
+
   // Generate CSV content
   const generateCSV = (type: string) => {
     let csvContent = "";
@@ -97,7 +112,7 @@ const Reports = () => {
         const tipo = entry.type === "revenue" ? "Entrada" : "Saída";
         const valor = entry.type === "revenue" ? Number(entry.value) : -Number(entry.value);
         const categoria = entry.categories?.name || 'Sem categoria';
-        csvContent += `${formatDateDisplay(entry.flow_date)},${tipo},"${entry.description || 'Sem descrição'}","${categoria}",${valor}\n`;
+        csvContent += `${formatDateDisplay(entry.flow_date)},${tipo},"${csv(entry.description || 'Sem descrição')}","${csv(categoria)}",${valor}\n`;
       });
       filename = `relatorio-financeiro-${startDate}-${endDate}.csv`;
     } else if (type === "motorcyclists") {
@@ -105,20 +120,20 @@ const Reports = () => {
       (motoboys || []).forEach(m => {
         const turno = m.shift === 'day' ? 'Diurno' : m.shift === 'night' ? 'Noturno' : m.shift === 'weekend' ? 'Final de Semana' : m.shift === 'star' ? 'Estrela' : 'Livre';
         const status = m.status === 'active' ? 'Ativo' : 'Inativo';
-        csvContent += `"${m.number || ''}","${m.name}","${m.phone || ''}",${turno},${status},${m.weekly_payment || 0},"${m.address || ''}"\n`;
+        csvContent += `"${csv(m.number)}","${csv(m.name)}","${csv(m.phone)}",${turno},${status},${m.weekly_payment || 0},"${csv(m.address)}"\n`;
       });
       filename = `relatorio-motoboys-${format(today, 'yyyy-MM-dd')}.csv`;
     } else if (type === "rides") {
       csvContent = "Data,Cliente,Motoboy,Valor,Observações\n";
       filteredRides.forEach(r => {
-        csvContent += `${formatDateDisplay(r.ride_date)},"${r.clients?.name || 'N/A'}","${r.motoboys?.name || 'N/A'}",${Number(r.value)},"${r.notes || ''}"\n`;
+        csvContent += `${formatDateDisplay(r.ride_date)},"${csv(r.clients?.name || 'N/A')}","${csv(r.motoboys?.name || 'N/A')}",${Number(r.value)},"${csv(r.notes)}"\n`;
       });
       filename = `relatorio-corridas-${startDate}-${endDate}.csv`;
     } else if (type === "academia") {
       csvContent = "Número,Nome,Telefone,CPF,Turno\n";
       (motoboys || []).filter(m => m.status === 'active').forEach(m => {
         const turno = m.shift === 'day' ? 'Diurno' : m.shift === 'night' ? 'Noturno' : m.shift === 'weekend' ? 'Final de Semana' : m.shift === 'star' ? 'Estrela' : 'Livre';
-        csvContent += `"${m.number || ''}","${m.name}","${m.phone || ''}","${m.cpf || ''}",${turno}\n`;
+        csvContent += `"${csv(m.number)}","${csv(m.name)}","${csv(m.phone)}","${csv(m.cpf)}",${turno}\n`;
       });
       filename = `relatorio-academia-${format(today, 'yyyy-MM-dd')}.csv`;
     }
@@ -164,8 +179,8 @@ const Reports = () => {
                 <tr>
                   <td>${formatDateDisplay(entry.flow_date)}</td>
                   <td>${entry.type === "revenue" ? "Entrada" : "Saída"}</td>
-                  <td>${entry.categories?.name || 'Sem categoria'}</td>
-                  <td>${entry.description || 'Sem descrição'}</td>
+                  <td>${esc(entry.categories?.name || 'Sem categoria')}</td>
+                  <td>${esc(entry.description || 'Sem descrição')}</td>
                   <td class="${entry.type === 'revenue' ? 'revenue' : 'expense'}">${formatCurrency(Number(entry.value))}</td>
                 </tr>
               `).join('')}
@@ -202,9 +217,9 @@ const Reports = () => {
             <tbody>
               ${(motoboys || []).map(m => `
                 <tr>
-                  <td>${m.number || '-'}</td>
-                  <td>${m.name}</td>
-                  <td>${m.phone || '-'}</td>
+                  <td>${esc(m.number || '-')}</td>
+                  <td>${esc(m.name)}</td>
+                  <td>${esc(m.phone || '-')}</td>
                   <td>${m.shift === 'day' ? 'Diurno' : m.shift === 'night' ? 'Noturno' : m.shift === 'weekend' ? 'Fim de Semana' : m.shift === 'star' ? 'Estrela' : 'Livre'}</td>
                   <td>${formatCurrency(m.weekly_payment || 0)}</td>
                   <td class="${m.status === 'active' ? 'active' : 'inactive'}">${m.status === 'active' ? 'Ativo' : 'Inativo'}</td>
@@ -241,10 +256,10 @@ const Reports = () => {
               ${filteredRides.map(r => `
                 <tr>
                   <td>${formatDateDisplay(r.ride_date)}</td>
-                  <td>${r.clients?.name || 'N/A'}</td>
-                  <td>${r.motoboys?.number ? '#' + r.motoboys.number + ' - ' : ''}${r.motoboys?.name || 'N/A'}</td>
+                  <td>${esc(r.clients?.name || 'N/A')}</td>
+                  <td>${r.motoboys?.number ? '#' + esc(r.motoboys.number) + ' - ' : ''}${esc(r.motoboys?.name || 'N/A')}</td>
                   <td>${formatCurrency(Number(r.value))}</td>
-                  <td>${r.notes || '-'}</td>
+                  <td>${esc(r.notes || '-')}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -277,10 +292,10 @@ const Reports = () => {
             <tbody>
               ${(motoboys || []).filter(m => m.status === 'active').map(m => `
                 <tr>
-                  <td>${m.number || '-'}</td>
-                  <td>${m.name}</td>
-                  <td>${m.phone || '-'}</td>
-                  <td>${m.cpf || '-'}</td>
+                  <td>${esc(m.number || '-')}</td>
+                  <td>${esc(m.name)}</td>
+                  <td>${esc(m.phone || '-')}</td>
+                  <td>${esc(m.cpf || '-')}</td>
                   <td>${m.shift === 'day' ? 'Diurno' : m.shift === 'night' ? 'Noturno' : m.shift === 'weekend' ? 'Fim de Semana' : m.shift === 'star' ? 'Estrela' : 'Livre'}</td>
                 </tr>
               `).join('')}
