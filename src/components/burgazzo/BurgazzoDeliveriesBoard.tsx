@@ -691,12 +691,12 @@ export const BurgazzoDeliveriesBoard = ({
         </h2>
       </div>
 
-      {/* On-screen small centered logo */}
+      {/* On-screen centered logo */}
       <div className="flex justify-center print:hidden">
         <img
           src={logo}
           alt="Burgazzo"
-          className="h-14 w-14 rounded-lg shadow-sm object-cover"
+          className="h-24 w-24 rounded-xl shadow-sm object-cover"
         />
       </div>
 

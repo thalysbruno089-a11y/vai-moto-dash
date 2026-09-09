@@ -42,7 +42,7 @@ const BurgazzoRegistro = () => {
       <header className="sticky top-0 z-10 bg-card border-b print:hidden">
         <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Vai Moto" className="h-9 w-auto" />
+            <img src={logo} alt="Burgazzo" className="h-14 w-14 rounded-lg shadow-sm object-cover" />
             <div>
               <h1 className="text-lg font-bold leading-none">BURGAZZO</h1>
               <p className="text-xs text-muted-foreground">Registro de entregas</p>
