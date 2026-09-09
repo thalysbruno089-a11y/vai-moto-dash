@@ -50,7 +50,8 @@ import {
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { MotoboyCombobox } from "@/components/clients/MotoboyCombobox";
 import { toast } from "sonner";
-import logo from "@/assets/logo.png";
+import burgazzoLogoAsset from "@/assets/burgazzo-logo.jpg.asset.json";
+const logo = burgazzoLogoAsset.url;
 
 const fmtMoney = (v: number | null) =>
   v == null
