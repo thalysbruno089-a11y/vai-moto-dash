@@ -25,6 +25,8 @@ import SantaLuzia from "./pages/SantaLuzia";
 import SantaLuziaRegistro from "./pages/SantaLuziaRegistro";
 import Lagoinha from "./pages/Lagoinha";
 import LagoinhaRegistro from "./pages/LagoinhaRegistro";
+import Burgazzo from "./pages/Burgazzo";
+import BurgazzoRegistro from "./pages/BurgazzoRegistro";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +58,8 @@ const App = () => (
               <Route path="/santa-luzia-registro" element={<ProtectedRoute allowEmployee allowSantaLuzia><SantaLuziaRegistro /></ProtectedRoute>} />
               <Route path="/lagoinha" element={<ProtectedRoute allowEmployee><Lagoinha /></ProtectedRoute>} />
               <Route path="/lagoinha-registro" element={<ProtectedRoute allowEmployee allowLagoinha><LagoinhaRegistro /></ProtectedRoute>} />
+              <Route path="/burgazzo" element={<ProtectedRoute allowEmployee><Burgazzo /></ProtectedRoute>} />
+              <Route path="/burgazzo-registro" element={<ProtectedRoute allowEmployee allowBurgazzo><BurgazzoRegistro /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

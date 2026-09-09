@@ -40,6 +40,7 @@ const adminNavigation = [
   { name: "ULTRA", href: "/ultra", icon: Zap },
   { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
   { name: "Panificadora Lagoinha", href: "/lagoinha", icon: Store },
+  { name: "Burgazzo", href: "/burgazzo", icon: Store },
   { name: "Aluguel Moto", href: "/motorcycle-rentals", icon: CarFront },
   { name: "Despesa Moto", href: "/motorcycle-expenses", icon: Wrench },
   { name: "Histórico Exclusões", href: "/deletion-logs", icon: Trash2 },
@@ -50,6 +51,7 @@ const employeeNavigation = [
   { name: "ULTRA", href: "/ultra", icon: Zap },
   { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
   { name: "Panificadora Lagoinha", href: "/lagoinha", icon: Store },
+  { name: "Burgazzo", href: "/burgazzo", icon: Store },
 ];
 
 const managerNavigation = [
@@ -57,6 +59,7 @@ const managerNavigation = [
   { name: "ULTRA", href: "/ultra", icon: Zap },
   { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
   { name: "Panificadora Lagoinha", href: "/lagoinha", icon: Store },
+  { name: "Burgazzo", href: "/burgazzo", icon: Store },
 ];
 
 const financeNavigation = [
