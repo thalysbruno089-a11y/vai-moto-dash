@@ -25,6 +25,8 @@ import SantaLuzia from "./pages/SantaLuzia";
 import SantaLuziaRegistro from "./pages/SantaLuziaRegistro";
 import Lagoinha from "./pages/Lagoinha";
 import LagoinhaRegistro from "./pages/LagoinhaRegistro";
+import Burgazzo from "./pages/Burgazzo";
+import BurgazzoRegistro from "./pages/BurgazzoRegistro";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
