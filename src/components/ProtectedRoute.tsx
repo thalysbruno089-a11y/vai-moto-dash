@@ -56,6 +56,12 @@ const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, a
     return <Navigate to="/lagoinha-registro" replace />;
   }
 
+  // BURGAZZO user can only access /burgazzo-registro
+  if (profile?.name === 'BURGAZZO' && !allowBurgazzo) {
+    return <Navigate to="/burgazzo-registro" replace />;
+  }
+
+
   // Employees can only access /clients
   if (profile?.role === 'employee' && !allowEmployee) {
     return <Navigate to="/clients" replace />;
