@@ -43,7 +43,7 @@ const BurgazzoRegistro = () => {
           <div className="flex items-center gap-3">
             <img src={logo} alt="Vai Moto" className="h-9 w-auto" />
             <div>
-              <h1 className="text-lg font-bold leading-none">PANIFICADORA BURGAZZO</h1>
+              <h1 className="text-lg font-bold leading-none">BURGAZZO</h1>
               <p className="text-xs text-muted-foreground">Registro de entregas</p>
             </div>
           </div>

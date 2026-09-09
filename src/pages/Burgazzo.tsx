@@ -5,7 +5,7 @@ const Burgazzo = () => {
   return (
     <MainLayout
       title="Burgazzo"
-      subtitle="Relatórios recebidos da padaria Burgazzo — escolha a data no calendário"
+      subtitle="Relatórios recebidos da lanchonete Burgazzo — escolha a data no calendário"
     >
       <BurgazzoDeliveriesBoard editable={false} allowDateChange sentOnly />
     </MainLayout>
