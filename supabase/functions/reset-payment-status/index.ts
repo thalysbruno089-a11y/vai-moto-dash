@@ -17,10 +17,18 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
     const authHeader = req.headers.get('Authorization')
+
+    // Automated call: only accepted with the internal scheduler secret
+    const cronSecret = Deno.env.get('CRON_SECRET')
+    const isCronCall = !!cronSecret && req.headers.get('x-cron-secret') === cronSecret
+
+    if (!isCronCall && !authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
     
-    // Check if this is a cron job call (no auth or anon key)
-    // For cron jobs, we allow the call but reset ALL companies (automated)
-    const isCronCall = !authHeader || authHeader === `Bearer ${supabaseAnonKey}`
     
     if (isCronCall) {
       // Cron job call - reset payment status for ALL motoboys in ALL companies
