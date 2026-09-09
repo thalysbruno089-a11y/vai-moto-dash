@@ -58,6 +58,8 @@ const App = () => (
               <Route path="/santa-luzia-registro" element={<ProtectedRoute allowEmployee allowSantaLuzia><SantaLuziaRegistro /></ProtectedRoute>} />
               <Route path="/lagoinha" element={<ProtectedRoute allowEmployee><Lagoinha /></ProtectedRoute>} />
               <Route path="/lagoinha-registro" element={<ProtectedRoute allowEmployee allowLagoinha><LagoinhaRegistro /></ProtectedRoute>} />
+              <Route path="/burgazzo" element={<ProtectedRoute allowEmployee><Burgazzo /></ProtectedRoute>} />
+              <Route path="/burgazzo-registro" element={<ProtectedRoute allowEmployee allowBurgazzo><BurgazzoRegistro /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
