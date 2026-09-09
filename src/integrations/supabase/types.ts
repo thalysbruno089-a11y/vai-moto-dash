@@ -225,6 +225,89 @@ export type Database = {
           },
         ]
       }
+      burgazzo_deliveries: {
+        Row: {
+          company_id: string | null
+          comprovante_ok: boolean
+          created_at: string
+          created_by: string | null
+          delivery_date: string
+          devolveu_maquina: boolean
+          dinheiro_devolvido: boolean
+          endereco: string | null
+          entregador: string | null
+          horario: string | null
+          id: string
+          numero: string | null
+          ok: boolean
+          pagamento: number | null
+          payment_method: string | null
+          position: number
+          saiu_maquina: boolean
+          sent_at: string | null
+          sent_to_central: boolean
+          taxa: number | null
+          tem_comprovante: boolean
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          comprovante_ok?: boolean
+          created_at?: string
+          created_by?: string | null
+          delivery_date?: string
+          devolveu_maquina?: boolean
+          dinheiro_devolvido?: boolean
+          endereco?: string | null
+          entregador?: string | null
+          horario?: string | null
+          id?: string
+          numero?: string | null
+          ok?: boolean
+          pagamento?: number | null
+          payment_method?: string | null
+          position?: number
+          saiu_maquina?: boolean
+          sent_at?: string | null
+          sent_to_central?: boolean
+          taxa?: number | null
+          tem_comprovante?: boolean
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          comprovante_ok?: boolean
+          created_at?: string
+          created_by?: string | null
+          delivery_date?: string
+          devolveu_maquina?: boolean
+          dinheiro_devolvido?: boolean
+          endereco?: string | null
+          entregador?: string | null
+          horario?: string | null
+          id?: string
+          numero?: string | null
+          ok?: boolean
+          pagamento?: number | null
+          payment_method?: string | null
+          position?: number
+          saiu_maquina?: boolean
+          sent_at?: string | null
+          sent_to_central?: boolean
+          taxa?: number | null
+          tem_comprovante?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "burgazzo_deliveries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carlos_bank_transactions: {
         Row: {
           amount: number
