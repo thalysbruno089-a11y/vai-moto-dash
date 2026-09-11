@@ -164,6 +164,9 @@ const Contas = () => {
   const unmarkPaid = useUnmarkBillPaid();
   const updateBill = useUpdateBill();
   const createBalanceDifference = useCreateBalanceDifference();
+  const { data: partialPayments = [] } = useBillPartialPayments();
+  const createPartialPayment = useCreatePartialPayment();
+  const deleteBillScoped = useDeleteBillScoped();
 
   const isLoading = loadingCategories || loadingBills;
 
