@@ -107,7 +107,7 @@ const Contas = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [period, setPeriod] = useState<"month" | "week" | "custom">("month");
   const [offset, setOffset] = useState(0);
-  const [activeGroup, setActiveGroup] = useState<"carlos" | "central" | "both">("carlos");
+  const [activeGroup, setActiveGroup] = useState<"carlos" | "central" | "both">("both");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showCategories, setShowCategories] = useState(false);
   // Multi-category filter for "Contas no período" summary
@@ -573,9 +573,9 @@ const Contas = () => {
         <div className="flex items-center gap-2">
           <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "carlos" | "central" | "both")} className="flex-1">
             <TabsList className="w-full h-10">
-              <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-emerald-500 data-[state=active]:text-white">Carlos</TabsTrigger>
-              <TabsTrigger value="central" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Central</TabsTrigger>
               <TabsTrigger value="both" className="flex-1 font-semibold text-sm data-[state=active]:bg-foreground data-[state=active]:text-background">Ambos</TabsTrigger>
+              <TabsTrigger value="central" className="flex-1 font-semibold text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Central</TabsTrigger>
+              <TabsTrigger value="carlos" className="flex-1 font-semibold text-sm data-[state=active]:bg-emerald-500 data-[state=active]:text-white">Carlos</TabsTrigger>
             </TabsList>
           </Tabs>
           <DropdownMenu>
@@ -838,6 +838,11 @@ const Contas = () => {
                         <span className={cn("text-base font-bold", tone.text)}>
                           {formatCurrency(Number(b.value) - getVale(b))}
                         </span>
+                        {effectiveStatus !== "paid" && getPartialPaid(b) > 0 && (
+                          <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                            falta {formatCurrency(Math.max(0, Number(b.value) - getVale(b) - getPartialPaid(b)))}
+                          </span>
+                        )}
                         {effectiveStatus !== "paid" && (
                           <Button
                             size="sm"
@@ -872,7 +877,7 @@ const Contas = () => {
                             <DropdownMenuItem onClick={() => handleEditEntry(b)}>
                               <Package className="mr-2 h-4 w-4" /> Trocar Categoria
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEntryClick(b.id)}>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEntryClick(b)}>
                               <Trash2 className="mr-2 h-4 w-4" /> Excluir
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -1047,7 +1052,7 @@ const Contas = () => {
                                         <DropdownMenuItem onClick={() => handleEditEntry(entry)}>
                                           <Package className="mr-2 h-4 w-4" /> Trocar Categoria
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEntryClick(entry.id)}>
+                                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteEntryClick(entry)}>
                                           <Trash2 className="mr-2 h-4 w-4" /> Excluir
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
@@ -1082,7 +1087,24 @@ const Contas = () => {
       <ContaEntryFormDialog open={entryFormOpen} onOpenChange={setEntryFormOpen} entry={selectedEntry} categoryId={entryCategoryId} />
       <ValeDialog open={valeDialogOpen} onOpenChange={setValeDialogOpen} entry={valeEntry} />
       <DeleteConfirmDialog open={deleteCategoryDialogOpen} onOpenChange={setDeleteCategoryDialogOpen} onConfirm={handleDeleteCategoryConfirm} title="Excluir Categoria" description="Tem certeza? Os itens dentro desta categoria não serão excluídos." isLoading={deleteCategory.isPending} />
-      <DeleteConfirmDialog open={deleteEntryDialogOpen} onOpenChange={setDeleteEntryDialogOpen} onConfirm={handleDeleteEntryConfirm} title="Excluir Item" description="Tem certeza que deseja excluir este item?" isLoading={deleteBill.isPending} />
+      <BillPaymentDialog
+        open={paymentDialogOpen}
+        onOpenChange={(o) => { setPaymentDialogOpen(o); if (!o) setPaymentBill(null); }}
+        billName={paymentBill?.name || ''}
+        totalValue={paymentBill ? Number(paymentBill.value) - getVale(paymentBill) : 0}
+        alreadyPaid={paymentBill ? getPartialPaid(paymentBill) : 0}
+        isLoading={markAsPaid.isPending || createPartialPayment.isPending}
+        onPayFull={() => paymentBill && payFull(paymentBill)}
+        onPayPartial={(amount) => paymentBill && payPartial(paymentBill, amount)}
+      />
+      <BillDeleteOptionsDialog
+        open={deleteScopeOpen}
+        onOpenChange={(o) => { setDeleteScopeOpen(o); if (!o) setDeleteScopeBill(null); }}
+        billName={deleteScopeBill?.name || ''}
+        monthLabel={format(currentRange.start, "MMMM 'de' yyyy", { locale: ptBR })}
+        isLoading={deleteBillScoped.isPending}
+        onConfirm={handleDeleteScopeConfirm}
+      />
       <DeleteConfirmDialog open={dismissBillDialogOpen} onOpenChange={setDismissBillDialogOpen} onConfirm={handleDismissBillConfirm} title="Apagar Conta" description="Tem certeza que deseja apagar esta conta? Essa ação não pode ser desfeita." isLoading={deleteBill.isPending} />
       <InsufficientBalanceDialog
         open={balanceDialogOpen}
