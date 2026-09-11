@@ -368,6 +368,7 @@ const Contas = () => {
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
       if (b.category_id !== categoryId) return false;
+      if (!isVisibleInMonth(b)) return false;
       // Fixed bills always appear when viewing by month
       if (b.is_fixed && period === "month") return true;
       const dueDate = getEffectiveDueDate(b);
