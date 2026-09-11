@@ -22,6 +22,8 @@ export interface Bill {
   total_installments: number | null;
   paid_installments: number;
   vale_amount: number;
+  skipped_months?: string[] | null;
+  end_month?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -330,6 +332,137 @@ export const useDeleteBill = () => {
         .delete()
         .eq('id', id);
       
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bills'] });
+      queryClient.invalidateQueries({ queryKey: ['cash_flow'] });
+      toast.success('Conta excluída com sucesso!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao excluir conta', { description: error.message });
+    },
+  });
+};
+
+// ===================== Pagamentos parciais =====================
+
+export interface BillPartialPayment {
+  id: string;
+  bill_id: string;
+  paid_month: string;
+  amount: number;
+  created_at: string;
+}
+
+export const useBillPartialPayments = () => {
+  return useQuery({
+    queryKey: ['bill_partial_payments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bill_partial_payments' as any)
+        .select('id, bill_id, paid_month, amount, created_at');
+      if (error) throw error;
+      return (data || []) as unknown as BillPartialPayment[];
+    },
+  });
+};
+
+export const useCreatePartialPayment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ bill, amount, paidMonth }: { bill: Bill; amount: number; paidMonth: string }) => {
+      if (!(amount > 0)) throw new Error('Informe um valor válido');
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('Usuário não autenticado');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!profile?.company_id) throw new Error('Empresa não encontrada');
+
+      const { error } = await supabase
+        .from('bill_partial_payments' as any)
+        .insert({
+          company_id: profile.company_id,
+          bill_id: bill.id,
+          paid_month: paidMonth,
+          amount,
+        });
+      if (error) throw error;
+
+      const { error: cfError } = await supabase
+        .from('cash_flow')
+        .insert({
+          company_id: profile.company_id,
+          description: bill.name,
+          value: amount,
+          type: 'expense' as const,
+          flow_date: new Date().toISOString().split('T')[0],
+          category_id: bill.category_id,
+        });
+      if (cfError) throw cfError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bill_partial_payments'] });
+      queryClient.invalidateQueries({ queryKey: ['bills'] });
+      queryClient.invalidateQueries({ queryKey: ['cash_flow'] });
+      toast.success('Pagamento parcial registrado!');
+    },
+    onError: (error) => {
+      toast.error('Erro ao registrar pagamento parcial', { description: error.message });
+    },
+  });
+};
+
+// ===================== Exclusão com escopo =====================
+
+export type BillDeleteScope = 'only_this' | 'this_and_next' | 'all';
+
+const prevMonthKey = (monthKey: string) => {
+  const [y, m] = monthKey.split('-').map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
+export const useDeleteBillScoped = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ bill, scope, monthKey }: { bill: Bill; scope: BillDeleteScope; monthKey: string }) => {
+      // Contas não fixas só existem uma vez — qualquer escopo apaga o registro
+      if (scope === 'all' || !bill.is_fixed) {
+        if (bill.status === 'paid') {
+          await supabase
+            .from('cash_flow')
+            .delete()
+            .eq('description', bill.name)
+            .eq('type', 'expense');
+        }
+        const { error } = await supabase.from('bills').delete().eq('id', bill.id);
+        if (error) throw error;
+        return;
+      }
+
+      if (scope === 'only_this') {
+        const months = Array.from(new Set([...(bill.skipped_months || []), monthKey]));
+        const { error } = await supabase
+          .from('bills')
+          .update({ skipped_months: months } as any)
+          .eq('id', bill.id);
+        if (error) throw error;
+        return;
+      }
+
+      // this_and_next: conta encerra no mês anterior, histórico preservado
+      const { error } = await supabase
+        .from('bills')
+        .update({ end_month: prevMonthKey(monthKey) } as any)
+        .eq('id', bill.id);
       if (error) throw error;
     },
     onSuccess: () => {

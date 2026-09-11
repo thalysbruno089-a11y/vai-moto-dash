@@ -59,7 +59,9 @@ import {
   Repeat,
 } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
-import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, useUnmarkBillPaid, Bill } from "@/hooks/useBills";
+import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, useUnmarkBillPaid, useBillPartialPayments, useCreatePartialPayment, useDeleteBillScoped, Bill } from "@/hooks/useBills";
+import { BillPaymentDialog } from "@/components/bills/BillPaymentDialog";
+import { BillDeleteOptionsDialog, BillDeleteScope } from "@/components/bills/BillDeleteOptionsDialog";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useWeeklyClosings } from "@/hooks/useWeeklyClosings";
@@ -143,6 +145,14 @@ const Contas = () => {
   const [balanceDialogOpen, setBalanceDialogOpen] = useState(false);
   const [balanceBillPending, setBalanceBillPending] = useState<Bill | null>(null);
 
+  // Payment dialog (pagar tudo / pagar parte)
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentBill, setPaymentBill] = useState<Bill | null>(null);
+
+  // Delete options dialog
+  const [deleteScopeOpen, setDeleteScopeOpen] = useState(false);
+  const [deleteScopeBill, setDeleteScopeBill] = useState<Bill | null>(null);
+
   const { data: categories, isLoading: loadingCategories } = useCategories();
   const { data: bills, isLoading: loadingBills } = useBills();
   const { data: motoboys } = useMotoboys();
@@ -154,6 +164,9 @@ const Contas = () => {
   const unmarkPaid = useUnmarkBillPaid();
   const updateBill = useUpdateBill();
   const createBalanceDifference = useCreateBalanceDifference();
+  const { data: partialPayments = [] } = useBillPartialPayments();
+  const createPartialPayment = useCreatePartialPayment();
+  const deleteBillScoped = useDeleteBillScoped();
 
   const isLoading = loadingCategories || loadingBills;
 
@@ -309,6 +322,27 @@ const Contas = () => {
   // Month key (YYYY-MM) of the period being viewed — fixed bills are paid "per month"
   const viewedMonthKey = format(currentRange.start, "yyyy-MM");
 
+  // Pagamentos parciais do mês visualizado
+  const partialByBill = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of partialPayments) {
+      const key = `${p.bill_id}|${p.paid_month}`;
+      m.set(key, (m.get(key) || 0) + Number(p.amount));
+    }
+    return m;
+  }, [partialPayments]);
+
+  const getPartialPaid = (b: Bill) => partialByBill.get(`${b.id}|${viewedMonthKey}`) || 0;
+
+  // Contas fixas podem ser removidas de um mês específico ou encerradas a partir de um mês
+  const isVisibleInMonth = (b: Bill) => {
+    if (!b.is_fixed) return true;
+    if ((b.skipped_months || []).includes(viewedMonthKey)) return false;
+    if (b.end_month && viewedMonthKey > b.end_month) return false;
+    return true;
+  };
+
+
   // Get effective status: fixed bills count as paid only if there's a payment
   // recorded for the viewed month (survives the monthly reset cron)
   const getEffectiveStatus = (bill: Bill): string => {
@@ -334,6 +368,7 @@ const Contas = () => {
   const getEntriesForCategory = (categoryId: string) => {
     return (bills || []).filter(b => {
       if (b.category_id !== categoryId) return false;
+      if (!isVisibleInMonth(b)) return false;
       // Fixed bills always appear when viewing by month
       if (b.is_fixed && period === "month") return true;
       const dueDate = getEffectiveDueDate(b);
@@ -423,18 +458,26 @@ const Contas = () => {
   };
   const handleCreateEntry = (categoryId: string) => { setSelectedEntry(null); setEntryCategoryId(categoryId); setEntryFormOpen(true); };
   const handleEditEntry = (entry: Bill) => { setSelectedEntry(entry); setEntryCategoryId(entry.category_id); setEntryFormOpen(true); };
-  const handleDeleteEntryClick = (id: string) => { setEntryToDelete(id); setDeleteEntryDialogOpen(true); };
-  const handleDeleteEntryConfirm = async () => {
-    if (entryToDelete) { await deleteBill.mutateAsync(entryToDelete); setDeleteEntryDialogOpen(false); setEntryToDelete(null); }
+  const handleDeleteEntryClick = (entry: Bill) => { setDeleteScopeBill(entry); setDeleteScopeOpen(true); };
+  const handleDeleteScopeConfirm = async (scope: BillDeleteScope) => {
+    if (!deleteScopeBill) return;
+    await deleteBillScoped.mutateAsync({ bill: deleteScopeBill, scope, monthKey: viewedMonthKey });
+    setDeleteScopeOpen(false);
+    setDeleteScopeBill(null);
   };
   const handleDismissFromUpcoming = (billId: string) => { setBillToDismiss(billId); setDismissBillDialogOpen(true); };
   const handleDismissBillConfirm = async () => {
     if (billToDismiss) { await deleteBill.mutateAsync(billToDismiss); setDismissBillDialogOpen(false); setBillToDismiss(null); }
   };
-  const handleMarkPaid = async (entry: Bill) => {
+  // Abre a caixa com as opções "pagar tudo" / "pagar uma parte"
+  const handleMarkPaid = (entry: Bill) => { setPaymentBill(entry); setPaymentDialogOpen(true); };
+
+  const payFull = async (entry: Bill) => {
     const valeNow = getVale(entry);
-    const netValue = entry.value - valeNow;
+    const alreadyPaid = getPartialPaid(entry);
+    const netValue = entry.value - valeNow - alreadyPaid;
     if (netValue > weekBalance) {
+      setPaymentDialogOpen(false);
       setBalanceBillPending(entry);
       setBalanceDialogOpen(true);
       return;
@@ -442,7 +485,15 @@ const Contas = () => {
     if (valeNow > 0) {
       toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow, paid_month: viewedMonthKey });
+    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow + alreadyPaid, paid_month: viewedMonthKey });
+    setPaymentDialogOpen(false);
+    setPaymentBill(null);
+  };
+
+  const payPartial = async (entry: Bill, amount: number) => {
+    await createPartialPayment.mutateAsync({ bill: entry, amount, paidMonth: viewedMonthKey });
+    setPaymentDialogOpen(false);
+    setPaymentBill(null);
   };
   const handleBalanceConfirm = async (source: string) => {
     if (!balanceBillPending) return;
