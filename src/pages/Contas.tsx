@@ -838,6 +838,11 @@ const Contas = () => {
                         <span className={cn("text-base font-bold", tone.text)}>
                           {formatCurrency(Number(b.value) - getVale(b))}
                         </span>
+                        {effectiveStatus !== "paid" && getPartialPaid(b) > 0 && (
+                          <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                            falta {formatCurrency(Math.max(0, Number(b.value) - getVale(b) - getPartialPaid(b)))}
+                          </span>
+                        )}
                         {effectiveStatus !== "paid" && (
                           <Button
                             size="sm"
