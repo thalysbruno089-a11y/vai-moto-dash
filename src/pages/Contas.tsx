@@ -322,6 +322,27 @@ const Contas = () => {
   // Month key (YYYY-MM) of the period being viewed — fixed bills are paid "per month"
   const viewedMonthKey = format(currentRange.start, "yyyy-MM");
 
+  // Pagamentos parciais do mês visualizado
+  const partialByBill = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const p of partialPayments) {
+      const key = `${p.bill_id}|${p.paid_month}`;
+      m.set(key, (m.get(key) || 0) + Number(p.amount));
+    }
+    return m;
+  }, [partialPayments]);
+
+  const getPartialPaid = (b: Bill) => partialByBill.get(`${b.id}|${viewedMonthKey}`) || 0;
+
+  // Contas fixas podem ser removidas de um mês específico ou encerradas a partir de um mês
+  const isVisibleInMonth = (b: Bill) => {
+    if (!b.is_fixed) return true;
+    if ((b.skipped_months || []).includes(viewedMonthKey)) return false;
+    if (b.end_month && viewedMonthKey > b.end_month) return false;
+    return true;
+  };
+
+
   // Get effective status: fixed bills count as paid only if there's a payment
   // recorded for the viewed month (survives the monthly reset cron)
   const getEffectiveStatus = (bill: Bill): string => {
