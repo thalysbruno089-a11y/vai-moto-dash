@@ -59,7 +59,9 @@ import {
   Repeat,
 } from "lucide-react";
 import { useCategories, useDeleteCategory, Category } from "@/hooks/useCategories";
-import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, useUnmarkBillPaid, Bill } from "@/hooks/useBills";
+import { useBills, useUpdateBill, useDeleteBill, useMarkBillAsPaid, useUnmarkBillPaid, useBillPartialPayments, useCreatePartialPayment, useDeleteBillScoped, Bill } from "@/hooks/useBills";
+import { BillPaymentDialog } from "@/components/bills/BillPaymentDialog";
+import { BillDeleteOptionsDialog, BillDeleteScope } from "@/components/bills/BillDeleteOptionsDialog";
 import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useWeeklyClosings } from "@/hooks/useWeeklyClosings";
