@@ -458,18 +458,26 @@ const Contas = () => {
   };
   const handleCreateEntry = (categoryId: string) => { setSelectedEntry(null); setEntryCategoryId(categoryId); setEntryFormOpen(true); };
   const handleEditEntry = (entry: Bill) => { setSelectedEntry(entry); setEntryCategoryId(entry.category_id); setEntryFormOpen(true); };
-  const handleDeleteEntryClick = (id: string) => { setEntryToDelete(id); setDeleteEntryDialogOpen(true); };
-  const handleDeleteEntryConfirm = async () => {
-    if (entryToDelete) { await deleteBill.mutateAsync(entryToDelete); setDeleteEntryDialogOpen(false); setEntryToDelete(null); }
+  const handleDeleteEntryClick = (entry: Bill) => { setDeleteScopeBill(entry); setDeleteScopeOpen(true); };
+  const handleDeleteScopeConfirm = async (scope: BillDeleteScope) => {
+    if (!deleteScopeBill) return;
+    await deleteBillScoped.mutateAsync({ bill: deleteScopeBill, scope, monthKey: viewedMonthKey });
+    setDeleteScopeOpen(false);
+    setDeleteScopeBill(null);
   };
   const handleDismissFromUpcoming = (billId: string) => { setBillToDismiss(billId); setDismissBillDialogOpen(true); };
   const handleDismissBillConfirm = async () => {
     if (billToDismiss) { await deleteBill.mutateAsync(billToDismiss); setDismissBillDialogOpen(false); setBillToDismiss(null); }
   };
-  const handleMarkPaid = async (entry: Bill) => {
+  // Abre a caixa com as opções "pagar tudo" / "pagar uma parte"
+  const handleMarkPaid = (entry: Bill) => { setPaymentBill(entry); setPaymentDialogOpen(true); };
+
+  const payFull = async (entry: Bill) => {
     const valeNow = getVale(entry);
-    const netValue = entry.value - valeNow;
+    const alreadyPaid = getPartialPaid(entry);
+    const netValue = entry.value - valeNow - alreadyPaid;
     if (netValue > weekBalance) {
+      setPaymentDialogOpen(false);
       setBalanceBillPending(entry);
       setBalanceDialogOpen(true);
       return;
@@ -477,7 +485,15 @@ const Contas = () => {
     if (valeNow > 0) {
       toast.warning(`⚠️ ${entry.name} possui vale de ${formatCurrency(valeNow)}. Valor líquido: ${formatCurrency(netValue)}.`, { duration: 6000 });
     }
-    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow, paid_month: viewedMonthKey });
+    await markAsPaid.mutateAsync({ ...entry, vale_amount: valeNow + alreadyPaid, paid_month: viewedMonthKey });
+    setPaymentDialogOpen(false);
+    setPaymentBill(null);
+  };
+
+  const payPartial = async (entry: Bill, amount: number) => {
+    await createPartialPayment.mutateAsync({ bill: entry, amount, paidMonth: viewedMonthKey });
+    setPaymentDialogOpen(false);
+    setPaymentBill(null);
   };
   const handleBalanceConfirm = async (source: string) => {
     if (!balanceBillPending) return;
