@@ -22,6 +22,8 @@ export interface Bill {
   total_installments: number | null;
   paid_installments: number;
   vale_amount: number;
+  skipped_months?: string[] | null;
+  end_month?: string | null;
   created_at: string;
   updated_at: string;
 }
