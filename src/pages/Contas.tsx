@@ -145,6 +145,14 @@ const Contas = () => {
   const [balanceDialogOpen, setBalanceDialogOpen] = useState(false);
   const [balanceBillPending, setBalanceBillPending] = useState<Bill | null>(null);
 
+  // Payment dialog (pagar tudo / pagar parte)
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentBill, setPaymentBill] = useState<Bill | null>(null);
+
+  // Delete options dialog
+  const [deleteScopeOpen, setDeleteScopeOpen] = useState(false);
+  const [deleteScopeBill, setDeleteScopeBill] = useState<Bill | null>(null);
+
   const { data: categories, isLoading: loadingCategories } = useCategories();
   const { data: bills, isLoading: loadingBills } = useBills();
   const { data: motoboys } = useMotoboys();
