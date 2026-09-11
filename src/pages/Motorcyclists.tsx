@@ -35,6 +35,7 @@ import { useMotoboys, useDeleteMotoboy, useUpdateMotoboy, Motoboy } from "@/hook
 import { MotoboyFormDialog } from "@/components/motoboys/MotoboyFormDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { MotoboyPaymentDialog, PaymentBreakdown } from "@/components/motoboys/MotoboyPaymentDialog";
+import { MotoboyDetailsSheet } from "@/components/motoboys/MotoboyDetailsSheet";
 import { printMotoboyReceipt } from "@/lib/motoboyReceipt";
 import { Database } from "@/integrations/supabase/types";
 
@@ -83,6 +84,8 @@ const Motorcyclists = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [motoboyToPay, setMotoboyToPay] = useState<Motoboy | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [motoboyToView, setMotoboyToView] = useState<Motoboy | null>(null);
 
   const { data: motoboys, isLoading } = useMotoboys();
   const deleteMotoboy = useDeleteMotoboy();
@@ -155,6 +158,16 @@ const Motorcyclists = () => {
   const handleEdit = (motoboy: Motoboy) => {
     setSelectedMotoboy(motoboy);
     setFormOpen(true);
+  };
+
+  const handleViewDetails = (motoboy: Motoboy) => {
+    setMotoboyToView(motoboy);
+    setDetailsOpen(true);
+  };
+
+  const handleEditFromDetails = (motoboy: Motoboy) => {
+    setDetailsOpen(false);
+    handleEdit(motoboy);
   };
 
   const handleCreate = () => {
@@ -370,7 +383,19 @@ const Motorcyclists = () => {
             </TableHeader>
             <TableBody>
               {filteredMotoboys.map((motoboy) => (
-                <TableRow key={motoboy.id} className="border-border">
+                <TableRow
+                  key={motoboy.id}
+                  className="cursor-pointer border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  tabIndex={0}
+                  onClick={() => handleViewDetails(motoboy)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleViewDetails(motoboy);
+                    }
+                  }}
+                  aria-label={`Abrir ficha de ${motoboy.name}`}
+                >
                   <TableCell className="font-medium">
                     {(motoboy as any).number || "-"}
                   </TableCell>
@@ -387,7 +412,7 @@ const Motorcyclists = () => {
                   <TableCell className={`font-medium ${shiftValueColors[motoboy.shift]}`}>
                     {Number((motoboy as any).weekly_payment || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${shiftColors[motoboy.shift]}`}>
                       {shiftLabels[motoboy.shift]}
                     </span>
@@ -470,6 +495,13 @@ const Motorcyclists = () => {
         onOpenChange={setPaymentDialogOpen}
         motoboy={motoboyToPay}
         onConfirm={handleConfirmPayment}
+      />
+
+      <MotoboyDetailsSheet
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+        motoboy={motoboyToView}
+        onEdit={handleEditFromDetails}
       />
 
       {/* Delete Confirmation */}
