@@ -27,6 +27,7 @@ import Lagoinha from "./pages/Lagoinha";
 import LagoinhaRegistro from "./pages/LagoinhaRegistro";
 import Burgazzo from "./pages/Burgazzo";
 import BurgazzoRegistro from "./pages/BurgazzoRegistro";
+import Benefits from "./pages/Benefits";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
           <BrowserRouter>
             <Routes>
             <Route path="/auth" element={<Auth />} />
+              <Route path="/beneficios" element={<Benefits />} />
               <Route path="/" element={<ProtectedRoute allowFinance={false}><Dashboard /></ProtectedRoute>} />
               <Route path="/motorcyclists" element={<ProtectedRoute allowFinance><Motorcyclists /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute allowEmployee allowFinance><Clients /></ProtectedRoute>} />

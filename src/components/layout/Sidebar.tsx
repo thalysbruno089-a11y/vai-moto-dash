@@ -14,6 +14,7 @@ import {
   Trash2,
   Zap,
   Store,
+  BadgePercent,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logoHero from "@/assets/logo-hero.jpg.asset.json";
@@ -24,6 +25,7 @@ const fullNavigation = [
   { name: "Clientes", href: "/clients", icon: CreditCard },
   { name: "Contas", href: "/contas", icon: Wallet },
   { name: "Relatórios", href: "/reports", icon: FileText },
+  { name: "Benefícios", href: "/beneficios", icon: BadgePercent },
 ];
 
 const adminNavigation = [
