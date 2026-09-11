@@ -65,6 +65,51 @@ export type Database = {
           },
         ]
       }
+      bill_partial_payments: {
+        Row: {
+          amount: number
+          bill_id: string
+          company_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          paid_month: string
+        }
+        Insert: {
+          amount: number
+          bill_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_month: string
+        }
+        Update: {
+          amount?: number
+          bill_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          paid_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_partial_payments_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bill_partial_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bill_payments: {
         Row: {
           amount: number | null
@@ -150,6 +195,7 @@ export type Database = {
           created_at: string
           description: string | null
           due_date: string
+          end_month: string | null
           id: string
           installment_number: number | null
           is_fixed: boolean
@@ -157,6 +203,7 @@ export type Database = {
           paid_at: string | null
           paid_installments: number | null
           parent_bill_id: string | null
+          skipped_months: string[]
           status: string
           total_installments: number | null
           updated_at: string
@@ -169,6 +216,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date: string
+          end_month?: string | null
           id?: string
           installment_number?: number | null
           is_fixed?: boolean
@@ -176,6 +224,7 @@ export type Database = {
           paid_at?: string | null
           paid_installments?: number | null
           parent_bill_id?: string | null
+          skipped_months?: string[]
           status?: string
           total_installments?: number | null
           updated_at?: string
@@ -188,6 +237,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string
+          end_month?: string | null
           id?: string
           installment_number?: number | null
           is_fixed?: boolean
@@ -195,6 +245,7 @@ export type Database = {
           paid_at?: string | null
           paid_installments?: number | null
           parent_bill_id?: string | null
+          skipped_months?: string[]
           status?: string
           total_installments?: number | null
           updated_at?: string
