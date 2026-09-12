@@ -11,11 +11,12 @@ interface ProtectedRouteProps {
   allowLagoinha?: boolean;
   allowBurgazzo?: boolean;
   allowFinance?: boolean;
+  allowQueue?: boolean;
 }
 
 const MIN_SPLASH_MS = 1500;
 
-const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, allowSantaLuzia = false, allowLagoinha = false, allowBurgazzo = false, allowFinance = true }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, allowSantaLuzia = false, allowLagoinha = false, allowBurgazzo = false, allowFinance = true, allowQueue = false }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
   const [splashElapsed, setSplashElapsed] = useState(false);
 
@@ -70,6 +71,10 @@ const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, a
   // Finance users can only access allowed routes (Motoboys and Clientes by default)
   if (profile?.role === 'finance' && !allowFinance) {
     return <Navigate to="/clients" replace />;
+  }
+
+  if (allowQueue && profile.role !== 'admin' && profile.name.toLowerCase() !== 'sofia') {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

@@ -28,6 +28,10 @@ import LagoinhaRegistro from "./pages/LagoinhaRegistro";
 import Burgazzo from "./pages/Burgazzo";
 import BurgazzoRegistro from "./pages/BurgazzoRegistro";
 import Benefits from "./pages/Benefits";
+import Queue from "./pages/Queue";
+import QueueTV from "./pages/QueueTV";
+import QueueApp from "./pages/QueueApp";
+import QueueAdmin from "./pages/QueueAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +47,10 @@ const App = () => (
             <Routes>
             <Route path="/auth" element={<Auth />} />
               <Route path="/beneficios" element={<Benefits />} />
+              <Route path="/fila" element={<Queue />} />
+              <Route path="/fila/tv" element={<QueueTV />} />
+              <Route path="/fila/app" element={<QueueApp />} />
+              <Route path="/fila/admin" element={<ProtectedRoute allowFinance={false} allowQueue><QueueAdmin /></ProtectedRoute>} />
               <Route path="/" element={<ProtectedRoute allowFinance={false}><Dashboard /></ProtectedRoute>} />
               <Route path="/motorcyclists" element={<ProtectedRoute allowFinance><Motorcyclists /></ProtectedRoute>} />
               <Route path="/clients" element={<ProtectedRoute allowEmployee allowFinance><Clients /></ProtectedRoute>} />
