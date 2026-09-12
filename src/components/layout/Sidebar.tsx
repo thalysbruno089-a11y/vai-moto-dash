@@ -15,6 +15,7 @@ import {
   Zap,
   Store,
   BadgePercent,
+  ListOrdered,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import logoHero from "@/assets/logo-hero.jpg.asset.json";
@@ -120,6 +121,12 @@ const Sidebar = () => {
               </Link>
             );
           })}
+          {(profile?.role === 'admin' || profile?.name.toLowerCase() === 'sofia') && (
+            <Link to="/fila/admin" className={location.pathname === '/fila/admin' ? "sidebar-link-active" : "sidebar-link"}>
+              <ListOrdered className="h-5 w-5 flex-shrink-0" />
+              <span>Fila Digital</span>
+            </Link>
+          )}
           {profile?.role === 'admin' && adminNavigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (

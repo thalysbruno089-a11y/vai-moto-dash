@@ -1256,6 +1256,78 @@ export type Database = {
           },
         ]
       }
+      queue_entries: {
+        Row: {
+          called_at: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          finished_at: string | null
+          id: string
+          joined_at: string
+          motoboy_id: string
+          position: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          called_at?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          finished_at?: string | null
+          id?: string
+          joined_at?: string
+          motoboy_id: string
+          position: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          called_at?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          finished_at?: string | null
+          id?: string
+          joined_at?: string
+          motoboy_id?: string
+          position?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "queue_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "queue_entries_motoboy_id_fkey"
+            columns: ["motoboy_id"]
+            isOneToOne: false
+            referencedRelation: "motoboys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      queue_public_events: {
+        Row: {
+          changed_at: string
+          id: number
+        }
+        Insert: {
+          changed_at?: string
+          id?: number
+        }
+        Update: {
+          changed_at?: string
+          id?: number
+        }
+        Relationships: []
+      }
       rides: {
         Row: {
           client_id: string
@@ -1400,6 +1472,96 @@ export type Database = {
           },
         ]
       }
+      saved_report_items: {
+        Row: {
+          company_id: string
+          count: number
+          created_at: string
+          id: string
+          motoboy_code: string
+          motoboy_id: string
+          motoboy_name: string
+          report_id: string
+        }
+        Insert: {
+          company_id: string
+          count: number
+          created_at?: string
+          id?: string
+          motoboy_code: string
+          motoboy_id: string
+          motoboy_name: string
+          report_id: string
+        }
+        Update: {
+          company_id?: string
+          count?: number
+          created_at?: string
+          id?: string
+          motoboy_code?: string
+          motoboy_id?: string
+          motoboy_name?: string
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_report_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_report_items_motoboy_id_fkey"
+            columns: ["motoboy_id"]
+            isOneToOne: false
+            referencedRelation: "motoboys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_report_items_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "saved_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_reports: {
+        Row: {
+          company_id: string
+          id: string
+          report_date: string
+          saved_at: string
+          saved_by: string | null
+          total: number
+        }
+        Insert: {
+          company_id: string
+          id?: string
+          report_date?: string
+          saved_at?: string
+          saved_by?: string | null
+          total?: number
+        }
+        Update: {
+          company_id?: string
+          id?: string
+          report_date?: string
+          saved_at?: string
+          saved_by?: string | null
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_reports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ultra_deliveries: {
         Row: {
           company_id: string | null
@@ -1535,6 +1697,10 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: boolean
       }
+      queue_call_next: { Args: never; Returns: string }
+      queue_finish_current: { Args: never; Returns: string }
+      queue_return_called: { Args: { p_entry_id: string }; Returns: undefined }
+      queue_save_and_reset: { Args: never; Returns: string }
     }
     Enums: {
       flow_type: "revenue" | "expense"
