@@ -20,18 +20,18 @@ Deno.serve(async (req) => {
 
   try {
     const parsed = BodySchema.safeParse(await req.json().catch(() => ({})))
-    if (!parsed.success) return json({ error: 'Digite um número válido' }, 400)
+    if (!parsed.success) return json({ ok: false, error: 'Digite um número válido' })
 
     const clientKey = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
     const now = Date.now()
     const current = attempts.get(clientKey)
     if (current && current.resetAt > now && current.count >= 20) {
-      return json({ error: 'Muitas tentativas. Aguarde alguns minutos.' }, 429)
+      return json({ ok: false, error: 'Muitas tentativas. Aguarde alguns minutos.' })
     }
 
     const url = Deno.env.get('SUPABASE_URL')
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    if (!url || !serviceKey) return json({ error: 'Serviço indisponível' }, 503)
+    if (!url || !serviceKey) return json({ ok: false, error: 'Serviço indisponível' })
     const db = createClient(url, serviceKey, { auth: { persistSession: false } })
 
     const { data: matches, error: motoboyError } = await db
@@ -46,10 +46,10 @@ Deno.serve(async (req) => {
         count: current && current.resetAt > now ? current.count + 1 : 1,
         resetAt: current && current.resetAt > now ? current.resetAt : now + 10 * 60 * 1000,
       })
-      return json({ error: 'Número não encontrado' }, 404)
+      return json({ ok: false, error: 'Número não encontrado' })
     }
-    if (motoboy.status !== 'active') return json({ error: 'Seu cadastro está inativo. Procure a administração.' }, 403)
-    if (motoboy.payment_status !== 'paid') return json({ error: 'Seu pagamento está pendente. Regularize para entrar na fila.' }, 403)
+    if (motoboy.status !== 'active') return json({ ok: false, error: 'Seu cadastro está inativo. Procure a administração.' })
+    if (motoboy.payment_status !== 'paid') return json({ ok: false, error: 'Seu pagamento está pendente. Regularize para entrar na fila.' })
 
     const { data: existing } = await db
       .from('queue_entries')
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
       .eq('motoboy_id', motoboy.id)
       .in('status', ['waiting', 'called'])
       .maybeSingle()
-    if (existing) return json({ error: 'Você já está na fila.' }, 409)
+    if (existing) return json({ ok: false, error: 'Você já está na fila.' })
 
     const { data: last } = await db
       .from('queue_entries')
@@ -76,16 +76,16 @@ Deno.serve(async (req) => {
     }).select('id').single()
 
     if (insertError) {
-      if (insertError.code === '23505') return json({ error: 'Você já está na fila.' }, 409)
-      return json({ error: 'Não foi possível entrar na fila' }, 500)
+      if (insertError.code === '23505') return json({ ok: false, error: 'Você já está na fila.' })
+      return json({ ok: false, error: 'Não foi possível entrar na fila' })
     }
 
     attempts.delete(clientKey)
     const { count } = await db.from('queue_entries').select('id', { count: 'exact', head: true })
       .eq('company_id', motoboy.company_id).eq('status', 'waiting')
 
-    return json({ entryId: entry.id, name: motoboy.name, code: motoboy.number, position: count ?? 1 }, 201)
+    return json({ ok: true, entryId: entry.id, name: motoboy.name, code: motoboy.number, position: count ?? 1 })
   } catch {
-    return json({ error: 'Não foi possível entrar na fila agora' }, 500)
+    return json({ ok: false, error: 'Não foi possível entrar na fila agora' })
   }
 })

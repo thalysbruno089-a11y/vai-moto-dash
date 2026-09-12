@@ -34,9 +34,9 @@ export default function QueueApp() {
     }
     setSending(true);
     setMessage(null);
-    const { data, error } = await supabase.functions.invoke<{ entryId?: string; position?: number; error?: string }>("queue-checkin", { body: { code } });
+    const { data, error } = await supabase.functions.invoke<{ ok?: boolean; entryId?: string; position?: number; error?: string }>("queue-checkin", { body: { code } });
     setSending(false);
-    if (error || data?.error || !data?.entryId) {
+    if (error || data?.ok === false || data?.error || !data?.entryId) {
       setMessage({ type: "error", text: data?.error ?? "Não foi possível entrar na fila." });
       return;
     }
