@@ -1,5 +1,10 @@
-import { createClient, corsHeaders } from 'npm:@supabase/supabase-js@2.91.0'
+import { createClient } from 'npm:@supabase/supabase-js@2.91.0'
 import { z } from 'npm:zod@3.25.76'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 const BodySchema = z.object({ code: z.string().trim().regex(/^\d{1,6}$/) })
 const attempts = new Map<string, { count: number; resetAt: number }>()
