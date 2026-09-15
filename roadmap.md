@@ -5,3 +5,4 @@
 - [x] Criar telas de entrada, TV, celular e administração
 - [x] Integrar navegação e permissões de Carlos/Sofia
 - [x] Validar fluxo, segurança e visual em celular/TV
+- [x] Corrigir exclusão de conta fixa nesta e nas próximas competências
