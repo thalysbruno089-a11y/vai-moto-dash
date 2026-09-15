@@ -410,7 +410,7 @@ const Contas = () => {
 
   const openBillsFromSavedCategories = useMemo(() => {
     if (!bills) return [];
-    return bills.filter(b => getEffectiveStatus(b) !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
+    return bills.filter(b => isVisibleInMonth(b) && getEffectiveStatus(b) !== "paid" && b.category_id && savedCategoryIds.has(b.category_id));
   }, [bills, savedCategoryIds, paidMonthsByBill, viewedMonthKey]);
 
   // Overdue bills - last 30 days, filtered by active group (includes fixed bills with stale paid status)
@@ -421,6 +421,7 @@ const Contas = () => {
     const groupCatIds = new Set(groupCategories.map(c => c.id));
     return (bills || [])
       .filter(b => {
+        if (!isVisibleInMonth(b)) return false;
         const effectiveStatus = getEffectiveStatus(b);
         if (effectiveStatus === "paid") return false;
         if (!b.category_id || !groupCatIds.has(b.category_id)) return false;
@@ -795,6 +796,7 @@ const Contas = () => {
             if (!b.category_id || !groupCatIds.has(b.category_id)) return false;
             if (selectedCategoryFilter.size > 0 && !selectedCategoryFilter.has(b.category_id)) return false;
             if (!matchesStatusFilter(b)) return false;
+            if (!isVisibleInMonth(b)) return false;
             if (b.is_fixed && period === "month") return true;
             const dueDate = getEffectiveDueDate(b);
             return isWithinInterval(dueDate, { start: currentRange.start, end: currentRange.end });
