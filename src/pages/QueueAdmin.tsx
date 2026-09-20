@@ -4,7 +4,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Archive, Check, Loader2, MoreHorizontal, Pencil, PhoneCall, Plus, RotateCcw, Search, Trash2, UserRoundX } from "lucide-react";
 import { toast } from "sonner";
-import MainLayout from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -110,50 +109,62 @@ export default function QueueAdmin() {
   }), [motoboys, search]);
 
   return (
-    <MainLayout title="Fila Digital" subtitle="Controle de chamadas e corridas do dia">
-      <Tabs defaultValue="fila" className="space-y-5">
-        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 sm:w-auto sm:grid-cols-4">
+    <main className="min-h-screen bg-[#fbf9ff] text-slate-900">
+      <Tabs defaultValue="fila" className="flex min-h-screen flex-col">
+      <header className="bg-gradient-to-r from-[#741bd9] via-[#9735df] to-[#c04be7] px-4 pb-5 pt-6 text-white sm:px-8">
+        <div className="mx-auto flex max-w-5xl flex-col gap-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white p-2 shadow-lg sm:h-20 sm:w-20">
+              <img src={new URL("../assets/logo.png", import.meta.url).href} alt="Vai Moto" className="h-full w-full object-contain" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Painel Administrativo <span className="text-white/80">✣</span></h1>
+              <p className="text-sm font-medium text-white/80">Vai Moto SSP - Sistema de Fila</p>
+            </div>
+          </div>
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl bg-white/95 p-1 text-slate-500 shadow-lg sm:w-fit sm:grid-cols-4">
           <TabsTrigger value="fila">Fila</TabsTrigger>
           <TabsTrigger value="corridas">Corridas</TabsTrigger>
           <TabsTrigger value="salvas">Corridas Salvas</TabsTrigger>
           <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
-        </TabsList>
+            </TabsList>
+        </div>
+      </header>
 
-        <TabsContent value="fila" className="space-y-5">
-          <section className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
-            <div className="border-l-4 border-primary bg-card p-5 shadow-card">
-              <p className="text-xs font-bold uppercase text-muted-foreground">Chamando agora</p>
+      <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:px-8">
+            <TabsContent value="fila" className="space-y-5">
+          <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="rounded-2xl border border-[#eadff7] bg-white p-6 shadow-[0_16px_35px_rgba(116,27,217,0.12)]">
+              <div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0e5ff] text-[#8e35dc]">✣</span><p className="text-base font-extrabold">Chamando agora</p></div>
               {called ? (
                 <div className="mt-4">
-                  <p className="font-mono text-6xl font-black text-primary">{called.motoboys?.number ?? "—"}</p>
-                  <p className="mt-2 text-2xl font-bold text-foreground">{called.motoboys?.name}</p>
-                  <div className="mt-6 flex flex-wrap gap-2">
+                  <div className="mt-5 flex items-center gap-4"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1edff] text-xl text-[#7880a5]">◷</span><div><p className="font-mono text-4xl font-black leading-none text-[#8e35dc]">{called.motoboys?.number ?? "—"}</p><p className="mt-1 text-sm font-medium uppercase tracking-wide text-slate-500">{called.motoboys?.name}</p></div></div>
+                  <div className="mt-6 flex flex-wrap justify-end gap-2">
                     <Button onClick={() => action.mutate({ name: "queue_finish_current" })} disabled={action.isPending}><Check className="mr-2 h-4 w-4" /> Finalizar</Button>
                     <Button variant="outline" onClick={() => action.mutate({ name: "queue_return_called", args: { p_entry_id: called.id } })} disabled={action.isPending}><RotateCcw className="mr-2 h-4 w-4" /> Voltar para fila</Button>
+                    <Button className="bg-gradient-to-r from-[#a33ee1] to-[#cf8bea] text-white hover:opacity-90" onClick={() => action.mutate({ name: "queue_call_next" })} disabled={action.isPending || waiting.length === 0}><PhoneCall className="mr-2 h-4 w-4" /> Próximo</Button>
                   </div>
                 </div>
-              ) : <p className="mt-8 text-lg text-muted-foreground">Nenhum motoboy chamado.</p>}
+              ) : <p className="mt-8 text-lg text-slate-500">Nenhum motoboy chamado.</p>}
             </div>
-            <div className="border border-border bg-card shadow-card">
-              <div className="flex items-center justify-between border-b border-border p-4">
-                <div><h2 className="font-bold text-foreground">Fila de espera</h2><p className="text-xs text-muted-foreground">{waiting.length} motoboy(s)</p></div>
-                <Button onClick={() => action.mutate({ name: "queue_call_next" })} disabled={action.isPending || waiting.length === 0}><PhoneCall className="mr-2 h-4 w-4" /> Chamar próximo</Button>
+            <div className="rounded-2xl border border-[#eadff7] bg-white shadow-[0_16px_35px_rgba(116,27,217,0.12)]">
+              <div className="flex items-center gap-3 border-b border-[#f0eafa] p-6"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0e5ff] text-[#8e35dc]">♙</span><div><h2 className="font-extrabold">Fila de espera</h2><p className="text-xs text-slate-500">{waiting.length} pessoas aguardando</p></div>
               </div>
               <div className="divide-y divide-border">
                 {waiting.map((entry, index) => (
                   <div key={entry.id} className="flex items-center gap-3 p-4">
                     <span className="w-8 font-mono text-sm text-muted-foreground">{index + 1}º</span>
-                    <span className="font-mono text-2xl font-black text-primary">{entry.motoboys?.number ?? "—"}</span>
-                    <span className="min-w-0 flex-1 truncate font-semibold text-foreground">{entry.motoboys?.name}</span>
+                    <span className="font-mono text-2xl font-black text-[#8e35dc]">{entry.motoboys?.number ?? "—"}</span>
+                    <span className="min-w-0 flex-1 truncate font-semibold text-slate-700">{entry.motoboys?.name}</span>
                     <Button variant="ghost" size="icon" onClick={() => removeEntry.mutate(entry.id)} aria-label={`Remover ${entry.motoboys?.name ?? "motoboy"}`}><UserRoundX className="h-5 w-5 text-destructive" /></Button>
                   </div>
                 ))}
-                {!queueLoading && waiting.length === 0 && <p className="p-10 text-center text-muted-foreground">Fila vazia</p>}
-                {queueLoading && <p className="flex items-center justify-center p-10 text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando</p>}
+                {!queueLoading && waiting.length === 0 && <div className="flex min-h-52 flex-col items-center justify-center gap-3 text-center text-slate-500"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f4edff] text-2xl text-[#8e35dc]">!</span><p>Nenhum motoboy na fila</p><span className="text-xs">Aguardando novos check-ins</span></div>}
+                {queueLoading && <p className="flex items-center justify-center p-10 text-slate-500"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando</p>}
               </div>
             </div>
           </section>
-        </TabsContent>
+            </TabsContent>
 
         <TabsContent value="corridas">
           <div className="border border-border bg-card shadow-card">
@@ -189,10 +200,11 @@ export default function QueueAdmin() {
             </Table>
           </div>
         </TabsContent>
+      </div>
       </Tabs>
 
       <MotoboyFormDialog open={formOpen} onOpenChange={setFormOpen} motoboy={selectedMotoboy} />
       <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir motoboy?</AlertDialogTitle><AlertDialogDescription>O cadastro de {deleteTarget?.name} será removido. Registros históricos podem impedir a exclusão.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => { if (deleteTarget) deleteMotoboy.mutate(deleteTarget.id); setDeleteTarget(null); }}>Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-    </MainLayout>
+    </main>
   );
 }

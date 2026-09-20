@@ -48,44 +48,42 @@ export default function QueueApp() {
   };
 
   return (
-    <main className="min-h-screen bg-background pb-10">
-      <header className="border-b border-border bg-card px-4 py-3">
+    <main className="min-h-screen bg-[#fbf9ff] pb-10">
+      <header className="bg-gradient-to-r from-[#741bd9] via-[#9735df] to-[#c04be7] px-4 py-4 text-white">
         <div className="mx-auto flex max-w-md items-center justify-between gap-3">
-          <QueueBrand compact />
-          <Button variant="ghost" size="icon" onClick={() => setAudio((value) => !value)} aria-label={audio ? "Desativar áudio" : "Ativar áudio"}>
+          <QueueBrand compact inverted />
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white" onClick={() => setAudio((value) => !value)} aria-label={audio ? "Desativar áudio" : "Ativar áudio"}>
             {audio ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
           </Button>
         </div>
       </header>
-      <div className="mx-auto max-w-md px-4 pt-5">
-        <section className="border-l-4 border-primary bg-card px-4 py-3 shadow-card">
-          <p className="text-xs font-bold uppercase text-muted-foreground">Chamando agora</p>
-          <div className="mt-1 flex items-baseline gap-3">
-            <span className="font-mono text-4xl font-black text-primary">{called?.code ?? "—"}</span>
-            <span className="truncate text-lg font-bold text-foreground">{called?.name ?? "Aguardando chamada"}</span>
+      <div className="mx-auto max-w-md px-4 pt-4">
+        <section className="rounded-2xl border border-[#eadff7] bg-white px-5 py-4 text-center shadow-[0_14px_30px_rgba(116,27,217,0.12)]">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Chamando agora</p>
+          <div className="mt-1">
+            <span className="font-mono text-3xl font-black text-[#8e35dc]">{called?.code ?? "—"}</span>
+            <p className="truncate text-lg font-extrabold text-slate-900">{called?.name ?? "Aguardando chamada"}</p>
           </div>
         </section>
 
-        <section className="mt-5">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Digite seu número</h1>
-              <p className="text-sm text-muted-foreground">Use o número do seu cadastro.</p>
-            </div>
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">{waiting.length} na fila</span>
+        <div className="my-4 flex justify-center"><span className="rounded-full border border-[#eadff7] bg-white px-4 py-2 text-xs font-semibold text-slate-600 shadow-sm"><span className="mr-2 text-[#8e35dc]">♙</span>{waiting.length} no fila</span></div>
+
+        <section className="rounded-2xl border border-[#eadff7] bg-white p-5 shadow-[0_14px_30px_rgba(116,27,217,0.12)]">
+          <div className="mb-4 text-center">
+            <h1 className="text-base font-extrabold text-slate-900"><span className="mr-2 text-[#8e35dc]">#</span>Digite seu código</h1>
           </div>
 
-          <div className="mb-4 flex h-20 items-center justify-center border-2 border-primary/30 bg-card font-mono text-4xl font-black text-foreground" aria-live="polite">
-            {code || "—"}
+          <div className="mb-3 flex h-20 items-center justify-center rounded-xl border-2 border-[#983ce3] bg-white font-mono text-4xl font-black tracking-[0.25em] text-slate-500" aria-live="polite">
+            {code || "EX: 001"}
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
-              <Button key={digit} type="button" variant="outline" className="h-16 font-mono text-2xl font-bold" onClick={() => append(digit)}>{digit}</Button>
+              <Button key={digit} type="button" variant="outline" className="h-14 rounded-xl border-[#e8def5] bg-[#f5f0fc] font-mono text-xl font-bold text-[#342451] hover:bg-[#eadcff]" onClick={() => append(digit)}>{digit}</Button>
             ))}
-            <Button type="button" variant="outline" className="h-16" onClick={() => setCode("")} aria-label="Limpar"><Delete className="h-6 w-6" /></Button>
-            <Button type="button" variant="outline" className="h-16 font-mono text-2xl font-bold" onClick={() => append("0")}>0</Button>
-            <Button type="button" variant="outline" className="h-16" onClick={() => setCode((value) => value.slice(0, -1))} aria-label="Apagar último número"><ArrowLeft className="h-6 w-6" /></Button>
+            <Button type="button" variant="outline" className="h-14 rounded-xl border-[#e8def5] bg-[#f5f0fc] text-xs font-bold text-[#342451] hover:bg-[#eadcff]" onClick={() => setCode("")} aria-label="Limpar">Limpar</Button>
+            <Button type="button" variant="outline" className="h-14 rounded-xl border-[#e8def5] bg-[#f5f0fc] font-mono text-xl font-bold text-[#342451] hover:bg-[#eadcff]" onClick={() => append("0")}>0</Button>
+            <Button type="button" variant="outline" className="h-14 rounded-xl border-[#e8def5] bg-[#f5f0fc] text-xl text-[#342451] hover:bg-[#eadcff]" onClick={() => setCode((value) => value.slice(0, -1))} aria-label="Apagar último número"><ArrowLeft className="h-5 w-5" /></Button>
           </div>
 
           {message && (
@@ -93,14 +91,14 @@ export default function QueueApp() {
               {message.type === "success" && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}{message.text}
             </div>
           )}
-          <Button type="button" className="mt-4 h-14 w-full text-lg font-bold" onClick={checkIn} disabled={sending || !code}>
+          <Button type="button" className="mt-4 h-14 w-full rounded-xl bg-gradient-to-r from-[#a33ee1] to-[#cf8bea] text-lg font-bold text-white shadow-lg hover:opacity-90" onClick={checkIn} disabled={sending || !code}>
             {sending && <Loader2 className="mr-2 h-5 w-5 animate-spin" />} Entrar na Fila
           </Button>
         </section>
 
         <section className="mt-7">
-          <h2 className="mb-3 text-sm font-bold uppercase text-muted-foreground">Lista de espera</h2>
-          <ol className="divide-y divide-border border border-border bg-card">
+          <h2 className="mb-3 text-sm font-bold uppercase text-slate-500">Lista de espera</h2>
+          <ol className="divide-y divide-[#eee7f8] rounded-2xl border border-[#eadff7] bg-white shadow-sm">
             {waiting.slice(0, 10).map((entry, index) => (
               <li key={entry.id} className="flex items-center gap-3 px-4 py-3">
                 <span className="w-7 font-mono text-sm text-muted-foreground">{index + 1}º</span>
