@@ -145,7 +145,14 @@ export default function QueueAdmin() {
                     <Button className="bg-gradient-to-r from-[#a33ee1] to-[#cf8bea] text-white hover:opacity-90" onClick={() => action.mutate({ name: "queue_call_next" })} disabled={action.isPending || waiting.length === 0}><PhoneCall className="mr-2 h-4 w-4" /> Próximo</Button>
                   </div>
                 </div>
-              ) : <p className="mt-8 text-lg text-slate-500">Nenhum motoboy chamado.</p>}
+              ) : (
+                <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+                  <p className="text-lg text-slate-500">Nenhum motoboy chamado.</p>
+                  <Button className="bg-gradient-to-r from-[#a33ee1] to-[#cf8bea] text-white hover:opacity-90" onClick={() => action.mutate({ name: "queue_call_next" })} disabled={action.isPending || waiting.length === 0}>
+                    <PhoneCall className="mr-2 h-4 w-4" /> Chamar da vez
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="rounded-2xl border border-[#eadff7] bg-white shadow-[0_16px_35px_rgba(116,27,217,0.12)]">
               <div className="flex items-center gap-3 border-b border-[#f0eafa] p-6"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#f0e5ff] text-[#8e35dc]">♙</span><div><h2 className="font-extrabold">Fila de espera</h2><p className="text-xs text-slate-500">{waiting.length} pessoas aguardando</p></div>
