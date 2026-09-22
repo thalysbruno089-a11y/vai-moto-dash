@@ -833,8 +833,10 @@ const Contas = () => {
                         ) : (
                           <Clock className={cn("h-5 w-5 shrink-0", tone.icon)} />
                         )}
-                        <span className={cn("text-base font-semibold truncate", tone.text)}>{b.name}</span>
-                        <span className="text-xs text-muted-foreground shrink-0">({dueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})</span>
+                        <span className="text-sm font-black shrink-0 text-black dark:text-black">
+                          ({dueDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })})
+                        </span>
+                        <span className={cn("text-base font-bold truncate", tone.text)}>{b.name}</span>
                       </div>
                       <div className="flex items-center gap-2 ml-2 shrink-0">
                         <span className={cn("text-base font-bold", tone.text)}>
