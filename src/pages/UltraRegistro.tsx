@@ -1,21 +1,48 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, Phone, Wallet } from "lucide-react";
+import { AlertTriangle, LogOut, Phone, Send, Wallet } from "lucide-react";
 import { UltraDeliveriesBoard } from "@/components/ultra/UltraDeliveriesBoard";
 import logo from "@/assets/logo.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Archive } from "lucide-react";
-import { useUltraDeliveries } from "@/hooks/useUltraDeliveries";
+import { useSendUltraDayToCentral, useUltraDeliveries } from "@/hooks/useUltraDeliveries";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const UltraRegistro = () => {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const today = format(new Date(), "yyyy-MM-dd");
   const { data: deliveries = [] } = useUltraDeliveries(today, { sentOnly: false });
+  const sendMut = useSendUltraDayToCentral();
+  const [exitReminderOpen, setExitReminderOpen] = useState(false);
+  const pendingCount = deliveries.filter((delivery) => !delivery.sent_to_central).length;
+
+  useEffect(() => {
+    if (pendingCount === 0) {
+      setExitReminderOpen(false);
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+      setExitReminderOpen(true);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [pendingCount]);
 
   const totals = useMemo(() => {
     const t = { pagamento: 0, taxa: 0, corridas: 0, entregues: 0 };
@@ -34,6 +61,12 @@ const UltraRegistro = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
+  };
+
+  const handleSendNow = () => {
+    sendMut.mutate(today, {
+      onSuccess: () => setExitReminderOpen(false),
+    });
   };
 
   return (
@@ -55,6 +88,21 @@ const UltraRegistro = () => {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-4">
+        {pendingCount > 0 && (
+          <div className="mb-4 flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">Relatório pendente de envio</p>
+              <p className="text-sm text-muted-foreground">
+                {pendingCount} {pendingCount === 1 ? "corrida ainda não foi enviada" : "corridas ainda não foram enviadas"} para os ADM.
+              </p>
+            </div>
+            <Button size="sm" onClick={handleSendNow} disabled={sendMut.isPending}>
+              <Send className="mr-2 h-4 w-4" />
+              {sendMut.isPending ? "Enviando..." : "Enviar agora"}
+            </Button>
+          </div>
+        )}
         <div className="flex justify-end gap-2 mb-3 print:hidden">
           <Button
             size="sm"
@@ -125,6 +173,29 @@ const UltraRegistro = () => {
         </div>
         <UltraDeliveriesBoard editable />
       </main>
+
+      <Dialog open={exitReminderOpen} onOpenChange={setExitReminderOpen}>
+        <DialogContent className="border-warning/50 sm:max-w-md animate-in zoom-in-95 duration-200">
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-14 w-14 animate-pulse items-center justify-center rounded-full bg-warning/15 text-warning">
+              <AlertTriangle className="h-7 w-7" />
+            </div>
+            <DialogTitle className="text-center">Calma, o relatório ainda não foi enviado</DialogTitle>
+            <DialogDescription className="text-center">
+              Existem {pendingCount} {pendingCount === 1 ? "corrida pendente" : "corridas pendentes"}. Os ADM só conseguirão ver o relatório depois do envio.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button className="w-full" onClick={handleSendNow} disabled={sendMut.isPending}>
+              <Send className="mr-2 h-4 w-4" />
+              {sendMut.isPending ? "Enviando..." : "Enviar relatório agora"}
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => setExitReminderOpen(false)}>
+              Continuar preenchendo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
