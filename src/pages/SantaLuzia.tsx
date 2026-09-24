@@ -7,7 +7,7 @@ const SantaLuzia = () => {
       title="Santa Luzia"
       subtitle="Relatórios recebidos da padaria Santa Luzia — escolha a data no calendário"
     >
-      <SantaLuziaDeliveriesBoard editable={false} allowDateChange sentOnly />
+      <SantaLuziaDeliveriesBoard editable={false} allowDateChange />
     </MainLayout>
   );
 };
