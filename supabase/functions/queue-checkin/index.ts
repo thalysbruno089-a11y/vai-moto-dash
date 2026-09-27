@@ -1,5 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.91.0'
 import { z } from 'npm:zod@3.25.76'
+import { createQueueRemovalToken } from '../_shared/queueRemovalToken.ts'
+import { isWithinShift } from '../_shared/shiftSchedule.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,7 +38,7 @@ Deno.serve(async (req) => {
 
     const { data: matches, error: motoboyError } = await db
       .from('motoboys')
-      .select('id, company_id, name, number, status, payment_status')
+      .select('id, company_id, name, number, status, payment_status, shift')
       .eq('number', parsed.data.code)
       .limit(2)
 
@@ -49,6 +51,7 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'Número não encontrado' })
     }
     if (motoboy.status !== 'active') return json({ ok: false, error: 'Seu cadastro está inativo. Procure a administração.' })
+    if (!isWithinShift(motoboy.shift)) return json({ ok: false, error: 'Fora do horário definido para o seu turno.' })
     if (motoboy.payment_status !== 'paid') return json({ ok: false, error: 'Seu pagamento está pendente. Regularize para entrar na fila.' })
 
     const { data: existing } = await db
@@ -84,7 +87,8 @@ Deno.serve(async (req) => {
     const { count } = await db.from('queue_entries').select('id', { count: 'exact', head: true })
       .eq('company_id', motoboy.company_id).eq('status', 'waiting')
 
-    return json({ ok: true, entryId: entry.id, name: motoboy.name, code: motoboy.number, position: count ?? 1 })
+    const removalToken = await createQueueRemovalToken(entry.id, serviceKey)
+    return json({ ok: true, entryId: entry.id, removalToken, name: motoboy.name, code: motoboy.number, position: count ?? 1 })
   } catch {
     return json({ ok: false, error: 'Não foi possível entrar na fila agora' })
   }

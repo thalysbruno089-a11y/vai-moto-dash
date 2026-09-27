@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, Delete, Loader2, Volume2, VolumeX, WifiOff } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, CheckCircle2, Loader2, UserRoundX, Volume2, VolumeX, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QueueBrand } from "@/components/queue/QueueBrand";
 import { usePublicQueue } from "@/hooks/usePublicQueue";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,15 +13,18 @@ export default function QueueApp() {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [audio, setAudio] = useState(true);
-  const trackedEntry = useRef<string | null>(sessionStorage.getItem("queue-entry"));
-  const announced = useRef<string | null>(null);
+  const [trackedEntry, setTrackedEntry] = useState<string | null>(() => sessionStorage.getItem("queue-entry"));
+  const [removalToken, setRemovalToken] = useState<string | null>(() => sessionStorage.getItem("queue-removal-token"));
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [announced, setAnnounced] = useState<string | null>(null);
 
   useEffect(() => {
-    if (audio && called && called.id === trackedEntry.current && called.id !== announced.current) {
-      announced.current = called.id;
+    if (audio && called && called.id === trackedEntry && called.id !== announced) {
+      setAnnounced(called.id);
       announceQueueCall(called.name);
     }
-  }, [audio, called]);
+  }, [audio, called, trackedEntry, announced]);
 
   const append = (digit: string) => {
     setMessage(null);
@@ -34,16 +38,38 @@ export default function QueueApp() {
     }
     setSending(true);
     setMessage(null);
-    const { data, error } = await supabase.functions.invoke<{ ok?: boolean; entryId?: string; position?: number; error?: string }>("queue-checkin", { body: { code } });
+    const { data, error } = await supabase.functions.invoke<{ ok?: boolean; entryId?: string; removalToken?: string; position?: number; error?: string }>("queue-checkin", { body: { code } });
     setSending(false);
-    if (error || data?.ok === false || data?.error || !data?.entryId) {
+    if (error || data?.ok === false || data?.error || !data?.entryId || !data?.removalToken) {
       setMessage({ type: "error", text: data?.error ?? "Não foi possível entrar na fila." });
       return;
     }
-    trackedEntry.current = data.entryId;
+    setTrackedEntry(data.entryId);
+    setRemovalToken(data.removalToken);
     sessionStorage.setItem("queue-entry", data.entryId);
+    sessionStorage.setItem("queue-removal-token", data.removalToken);
     setCode("");
     setMessage({ type: "success", text: `Entrada confirmada. Você está na posição ${data.position ?? 1}.` });
+    await refresh();
+  };
+
+  const removeFromQueue = async () => {
+    if (!trackedEntry || !removalToken) return;
+    setRemoving(true);
+    setMessage(null);
+    const { data, error } = await supabase.functions.invoke<{ ok?: boolean; error?: string }>("queue-remove", { body: { token: removalToken } });
+    setRemoving(false);
+    if (error || !data?.ok) {
+      setMessage({ type: "error", text: data?.error ?? "Não foi possível remover da fila." });
+      return;
+    }
+
+    setTrackedEntry(null);
+  setRemovalToken(null);
+    sessionStorage.removeItem("queue-entry");
+  sessionStorage.removeItem("queue-removal-token");
+    setRemoveDialogOpen(false);
+    setMessage({ type: "success", text: "Você foi removido da fila." });
     await refresh();
   };
 
@@ -94,7 +120,30 @@ export default function QueueApp() {
           <Button type="button" className="mt-4 h-14 w-full rounded-xl bg-gradient-to-r from-[#a33ee1] to-[#cf8bea] text-lg font-bold text-white shadow-lg hover:opacity-90" onClick={checkIn} disabled={sending || !code}>
             {sending && <Loader2 className="mr-2 h-5 w-5 animate-spin" />} Entrar na Fila
           </Button>
+          {trackedEntry && (
+            <Button type="button" variant="outline" className="mt-3 h-12 w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => setRemoveDialogOpen(true)}>
+              <UserRoundX className="mr-2 h-4 w-4" /> Remover da fila
+            </Button>
+          )}
         </section>
+
+        <Dialog open={removeDialogOpen} onOpenChange={(open) => {
+          setRemoveDialogOpen(open);
+        }}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Remover da fila</DialogTitle>
+              <DialogDescription>Confirma sua saída da fila? Sua posição será liberada.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setRemoveDialogOpen(false)} disabled={removing}>Cancelar</Button>
+              <Button type="button" variant="destructive" onClick={removeFromQueue} disabled={removing || !removalToken}>
+                {removing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Confirmar remoção
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <section className="mt-7">
           <h2 className="mb-3 text-sm font-bold uppercase text-slate-500">Lista de espera</h2>
