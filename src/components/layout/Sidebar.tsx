@@ -18,6 +18,7 @@ import {
   ListOrdered,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { canManageQueue } from "@/lib/queueAccess";
 import logoHero from "@/assets/logo-hero.jpg.asset.json";
 
 const fullNavigation = [
@@ -76,7 +77,7 @@ const roleLabels: Record<string, string> = {
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, signOut, canAccessSettings } = useAuth();
+  const { user, profile, signOut, canAccessSettings } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -121,7 +122,7 @@ const Sidebar = () => {
               </Link>
             );
           })}
-          {(profile?.role === 'admin' || profile?.name.toLowerCase() === 'sofia') && (
+          {canManageQueue(profile, user?.id) && (
             <Link to="/fila/admin" className={location.pathname === '/fila/admin' ? "sidebar-link-active" : "sidebar-link"}>
               <ListOrdered className="h-5 w-5 flex-shrink-0" />
               <span>Fila Digital</span>
