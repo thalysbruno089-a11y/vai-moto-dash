@@ -1,30 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, Loader2, UserRoundX, Volume2, VolumeX, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QueueBrand } from "@/components/queue/QueueBrand";
 import { usePublicQueue } from "@/hooks/usePublicQueue";
 import { supabase } from "@/integrations/supabase/client";
-import { announceQueueCall } from "@/lib/queueAudio";
+import { announceQueueCall, speakQueueMessage, stopQueueAudio } from "@/lib/queueAudio";
 
 export default function QueueApp() {
-  const { called, waiting, connected, refresh } = usePublicQueue();
+  const { called, waiting, connected, loading, refresh } = usePublicQueue();
   const [code, setCode] = useState("");
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [audio, setAudio] = useState(true);
+  const [audio, setAudio] = useState(false);
+  const [audioSupported] = useState(() => typeof window !== "undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window);
   const [trackedEntry, setTrackedEntry] = useState<string | null>(() => sessionStorage.getItem("queue-entry"));
   const [removalToken, setRemovalToken] = useState<string | null>(() => sessionStorage.getItem("queue-removal-token"));
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
   const [removing, setRemoving] = useState(false);
-  const [announced, setAnnounced] = useState<string | null>(null);
+  const observedFirstCall = useRef(false);
+  const lastCallKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (audio && called && called.id === trackedEntry && called.id !== announced) {
-      setAnnounced(called.id);
-      announceQueueCall(called.name);
+    if (loading) return;
+    const key = called ? `${called.id}:${called.calledAt ?? ""}` : null;
+    if (!observedFirstCall.current) {
+      observedFirstCall.current = true;
+      lastCallKey.current = key;
+      return;
     }
-  }, [audio, called, trackedEntry, announced]);
+    if (key !== lastCallKey.current) {
+      lastCallKey.current = key;
+      if (audio && called && called.id === trackedEntry) announceQueueCall(called.name);
+    }
+  }, [audio, called, loading, trackedEntry]);
+
+  const toggleAudio = () => {
+    if (audio) {
+      stopQueueAudio();
+      setAudio(false);
+    } else if (speakQueueMessage("Áudio da fila ativado.")) {
+      setAudio(true);
+    }
+  };
 
   const append = (digit: string) => {
     setMessage(null);
@@ -65,9 +83,9 @@ export default function QueueApp() {
     }
 
     setTrackedEntry(null);
-  setRemovalToken(null);
+    setRemovalToken(null);
     sessionStorage.removeItem("queue-entry");
-  sessionStorage.removeItem("queue-removal-token");
+    sessionStorage.removeItem("queue-removal-token");
     setRemoveDialogOpen(false);
     setMessage({ type: "success", text: "Você foi removido da fila." });
     await refresh();
@@ -78,12 +96,13 @@ export default function QueueApp() {
       <header className="bg-gradient-to-r from-[#741bd9] via-[#9735df] to-[#c04be7] px-4 py-4 text-white">
         <div className="mx-auto flex max-w-md items-center justify-between gap-3">
           <QueueBrand compact inverted />
-          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white" onClick={() => setAudio((value) => !value)} aria-label={audio ? "Desativar áudio" : "Ativar áudio"}>
+          <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white" onClick={toggleAudio} disabled={!audioSupported} aria-label={audio ? "Desativar áudio" : "Ativar áudio"} title={audioSupported ? (audio ? "Desativar áudio" : "Ativar áudio") : "Áudio indisponível neste navegador"}>
             {audio ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
           </Button>
         </div>
       </header>
       <div className="mx-auto max-w-md px-4 pt-4">
+        {!audio && <Button type="button" variant="outline" className="mb-4 h-12 w-full gap-2 border-primary text-primary" onClick={toggleAudio} disabled={!audioSupported}><Volume2 className="h-5 w-5" />{audioSupported ? "Ativar som das chamadas" : "Áudio indisponível neste navegador"}</Button>}
         <section className="rounded-2xl border border-[#eadff7] bg-white px-5 py-4 text-center shadow-[0_14px_30px_rgba(116,27,217,0.12)]">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Chamando agora</p>
           <div className="mt-1">

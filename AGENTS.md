@@ -1,0 +1,1 @@
+- Keep queue staff access in `src/lib/queueAccess.ts` for navigation and route checks, mirrored by database policies and queue functions, because client checks alone cannot authorize mutations.
