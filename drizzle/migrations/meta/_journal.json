@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790521583422,
+      "tag": "0000_allow_gabriel_to_call_queue_only",
+      "breakpoints": true
+    }
+  ]
+}
