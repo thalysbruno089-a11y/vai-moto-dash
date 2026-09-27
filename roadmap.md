@@ -6,4 +6,4 @@
 - [x] Integrar navegação e permissões de Carlos/Sofia
 - [x] Validar fluxo, segurança e visual em celular/TV
 - [x] Corrigir exclusão de conta fixa nesta e nas próximas competências
-- [ ] Anunciar todos os chamados na tela de entrada com ativação de áudio e voz feminina disponível
+- [x] Anunciar todos os chamados na tela de entrada com ativação de áudio e voz feminina disponível
