@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingScreen from '@/components/LoadingScreen';
+import { canManageQueue } from '@/lib/queueAccess';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -69,11 +70,11 @@ const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, a
   }
 
   // Finance users can only access allowed routes (Motoboys and Clientes by default)
-  if (profile?.role === 'finance' && !allowFinance) {
+  if (profile?.role === 'finance' && !allowFinance && !(allowQueue && canManageQueue(profile, user.id))) {
     return <Navigate to="/clients" replace />;
   }
 
-  if (allowQueue && profile.role !== 'admin' && profile.name.toLowerCase() !== 'sofia') {
+  if (allowQueue && !canManageQueue(profile, user.id)) {
     return <Navigate to="/" replace />;
   }
 

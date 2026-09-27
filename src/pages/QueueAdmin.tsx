@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MotoboyFormDialog } from "@/components/motoboys/MotoboyFormDialog";
 import { Motoboy, useDeleteMotoboy, useMotoboys, useUpdateMotoboy } from "@/hooks/useMotoboys";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface QueueRow {
   id: string;
@@ -34,6 +35,8 @@ interface SavedReport {
 }
 
 export default function QueueAdmin() {
+  const { user } = useAuth();
+  const isGabriel = user?.id === '9ac4e986-ff35-49af-a377-4dd9e281af4a';
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -57,6 +60,7 @@ export default function QueueAdmin() {
 
   const { data: reports = [] } = useQuery({
     queryKey: ["queue-reports"],
+    enabled: !isGabriel,
     queryFn: async () => {
       const { data, error } = await supabase.from("saved_reports")
         .select("id, report_date, saved_at, total, saved_report_items(id, motoboy_code, motoboy_name, count)")
@@ -77,6 +81,7 @@ export default function QueueAdmin() {
 
   const action = useMutation({
     mutationFn: async ({ name, args }: { name: "queue_call_next" | "queue_finish_current" | "queue_return_called" | "queue_save_and_reset"; args?: { p_entry_id: string } }) => {
+      if (isGabriel && name !== "queue_call_next") throw new Error("Acesso negado");
       const response = name === "queue_return_called"
         ? await supabase.rpc(name, args ?? { p_entry_id: "" })
         : await supabase.rpc(name);
@@ -122,12 +127,12 @@ export default function QueueAdmin() {
               <p className="text-sm font-medium text-white/80">Vai Moto SSP - Sistema de Fila</p>
             </div>
           </div>
-            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl bg-white/95 p-1 text-slate-500 shadow-lg sm:w-fit sm:grid-cols-4">
+            {!isGabriel && <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-2xl bg-white/95 p-1 text-slate-500 shadow-lg sm:w-fit sm:grid-cols-4">
           <TabsTrigger value="fila">Fila</TabsTrigger>
           <TabsTrigger value="corridas">Corridas</TabsTrigger>
           <TabsTrigger value="salvas">Corridas Salvas</TabsTrigger>
           <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
-            </TabsList>
+            </TabsList>}
         </div>
       </header>
 
@@ -140,8 +145,8 @@ export default function QueueAdmin() {
                 <div className="mt-4">
                   <div className="mt-5 flex items-center gap-4"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1edff] text-xl text-[#7880a5]">◷</span><div><p className="font-mono text-4xl font-black leading-none text-[#8e35dc]">{called.motoboys?.number ?? "—"}</p><p className="mt-1 text-sm font-medium uppercase tracking-wide text-slate-500">{called.motoboys?.name}</p></div></div>
                   <div className="mt-6 flex flex-wrap justify-end gap-2">
-                    <Button onClick={() => action.mutate({ name: "queue_finish_current" })} disabled={action.isPending}><Check className="mr-2 h-4 w-4" /> Finalizar</Button>
-                    <Button variant="outline" onClick={() => action.mutate({ name: "queue_return_called", args: { p_entry_id: called.id } })} disabled={action.isPending}><RotateCcw className="mr-2 h-4 w-4" /> Voltar para fila</Button>
+                     {!isGabriel && <Button onClick={() => action.mutate({ name: "queue_finish_current" })} disabled={action.isPending}><Check className="mr-2 h-4 w-4" /> Finalizar</Button>}
+                     {!isGabriel && <Button variant="outline" onClick={() => action.mutate({ name: "queue_return_called", args: { p_entry_id: called.id } })} disabled={action.isPending}><RotateCcw className="mr-2 h-4 w-4" /> Voltar para fila</Button>}
                     <Button className="bg-gradient-to-r from-[#a33ee1] to-[#cf8bea] text-white hover:opacity-90" onClick={() => action.mutate({ name: "queue_call_next" })} disabled={action.isPending || waiting.length === 0}><PhoneCall className="mr-2 h-4 w-4" /> Próximo</Button>
                   </div>
                 </div>
@@ -163,7 +168,7 @@ export default function QueueAdmin() {
                     <span className="w-8 font-mono text-sm text-muted-foreground">{index + 1}º</span>
                     <span className="font-mono text-2xl font-black text-[#8e35dc]">{entry.motoboys?.number ?? "—"}</span>
                     <span className="min-w-0 flex-1 truncate font-semibold text-slate-700">{entry.motoboys?.name}</span>
-                    <Button variant="ghost" size="icon" onClick={() => removeEntry.mutate(entry.id)} aria-label={`Remover ${entry.motoboys?.name ?? "motoboy"}`}><UserRoundX className="h-5 w-5 text-destructive" /></Button>
+                     {!isGabriel && <Button variant="ghost" size="icon" onClick={() => removeEntry.mutate(entry.id)} aria-label={`Remover ${entry.motoboys?.name ?? "motoboy"}`}><UserRoundX className="h-5 w-5 text-destructive" /></Button>}
                   </div>
                 ))}
                 {!queueLoading && waiting.length === 0 && <div className="flex min-h-52 flex-col items-center justify-center gap-3 text-center text-slate-500"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f4edff] text-2xl text-[#8e35dc]">!</span><p>Nenhum motoboy na fila</p><span className="text-xs">Aguardando novos check-ins</span></div>}
@@ -173,7 +178,7 @@ export default function QueueAdmin() {
           </section>
             </TabsContent>
 
-        <TabsContent value="corridas">
+        {!isGabriel && <TabsContent value="corridas">
           <div className="border border-border bg-card shadow-card">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
               <div><h2 className="font-bold text-foreground">Corridas finalizadas hoje</h2><p className="text-sm text-muted-foreground">{finished.length} corrida(s)</p></div>
@@ -184,9 +189,9 @@ export default function QueueAdmin() {
             </Table>
             {finished.length === 0 && <p className="p-10 text-center text-muted-foreground">Nenhuma corrida finalizada hoje.</p>}
           </div>
-        </TabsContent>
+        </TabsContent>}
 
-        <TabsContent value="salvas" className="space-y-4">
+        {!isGabriel && <TabsContent value="salvas" className="space-y-4">
           {reports.map((report) => (
             <article key={report.id} className="border border-border bg-card p-5 shadow-card">
               <div className="flex items-center justify-between border-b border-border pb-4"><div><h2 className="font-bold">{format(new Date(`${report.report_date}T12:00:00`), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</h2><p className="text-xs text-muted-foreground">Salvo às {format(new Date(report.saved_at), "HH:mm")}</p></div><Badge>{report.total} corridas</Badge></div>
@@ -194,9 +199,9 @@ export default function QueueAdmin() {
             </article>
           ))}
           {reports.length === 0 && <div className="border border-border bg-card p-10 text-center text-muted-foreground">Nenhum relatório salvo.</div>}
-        </TabsContent>
+        </TabsContent>}
 
-        <TabsContent value="cadastro">
+        {!isGabriel && <TabsContent value="cadastro">
           <div className="border border-border bg-card shadow-card">
             <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="relative max-w-sm flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar motoboy" className="pl-9" /></div>
@@ -206,7 +211,7 @@ export default function QueueAdmin() {
               <TableBody>{filteredMotoboys.map((motoboy) => <TableRow key={motoboy.id}><TableCell className="font-mono font-bold text-primary">{motoboy.number ?? "—"}</TableCell><TableCell className="font-semibold">{motoboy.name}</TableCell><TableCell><Badge variant={motoboy.status === "active" ? "default" : "secondary"}>{motoboy.status === "active" ? "Ativo" : "Inativo"}</Badge></TableCell><TableCell><span className={motoboy.payment_status === "paid" ? "font-semibold text-success" : "font-semibold text-destructive"}>{motoboy.payment_status === "paid" ? "Pago" : "Pendente"}</span></TableCell><TableCell><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => { setSelectedMotoboy(motoboy); setFormOpen(true); }}><Pencil className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem><DropdownMenuItem onClick={() => updateMotoboy.mutate({ id: motoboy.id, status: motoboy.status === "active" ? "inactive" : "active" })}><RotateCcw className="mr-2 h-4 w-4" /> {motoboy.status === "active" ? "Inativar" : "Ativar"}</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(motoboy)}><Trash2 className="mr-2 h-4 w-4" /> Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>)}</TableBody>
             </Table>
           </div>
-        </TabsContent>
+        </TabsContent>}
       </div>
       </Tabs>
 
