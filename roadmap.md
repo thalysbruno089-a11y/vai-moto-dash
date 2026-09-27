@@ -7,4 +7,4 @@
 - [x] Validar fluxo, segurança e visual em celular/TV
 - [x] Corrigir exclusão de conta fixa nesta e nas próximas competências
 - [x] Anunciar todos os chamados na tela de entrada com ativação de áudio e voz feminina disponível
-- [ ] Liberar Gabriel para chamar na fila, mantendo os demais acessos inalterados
+- [x] Liberar Gabriel para chamar na fila, mantendo os demais acessos inalterados
