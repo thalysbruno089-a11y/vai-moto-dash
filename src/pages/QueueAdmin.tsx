@@ -168,7 +168,7 @@ export default function QueueAdmin() {
                     <span className="w-8 font-mono text-sm text-muted-foreground">{index + 1}º</span>
                     <span className="font-mono text-2xl font-black text-[#8e35dc]">{entry.motoboys?.number ?? "—"}</span>
                     <span className="min-w-0 flex-1 truncate font-semibold text-slate-700">{entry.motoboys?.name}</span>
-                     {!isGabriel && <Button variant="ghost" size="icon" onClick={() => removeEntry.mutate(entry.id)} aria-label={`Remover ${entry.motoboys?.name ?? "motoboy"}`}><UserRoundX className="h-5 w-5 text-destructive" /></Button>}
+                    <Button variant="ghost" size="icon" onClick={() => removeEntry.mutate(entry.id)} aria-label={`Remover ${entry.motoboys?.name ?? "motoboy"}`}><UserRoundX className="h-5 w-5 text-destructive" /></Button>
                   </div>
                 ))}
                 {!queueLoading && waiting.length === 0 && <div className="flex min-h-52 flex-col items-center justify-center gap-3 text-center text-slate-500"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f4edff] text-2xl text-[#8e35dc]">!</span><p>Nenhum motoboy na fila</p><span className="text-xs">Aguardando novos check-ins</span></div>}
