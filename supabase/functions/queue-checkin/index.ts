@@ -54,25 +54,27 @@ Deno.serve(async (req) => {
     if (!isWithinShift(motoboy.shift)) return json({ ok: false, error: 'Fora do horário definido para o seu turno.' })
     if (motoboy.payment_status !== 'paid') return json({ ok: false, error: 'Seu pagamento está pendente. Regularize para entrar na fila.' })
 
-    const { data: existing, error: existingError } = await db
+    const { data: existing } = await db
       .from('queue_entries')
       .select('id, status, position')
       .eq('company_id', motoboy.company_id)
       .eq('motoboy_id', motoboy.id)
       .in('status', ['waiting', 'called'])
       .maybeSingle()
-    if (existingError) return json({ ok: false, error: 'Não foi possível consultar a fila agora.' })
 
-    const confirmed = async (id: string, position: number) => json({
-      ok: true,
-      entryId: id,
-      removalToken: await createQueueRemovalToken(id, serviceKey),
-      name: motoboy.name,
-      code: motoboy.number,
-      position,
-    })
-
-    if (existing) return await confirmed(existing.id, existing.position)
+    if (existing) {
+      const removalToken = await createQueueRemovalToken(existing.id, serviceKey)
+      // Return success if already in queue, allowing frontend to recover session
+      return json({
+        ok: true,
+        entryId: existing.id,
+        removalToken,
+        name: motoboy.name,
+        code: motoboy.number,
+        position: existing.position,
+        alreadyInQueue: true
+      })
+    }
 
     const { data: last } = await db
       .from('queue_entries')
@@ -82,34 +84,44 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle()
 
-    const entryId = crypto.randomUUID()
-    // Prepare the removal token before writing: a token failure must never leave
-    // an entry in the queue while the caller receives an error.
-    const removalToken = await createQueueRemovalToken(entryId, serviceKey)
     const { data: entry, error: insertError } = await db.from('queue_entries').insert({
-      id: entryId,
       company_id: motoboy.company_id,
       motoboy_id: motoboy.id,
       position: Number(last?.position ?? 0) + 1,
       status: 'waiting',
-    }).select('id').single()
+    }).select('id, position').single()
 
     if (insertError) {
       if (insertError.code === '23505') {
-        const { data: concurrent } = await db.from('queue_entries')
-          .select('id, position').eq('company_id', motoboy.company_id)
-          .eq('motoboy_id', motoboy.id).in('status', ['waiting', 'called']).maybeSingle()
-        if (concurrent) return await confirmed(concurrent.id, concurrent.position)
+        // Double check just in case of race condition between the maybeSingle and insert
+        const { data: retryExisting } = await db
+          .from('queue_entries')
+          .select('id, position')
+          .eq('company_id', motoboy.company_id)
+          .eq('motoboy_id', motoboy.id)
+          .in('status', ['waiting', 'called'])
+          .maybeSingle()
+        if (retryExisting) {
+          const removalToken = await createQueueRemovalToken(retryExisting.id, serviceKey)
+          return json({
+            ok: true,
+            entryId: retryExisting.id,
+            removalToken,
+            name: motoboy.name,
+            code: motoboy.number,
+            position: retryExisting.position,
+            alreadyInQueue: true
+          })
+        }
       }
       return json({ ok: false, error: 'Não foi possível entrar na fila' })
     }
 
     attempts.delete(clientKey)
-    const { count } = await db.from('queue_entries').select('id', { count: 'exact', head: true })
-      .eq('company_id', motoboy.company_id).eq('status', 'waiting')
-
-    return json({ ok: true, entryId: entry.id, removalToken, name: motoboy.name, code: motoboy.number, position: count ?? 1 })
-  } catch {
+    const removalToken = await createQueueRemovalToken(entry.id, serviceKey)
+    return json({ ok: true, entryId: entry.id, removalToken, name: motoboy.name, code: motoboy.number, position: entry.position })
+  } catch (err) {
+    console.error('Checkin error:', err)
     return json({ ok: false, error: 'Não foi possível entrar na fila agora' })
   }
 })
