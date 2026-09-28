@@ -27,13 +27,14 @@ export default function QueueApp() {
     if (!observedFirstCall.current) {
       observedFirstCall.current = true;
       lastCallKey.current = key;
+      if (audio && called) announceQueueCall(called.name);
       return;
     }
     if (key !== lastCallKey.current) {
       lastCallKey.current = key;
       if (audio && called) announceQueueCall(called.name);
     }
-  }, [audio, called, loading, trackedEntry]);
+  }, [audio, called, loading]);
 
   const toggleAudio = () => {
     if (audio) {
@@ -41,6 +42,7 @@ export default function QueueApp() {
       setAudio(false);
     } else if (speakQueueMessage("Áudio da fila ativado.")) {
       setAudio(true);
+      if (called) announceQueueCall(called.name);
     }
   };
 

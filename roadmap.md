@@ -9,3 +9,4 @@
 - [x] Anunciar todos os chamados na tela de entrada com ativação de áudio e voz feminina disponível
 - [x] Liberar Gabriel para chamar na fila, mantendo os demais acessos inalterados
 - [x] Corrigir anúncio de todos os chamados no tablet e confirmar entrada na fila após resposta perdida
+- [x] Corrigir chamada muda após a confirmação de áudio no tablet e validar a reprodução
