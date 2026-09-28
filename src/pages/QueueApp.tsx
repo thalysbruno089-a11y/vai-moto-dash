@@ -33,7 +33,7 @@ export default function QueueApp() {
       lastCallKey.current = key;
       if (audio && called) announceQueueCall(called.name);
     }
-  }, [audio, called, loading, trackedEntry]);
+  }, [audio, called, loading]);
 
   const toggleAudio = () => {
     if (audio) {
