@@ -54,14 +54,25 @@ Deno.serve(async (req) => {
     if (!isWithinShift(motoboy.shift)) return json({ ok: false, error: 'Fora do horário definido para o seu turno.' })
     if (motoboy.payment_status !== 'paid') return json({ ok: false, error: 'Seu pagamento está pendente. Regularize para entrar na fila.' })
 
-    const { data: existing } = await db
+    const { data: existing, error: existingError } = await db
       .from('queue_entries')
-      .select('id, status')
+      .select('id, status, position')
       .eq('company_id', motoboy.company_id)
       .eq('motoboy_id', motoboy.id)
       .in('status', ['waiting', 'called'])
       .maybeSingle()
-    if (existing) return json({ ok: false, error: 'Você já está na fila.' })
+    if (existingError) return json({ ok: false, error: 'Não foi possível consultar a fila agora.' })
+
+    const confirmed = async (id: string, position: number) => json({
+      ok: true,
+      entryId: id,
+      removalToken: await createQueueRemovalToken(id, serviceKey),
+      name: motoboy.name,
+      code: motoboy.number,
+      position,
+    })
+
+    if (existing) return await confirmed(existing.id, existing.position)
 
     const { data: last } = await db
       .from('queue_entries')
@@ -71,7 +82,12 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle()
 
+    const entryId = crypto.randomUUID()
+    // Prepare the removal token before writing: a token failure must never leave
+    // an entry in the queue while the caller receives an error.
+    const removalToken = await createQueueRemovalToken(entryId, serviceKey)
     const { data: entry, error: insertError } = await db.from('queue_entries').insert({
+      id: entryId,
       company_id: motoboy.company_id,
       motoboy_id: motoboy.id,
       position: Number(last?.position ?? 0) + 1,
@@ -79,7 +95,12 @@ Deno.serve(async (req) => {
     }).select('id').single()
 
     if (insertError) {
-      if (insertError.code === '23505') return json({ ok: false, error: 'Você já está na fila.' })
+      if (insertError.code === '23505') {
+        const { data: concurrent } = await db.from('queue_entries')
+          .select('id, position').eq('company_id', motoboy.company_id)
+          .eq('motoboy_id', motoboy.id).in('status', ['waiting', 'called']).maybeSingle()
+        if (concurrent) return await confirmed(concurrent.id, concurrent.position)
+      }
       return json({ ok: false, error: 'Não foi possível entrar na fila' })
     }
 
@@ -87,7 +108,6 @@ Deno.serve(async (req) => {
     const { count } = await db.from('queue_entries').select('id', { count: 'exact', head: true })
       .eq('company_id', motoboy.company_id).eq('status', 'waiting')
 
-    const removalToken = await createQueueRemovalToken(entry.id, serviceKey)
     return json({ ok: true, entryId: entry.id, removalToken, name: motoboy.name, code: motoboy.number, position: count ?? 1 })
   } catch {
     return json({ ok: false, error: 'Não foi possível entrar na fila agora' })
