@@ -8,4 +8,4 @@
 - [x] Corrigir exclusão de conta fixa nesta e nas próximas competências
 - [x] Anunciar todos os chamados na tela de entrada com ativação de áudio e voz feminina disponível
 - [x] Liberar Gabriel para chamar na fila, mantendo os demais acessos inalterados
-- [ ] Corrigir anúncio de todos os chamados no tablet e confirmar entrada na fila após resposta perdida
+- [x] Corrigir anúncio de todos os chamados no tablet e confirmar entrada na fila após resposta perdida
