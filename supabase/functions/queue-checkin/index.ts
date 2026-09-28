@@ -56,12 +56,25 @@ Deno.serve(async (req) => {
 
     const { data: existing } = await db
       .from('queue_entries')
-      .select('id, status')
+      .select('id, status, position')
       .eq('company_id', motoboy.company_id)
       .eq('motoboy_id', motoboy.id)
       .in('status', ['waiting', 'called'])
       .maybeSingle()
-    if (existing) return json({ ok: false, error: 'Você já está na fila.' })
+
+    if (existing) {
+      const removalToken = await createQueueRemovalToken(existing.id, serviceKey)
+      // Return success if already in queue, allowing frontend to recover session
+      return json({
+        ok: true,
+        entryId: existing.id,
+        removalToken,
+        name: motoboy.name,
+        code: motoboy.number,
+        position: existing.position,
+        alreadyInQueue: true
+      })
+    }
 
     const { data: last } = await db
       .from('queue_entries')
@@ -76,20 +89,39 @@ Deno.serve(async (req) => {
       motoboy_id: motoboy.id,
       position: Number(last?.position ?? 0) + 1,
       status: 'waiting',
-    }).select('id').single()
+    }).select('id, position').single()
 
     if (insertError) {
-      if (insertError.code === '23505') return json({ ok: false, error: 'Você já está na fila.' })
+      if (insertError.code === '23505') {
+        // Double check just in case of race condition between the maybeSingle and insert
+        const { data: retryExisting } = await db
+          .from('queue_entries')
+          .select('id, position')
+          .eq('company_id', motoboy.company_id)
+          .eq('motoboy_id', motoboy.id)
+          .in('status', ['waiting', 'called'])
+          .maybeSingle()
+        if (retryExisting) {
+          const removalToken = await createQueueRemovalToken(retryExisting.id, serviceKey)
+          return json({
+            ok: true,
+            entryId: retryExisting.id,
+            removalToken,
+            name: motoboy.name,
+            code: motoboy.number,
+            position: retryExisting.position,
+            alreadyInQueue: true
+          })
+        }
+      }
       return json({ ok: false, error: 'Não foi possível entrar na fila' })
     }
 
     attempts.delete(clientKey)
-    const { count } = await db.from('queue_entries').select('id', { count: 'exact', head: true })
-      .eq('company_id', motoboy.company_id).eq('status', 'waiting')
-
     const removalToken = await createQueueRemovalToken(entry.id, serviceKey)
-    return json({ ok: true, entryId: entry.id, removalToken, name: motoboy.name, code: motoboy.number, position: count ?? 1 })
-  } catch {
+    return json({ ok: true, entryId: entry.id, removalToken, name: motoboy.name, code: motoboy.number, position: entry.position })
+  } catch (err) {
+    console.error('Checkin error:', err)
     return json({ ok: false, error: 'Não foi possível entrar na fila agora' })
   }
 })
