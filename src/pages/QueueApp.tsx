@@ -27,13 +27,14 @@ export default function QueueApp() {
     if (!observedFirstCall.current) {
       observedFirstCall.current = true;
       lastCallKey.current = key;
+      if (audio && called) announceQueueCall(called.name);
       return;
     }
     if (key !== lastCallKey.current) {
       lastCallKey.current = key;
-      if (audio && called && called.id === trackedEntry) announceQueueCall(called.name);
+      if (audio && called) announceQueueCall(called.name);
     }
-  }, [audio, called, loading, trackedEntry]);
+  }, [audio, called, loading]);
 
   const toggleAudio = () => {
     if (audio) {
@@ -41,6 +42,7 @@ export default function QueueApp() {
       setAudio(false);
     } else if (speakQueueMessage("Áudio da fila ativado.")) {
       setAudio(true);
+      if (called) announceQueueCall(called.name);
     }
   };
 
@@ -59,7 +61,8 @@ export default function QueueApp() {
     const { data, error } = await supabase.functions.invoke<{ ok?: boolean; entryId?: string; removalToken?: string; position?: number; error?: string }>("queue-checkin", { body: { code } });
     setSending(false);
     if (error || data?.ok === false || data?.error || !data?.entryId || !data?.removalToken) {
-      setMessage({ type: "error", text: data?.error ?? "Não foi possível entrar na fila." });
+      await refresh();
+      setMessage({ type: "error", text: data?.error ?? "Não foi possível confirmar a entrada. Confira a lista e tente novamente com o mesmo código." });
       return;
     }
     setTrackedEntry(data.entryId);

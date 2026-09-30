@@ -8,6 +8,13 @@
       "when": 1790521583422,
       "tag": "0000_allow_gabriel_to_call_queue_only",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790728466524,
+      "tag": "0001_correct_motoboy_weekly_reset_schedule",
+      "breakpoints": true
     }
   ]
 }

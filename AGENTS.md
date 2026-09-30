@@ -1,1 +1,2 @@
 - Keep queue staff access in `src/lib/queueAccess.ts` for navigation and route checks, mirrored by database policies and queue functions, because client checks alone cannot authorize mutations.
+- Schedule the motoboy payment reset for Thursday 03:00 UTC (midnight in São Paulo), because the business week ends Wednesday and a Wednesday 00:00 UTC reset clears paid flags early.
