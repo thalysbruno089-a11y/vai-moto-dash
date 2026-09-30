@@ -46,12 +46,27 @@ export default function QueueAdmin() {
   const updateMotoboy = useUpdateMotoboy();
   const deleteMotoboy = useDeleteMotoboy();
 
-  const { data: queue = [], isLoading: queueLoading } = useQuery({
-    queryKey: ["queue-admin"],
+  const { data: activeQueue = [], isLoading: queueLoading, isError: queueError } = useQuery({
+    queryKey: ["queue-admin", "active"],
     queryFn: async () => {
       const { data, error } = await supabase.from("queue_entries")
         .select("id, status, position, joined_at, called_at, finished_at, motoboys(id, name, number)")
+        .in("status", ["waiting", "called"])
         .order("position", { ascending: true });
+      if (error) throw error;
+      return data as unknown as QueueRow[];
+    },
+    refetchInterval: 5000,
+  });
+
+  const { data: finished = [] } = useQuery({
+    queryKey: ["queue-admin", "finished"],
+    enabled: !isGabriel,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("queue_entries")
+        .select("id, status, position, joined_at, called_at, finished_at, motoboys(id, name, number)")
+        .eq("status", "finished")
+        .order("finished_at", { ascending: false });
       if (error) throw error;
       return data as unknown as QueueRow[];
     },
@@ -105,9 +120,8 @@ export default function QueueAdmin() {
     onError: () => toast.error("Não foi possível remover da fila."),
   });
 
-  const waiting = queue.filter((entry) => entry.status === "waiting");
-  const called = queue.find((entry) => entry.status === "called") ?? null;
-  const finished = queue.filter((entry) => entry.status === "finished").sort((a, b) => (b.finished_at ?? "").localeCompare(a.finished_at ?? ""));
+  const waiting = activeQueue.filter((entry) => entry.status === "waiting");
+  const called = activeQueue.find((entry) => entry.status === "called") ?? null;
   const filteredMotoboys = useMemo(() => motoboys.filter((motoboy) => {
     const term = search.toLowerCase();
     return motoboy.name.toLowerCase().includes(term) || (motoboy.number ?? "").includes(term);
@@ -171,7 +185,8 @@ export default function QueueAdmin() {
                     <Button variant="ghost" size="icon" onClick={() => removeEntry.mutate(entry.id)} aria-label={`Remover ${entry.motoboys?.name ?? "motoboy"}`}><UserRoundX className="h-5 w-5 text-destructive" /></Button>
                   </div>
                 ))}
-                {!queueLoading && waiting.length === 0 && <div className="flex min-h-52 flex-col items-center justify-center gap-3 text-center text-slate-500"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f4edff] text-2xl text-[#8e35dc]">!</span><p>Nenhum motoboy na fila</p><span className="text-xs">Aguardando novos check-ins</span></div>}
+                {queueError && <p className="p-10 text-center text-destructive">Não foi possível carregar a fila. Tentando novamente...</p>}
+                {!queueLoading && !queueError && waiting.length === 0 && <div className="flex min-h-52 flex-col items-center justify-center gap-3 text-center text-slate-500"><span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f4edff] text-2xl text-[#8e35dc]">!</span><p>Nenhum motoboy na fila</p><span className="text-xs">Aguardando novos check-ins</span></div>}
                 {queueLoading && <p className="flex items-center justify-center p-10 text-slate-500"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando</p>}
               </div>
             </div>
