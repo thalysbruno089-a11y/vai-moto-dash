@@ -12,4 +12,4 @@
 - [x] Corrigir chamada muda após a confirmação de áudio no tablet e validar a reprodução
 - [x] Restaurar pagamentos dos motoboys zerados antes do fim da semana e confirmar retorno das entradas do dashboard
 - [x] Mover reinício semanal automático de pagamentos para quinta-feira à meia-noite em São Paulo
-- [ ] Mostrar motoboys aguardando e chamado no painel da fila, sem depender do limite de corridas finalizadas
+- [x] Mostrar motoboys aguardando e chamado no painel da fila, sem depender do limite de corridas finalizadas
