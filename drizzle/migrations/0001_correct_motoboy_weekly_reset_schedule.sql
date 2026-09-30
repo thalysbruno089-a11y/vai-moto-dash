@@ -1,0 +1,1 @@
+SELECT cron.alter_job(job_id := (SELECT jobid FROM cron.job WHERE jobname = 'reset-motoboy-payment-status'), schedule := '0 3 * * 4');
