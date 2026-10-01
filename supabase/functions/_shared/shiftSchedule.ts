@@ -27,16 +27,19 @@ export function isWithinShift(shift: Shift, now = new Date()): boolean {
 
   switch (shift) {
     case 'day':
-      return minutesSinceMidnight >= 6 * 60 && minutesSinceMidnight < 19 * 60
+      return minutesSinceMidnight >= 7 * 60 && minutesSinceMidnight < 19 * 60
     case 'night':
       return minutesSinceMidnight >= 16 * 60
     case 'weekend':
       return weekday === 5
         ? minutesSinceMidnight >= 16 * 60
-        : weekday === 6 || (weekday === 0 && minutesSinceMidnight < 23 * 60)
+        : (weekday === 6 || weekday === 0) && minutesSinceMidnight >= 6 * 60
     case 'star':
       return minutesSinceMidnight >= 6 * 60
     case 'free':
-      return weekday === 0 || weekday === 6 || (weekday >= 1 && weekday <= 5 && minutesSinceMidnight >= 16 * 60)
+      return (weekday === 0 || weekday === 6)
+        ? minutesSinceMidnight >= 6 * 60
+        : weekday >= 1 && weekday <= 5 && minutesSinceMidnight >= 16 * 60
   }
+  return false
 }

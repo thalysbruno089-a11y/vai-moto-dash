@@ -14,3 +14,4 @@
 - [x] Mover reinício semanal automático de pagamentos para quinta-feira à meia-noite em São Paulo
 - [x] Mostrar motoboys aguardando e chamado no painel da fila, sem depender do limite de corridas finalizadas
 - [x] Permitir entrada de todo motoboy ativo na fila, pago ou pendente; bloquear inativos
+- [ ] Aplicar horários fixos por turno em São Paulo para a entrada na fila, mantendo bloqueio de inativos
