@@ -15,6 +15,13 @@
       "when": 1790728466524,
       "tag": "0001_correct_motoboy_weekly_reset_schedule",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791339005127,
+      "tag": "0002_allow_motoboy_deletion",
+      "breakpoints": true
     }
   ]
 }

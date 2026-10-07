@@ -1512,13 +1512,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "saved_report_items_motoboy_id_fkey"
-            columns: ["motoboy_id"]
-            isOneToOne: false
-            referencedRelation: "motoboys"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "saved_report_items_report_id_fkey"
             columns: ["report_id"]
             isOneToOne: false
