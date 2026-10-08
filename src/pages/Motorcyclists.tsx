@@ -500,7 +500,7 @@ const Motorcyclists = () => {
       <MotoboyDetailsSheet
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
-        motoboy={motoboyToView}
+        motoboy={motoboys?.find((motoboy) => motoboy.id === motoboyToView?.id) ?? motoboyToView}
         onEdit={handleEditFromDetails}
       />
 
