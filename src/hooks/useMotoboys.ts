@@ -11,6 +11,9 @@ export type MotoboyUpdate = TablesUpdate<'motoboys'>;
 export const useMotoboys = () => {
   return useQuery({
     queryKey: ['motoboys'],
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
     queryFn: async () => {
       const { data, error } = await supabase
         .from('motoboys')

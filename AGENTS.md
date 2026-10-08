@@ -1,3 +1,4 @@
 - Keep queue staff access in `src/lib/queueAccess.ts` for navigation and route checks, mirrored by database policies and queue functions, because client checks alone cannot authorize mutations.
 - Schedule the motoboy payment reset for Thursday 03:00 UTC (midnight in São Paulo), because the business week ends Wednesday and a Wednesday 00:00 UTC reset clears paid flags early.
 - Authorize public queue check-in by active status and the motoboy's fixed São Paulo shift schedule, never payment, because eligibility depends on registration and local working hours.
+- Refresh the shared motoboy query periodically and on focus/reconnect, and derive open details from its current data, because payment changes made on another device must not leave stale statuses visible.
