@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import LoadingScreen from '@/components/LoadingScreen';
 import { canManageQueue } from '@/lib/queueAccess';
+import { useFuelAccess } from '@/hooks/useFuel';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ const MIN_SPLASH_MS = 1500;
 
 const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, allowSantaLuzia = false, allowLagoinha = false, allowBurgazzo = false, allowFinance = true, allowQueue = false }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
+  const fuelAccess = useFuelAccess();
   const [splashElapsed, setSplashElapsed] = useState(false);
 
   useEffect(() => {
@@ -35,6 +37,10 @@ const ProtectedRoute = ({ children, allowEmployee = false, allowUltra = false, a
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
+
+  if (fuelAccess.isLoading) return <LoadingScreen variant="auto" />;
+  if (fuelAccess.isError) return <p className="p-6 text-destructive">Não foi possível verificar seu acesso.</p>;
+  if (fuelAccess.data) return <Navigate to="/posto" replace />;
 
   // Profile still loading (user authenticated but profile not yet fetched):
   // show branded splash instead of rendering the child route (avoids flashing

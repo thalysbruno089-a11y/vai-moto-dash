@@ -16,6 +16,7 @@ import {
   Store,
   BadgePercent,
   ListOrdered,
+  Fuel,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { canManageQueue } from "@/lib/queueAccess";
@@ -31,6 +32,7 @@ const fullNavigation = [
 ];
 
 const adminNavigation = [
+  { name: "Posto de Gasolina", href: "/posto", icon: Fuel },
   { name: "Emprestei", href: "/loans-lent", icon: HandCoins },
   { name: "Peguei Emprestado", href: "/loans-borrowed", icon: Landmark },
   { name: "ULTRA", href: "/ultra", icon: Zap },
