@@ -1,5 +1,9 @@
 # Roadmap
 
+- [ ] Criar áreas Carlos, motoboy e posto com acessos seguros
+- [ ] Criar comprovantes privados, preço do litro e consumo automático
+- [ ] Disponibilizar app instalável e validar abastecimento completo
+
 - [x] Corrigir atualização dos pagamentos feitos em outro aparelho e da ficha aberta do motoboy
 
 - [x] Criar estrutura segura da fila e relatórios
