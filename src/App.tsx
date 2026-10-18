@@ -33,6 +33,8 @@ import QueueTV from "./pages/QueueTV";
 import QueueApp from "./pages/QueueApp";
 import QueueAdmin from "./pages/QueueAdmin";
 import NotFound from "./pages/NotFound";
+import Fuel from './pages/Fuel';
+import FuelLogin from './pages/FuelLogin';
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,8 @@ const App = () => (
           <BrowserRouter>
             <Routes>
             <Route path="/auth" element={<Auth />} />
+              <Route path="/posto" element={<Fuel />} />
+              <Route path="/posto/entrar" element={<FuelLogin />} />
               <Route path="/beneficios" element={<Benefits />} />
               <Route path="/fila" element={<Queue />} />
               <Route path="/fila/tv" element={<QueueTV />} />

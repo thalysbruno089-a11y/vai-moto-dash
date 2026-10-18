@@ -636,6 +636,127 @@ export type Database = {
         }
         Relationships: []
       }
+      fuel_accounts: {
+        Row: {
+          company_id: string
+          created_at: string
+          motoboy_id: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          motoboy_id?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          motoboy_id?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fuel_accounts_motoboy_id_fkey"
+            columns: ["motoboy_id"]
+            isOneToOne: true
+            referencedRelation: "motoboys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_fillings: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          discount: number
+          id: string
+          liters: number
+          motoboy_code: string | null
+          motoboy_id: string
+          motoboy_name: string
+          plate: string | null
+          price: number
+          receipt_path: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          discount?: number
+          id: string
+          liters?: number
+          motoboy_code?: string | null
+          motoboy_id: string
+          motoboy_name?: string
+          plate?: string | null
+          price?: number
+          receipt_path: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          discount?: number
+          id?: string
+          liters?: number
+          motoboy_code?: string | null
+          motoboy_id?: string
+          motoboy_name?: string
+          plate?: string | null
+          price?: number
+          receipt_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_fillings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_prices: {
+        Row: {
+          company_id: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          price: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_prices_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lagoinha_deliveries: {
         Row: {
           company_id: string | null
@@ -1638,6 +1759,24 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["fuel_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["fuel_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["fuel_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_closings: {
         Row: {
           company_id: string
@@ -1681,6 +1820,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      fuel_admin: { Args: never; Returns: boolean }
+      fuel_company: { Args: never; Returns: string }
+      fuel_rider_details: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+          number: string
+          payment_status: string
+          plate: string
+          status: Database["public"]["Enums"]["status_type"]
+        }[]
+      }
       get_user_company_id: { Args: never; Returns: string }
       get_user_role: {
         Args: never
@@ -1690,6 +1842,10 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: boolean
       }
+      has_fuel_role: {
+        Args: { r: Database["public"]["Enums"]["fuel_role"] }
+        Returns: boolean
+      }
       queue_call_next: { Args: never; Returns: string }
       queue_finish_current: { Args: never; Returns: string }
       queue_return_called: { Args: { p_entry_id: string }; Returns: undefined }
@@ -1697,6 +1853,7 @@ export type Database = {
     }
     Enums: {
       flow_type: "revenue" | "expense"
+      fuel_role: "fuel_rider" | "fuel_station"
       order_status: "pending" | "in_progress" | "delivered" | "cancelled"
       payment_status: "paid" | "pending"
       shift_type: "day" | "night" | "weekend" | "star" | "free"
@@ -1830,6 +1987,7 @@ export const Constants = {
   public: {
     Enums: {
       flow_type: ["revenue", "expense"],
+      fuel_role: ["fuel_rider", "fuel_station"],
       order_status: ["pending", "in_progress", "delivered", "cancelled"],
       payment_status: ["paid", "pending"],
       shift_type: ["day", "night", "weekend", "star", "free"],
