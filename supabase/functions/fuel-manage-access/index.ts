@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3';
-const schema = z.object({ kind: z.enum(['fuel_rider','fuel_station']), motoboyId: z.string().uuid().optional(), username: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,40}$/), password: z.string().min(8).max(128), userId: z.string().uuid().optional() });
+const schema = z.object({ action:z.enum(['save','revoke']).default('save'), kind: z.enum(['fuel_rider','fuel_station']), motoboyId: z.string().uuid().optional(), username: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,40}$/), password: z.string().min(8).max(128).optional(), userId: z.string().uuid().optional() });
 Deno.serve(async(req)=>{
  const response=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...corsHeaders,'Content-Type':'application/json'}});
  if(req.method==='OPTIONS')return response({ok:true});
@@ -17,12 +17,19 @@ Deno.serve(async(req)=>{
  const input=schema.safeParse(await req.json());
  if(!input.success)return response({error:'Use login com 3 a 40 caracteres e senha com pelo menos 8 caracteres'},400);
  const b=input.data;
+ if(b.action==='save'&&!b.password)return response({error:'Informe a senha'},400);
  if(b.userId){
  const {data:a}=await db.from('fuel_accounts').select('user_id,username').eq('user_id',b.userId).eq('company_id',profile.company_id).single();
  if(!a||a.username!==b.username)return response({error:'Acesso não encontrado'},404);
+ if(b.action==='revoke'){
+ const {error}=await db.auth.admin.deleteUser(a.user_id);if(error)throw error;
+ const {error:removeError}=await db.from('fuel_accounts').delete().eq('user_id',a.user_id);if(removeError)throw removeError;
+ return response({ok:true});
+ }
  const {error}=await db.auth.admin.updateUserById(a.user_id,{password:b.password});if(error)throw error;
  return response({ok:true});
  }
+ if(b.action==='revoke')return response({error:'Acesso não encontrado'},404);
  let motoboyId:null|string=null;
  if(b.kind==='fuel_rider'){
  const {data:m}=await db.from('motoboys').select('id').eq('id',b.motoboyId??'').eq('company_id',profile.company_id).single();
