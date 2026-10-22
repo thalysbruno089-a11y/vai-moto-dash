@@ -29,6 +29,13 @@
       "when": 1792366756255,
       "tag": "0003_fuel_station_accounts_and_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792637332378,
+      "tag": "0004_allow_sofia_delete_motoboys",
+      "breakpoints": true
     }
   ]
 }
