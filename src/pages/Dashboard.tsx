@@ -66,6 +66,19 @@ const Dashboard = () => {
   const { data: balanceDifferences = [] } = useBalanceDifferences();
   const deleteBalanceDifference = useDeleteBalanceDifference();
 
+  // Histórico de pagamentos dos motoboys (para o detalhamento por Pix/Dinheiro)
+  const { data: paymentHistory = [] } = useQuery({
+    queryKey: ["motoboy_payment_history", "dashboard"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("motoboy_payment_history" as any)
+        .select("id, motoboy_name, amount, pix_amount, cash_amount, other_amount, paid_at")
+        .order("paid_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as DashboardPaymentRow[];
+    },
+  });
+
   const isLoading = loadingCashFlow || loadingMotoboys || loadingBills;
 
   const week = getWeekRange();
