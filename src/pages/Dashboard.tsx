@@ -114,6 +114,13 @@ const Dashboard = () => {
 
   const weekResetAt = latestWeeklyResetAt ? new Date(latestWeeklyResetAt) : null;
 
+  // Entradas da semana por forma de pagamento (Pix / Dinheiro / Outros)
+  const weekPayments = useMemo(
+    () => filterWeekPayments(paymentHistory, week.start, week.end, weekResetAt),
+    [paymentHistory, week.start, week.end, weekResetAt]
+  );
+  const weekPaymentTotals = useMemo(() => sumPaymentTotals(weekPayments), [weekPayments]);
+
   const weekCashFlowEntries = cashFlowEntries?.filter((e) => {
     const inWeekRange = e.flow_date >= weekStartStr && e.flow_date <= weekEndStr;
     if (!inWeekRange) return false;
