@@ -17,7 +17,7 @@ import { useWeeklyClosings, useSaveWeeklyClosing, useDeleteWeeklyClosing } from 
 import { useState, useMemo } from "react";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { format, addDays, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -61,6 +61,7 @@ const Dashboard = () => {
   const [deleteHistoryType, setDeleteHistoryType] = useState<'weekly' | 'monthly'>('weekly');
   const [deleteHistoryDialogOpen, setDeleteHistoryDialogOpen] = useState(false);
   const [differenceDialogOpen, setDifferenceDialogOpen] = useState(false);
+  const [entradasDialogOpen, setEntradasDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { data: balanceDifferences = [] } = useBalanceDifferences();
   const deleteBalanceDifference = useDeleteBalanceDifference();
