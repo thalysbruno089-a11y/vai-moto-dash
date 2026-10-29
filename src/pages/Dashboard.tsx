@@ -261,7 +261,9 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-            <StatCard title="Entradas da Semana" value={isLoading ? "..." : formatCurrency(weekIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
+            <div onClick={() => setEntradasDialogOpen(true)} className="cursor-pointer">
+              <StatCard title="Entradas da Semana" value={isLoading ? "..." : formatCurrency(weekIncome)} icon={<TrendingUp className="h-6 w-6 text-success" />} variant="success" />
+            </div>
             <StatCard title="Saídas da Semana" value={isLoading ? "..." : formatCurrency(weekExpense)} icon={<TrendingDown className="h-6 w-6 text-destructive" />} variant="destructive" />
             <StatCard title="Saldo da Semana" value={isLoading ? "..." : formatCurrency(weekBalance)} icon={<Wallet className="h-6 w-6 text-primary" />} variant={weekBalance >= 0 ? "success" : "destructive"} />
           </div>
