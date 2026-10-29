@@ -1,7 +1,8 @@
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
-import { Wallet, TrendingUp, TrendingDown, RotateCcw, ChevronLeft, ChevronRight, Save, History, Trash2, DollarSign } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, RotateCcw, ChevronLeft, ChevronRight, Save, History, Trash2, DollarSign, Banknote, Smartphone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,6 +10,7 @@ import { useMotoboys } from "@/hooks/useMotoboys";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { useBills, Bill } from "@/hooks/useBills";
 import { useBalanceDifferences, useDeleteBalanceDifference } from "@/hooks/useBalanceDifferences";
+import { filterWeekPayments, sumPaymentTotals, paymentMethods, DashboardPaymentRow } from "@/lib/dashboardEntradas";
 
 import { useMonthlyClosings, useSaveMonthlyClosing, useDeleteMonthlyClosing } from "@/hooks/useMonthlyClosings";
 import { useWeeklyClosings, useSaveWeeklyClosing, useDeleteWeeklyClosing } from "@/hooks/useWeeklyClosings";
