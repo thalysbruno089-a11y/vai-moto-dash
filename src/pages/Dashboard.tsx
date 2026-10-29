@@ -75,7 +75,7 @@ const Dashboard = () => {
         .select("id, motoboy_name, amount, pix_amount, cash_amount, other_amount, paid_at")
         .order("paid_at", { ascending: false });
       if (error) throw error;
-      return (data || []) as DashboardPaymentRow[];
+      return (data || []) as unknown as DashboardPaymentRow[];
     },
   });
 
