@@ -435,6 +435,84 @@ const Dashboard = () => {
         isLoading={deleteWeeklyClosing.isPending || deleteMonthlyClosing.isPending}
       />
 
+      {/* Entradas da Semana — detalhamento por forma de pagamento */}
+      <Dialog open={entradasDialogOpen} onOpenChange={setEntradasDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Entradas da Semana</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Quinta {fmtShort(week.start)} → Quarta {fmtShort(week.end)}
+          </p>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between rounded-lg border bg-success/5 p-3">
+              <div className="flex items-center gap-2">
+                <Banknote className="h-5 w-5 text-success" />
+                <span className="font-medium text-foreground">Dinheiro</span>
+              </div>
+              <span className="font-semibold text-success">{formatCurrency(weekPaymentTotals.cash)}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border bg-primary/5 p-3">
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-5 w-5 text-primary" />
+                <span className="font-medium text-foreground">Pix</span>
+              </div>
+              <span className="font-semibold text-primary">{formatCurrency(weekPaymentTotals.pix)}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/50">
+              <span className="font-semibold text-foreground">Dinheiro + Pix</span>
+              <span className="font-bold text-foreground">{formatCurrency(weekPaymentTotals.cashPlusPix)}</span>
+            </div>
+            {weekPaymentTotals.other > 0 && (
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <span className="text-muted-foreground">Outros</span>
+                <span className="font-semibold text-foreground">{formatCurrency(weekPaymentTotals.other)}</span>
+              </div>
+            )}
+            {weekCfIncome > 0 && (
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <span className="text-muted-foreground">Fluxo de Caixa (sem forma)</span>
+                <span className="font-semibold text-foreground">{formatCurrency(weekCfIncome)}</span>
+              </div>
+            )}
+          </div>
+
+          {weekPayments.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-foreground">Pagamentos recebidos dos motoboys</p>
+              <div className="max-h-[220px] space-y-1 overflow-y-auto pr-1">
+                {weekPayments.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between rounded-md border px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">{p.motoboy_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(p.paid_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        {paymentMethods(p).map((m) => (
+                          <Badge key={m} variant="outline" className="text-[10px] px-1.5 py-0">
+                            {m}
+                          </Badge>
+                        ))}
+                      </div>
+                      <span className="text-sm font-semibold text-success whitespace-nowrap">
+                        {formatCurrency(Number(p.amount))}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {weekPayments.length === 0 && weekCfIncome === 0 && (
+            <p className="py-6 text-center text-muted-foreground">Nenhuma entrada registrada nesta semana.</p>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Diferença Dialog */}
       <Dialog open={differenceDialogOpen} onOpenChange={setDifferenceDialogOpen}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
