@@ -174,23 +174,22 @@ const Contas = () => {
   const { data: currentMonthVales = {} } = useQuery({
     queryKey: ["bill_vales", "current_month"],
     queryFn: async () => {
-      const now = new Date();
-      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
       const { data, error } = await supabase
         .from("bill_vales" as any)
-        .select("bill_id, amount, taken_at")
-        .gte("taken_at", monthStart);
+        .select("bill_id, amount, taken_at");
       if (error) throw error;
+      // key: `${bill_id}|yyyy-MM` — vale only counts in the month it was taken
       const map: Record<string, number> = {};
       (data || []).forEach((v: any) => {
-        map[v.bill_id] = (map[v.bill_id] || 0) + Number(v.amount);
+        const k = `${v.bill_id}|${String(v.taken_at).slice(0, 7)}`;
+        map[k] = (map[k] || 0) + Number(v.amount);
       });
       return map;
     },
   });
 
   // Returns vale only for current month (ignores stale prior-month totals on bills.vale_amount)
-  const getVale = (b: Bill) => currentMonthVales[b.id] || 0;
+  const getVale = (b: Bill) => currentMonthVales[`${b.id}|${viewedMonthKey}`] || 0;
 
   // Monthly payment records — source of truth for "was this fixed bill paid in month X?"
   const { data: billPayments = [] } = useQuery({
