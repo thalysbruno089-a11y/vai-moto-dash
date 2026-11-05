@@ -26,7 +26,7 @@ Deno.serve(async(req)=>{
  const {error:removeError}=await db.from('fuel_accounts').delete().eq('user_id',a.user_id);if(removeError)throw removeError;
  return response({ok:true});
  }
- const {error}=await db.auth.admin.updateUserById(a.user_id,{password:b.password});if(error)throw error;
+ const {error}=await db.auth.admin.updateUserById(a.user_id,{password:b.password});if(error){if(/weak|easy to guess|pwned/i.test(String(error.message)))return response({error:'Senha muito fraca ou comum. Use uma senha mais forte.'},400);throw error;}
  return response({ok:true});
  }
  if(b.action==='revoke')return response({error:'Acesso não encontrado'},404);
@@ -38,7 +38,7 @@ Deno.serve(async(req)=>{
  const {data:existing}=await db.from('fuel_accounts').select('user_id').or(`username.eq.${b.username}${motoboyId?`,motoboy_id.eq.${motoboyId}`:''}`).limit(1);
  if(existing?.length)return response({error:'Login ou motoboy já possui acesso'},409);
  const {data:created,error}=await db.auth.admin.createUser({email:`${b.username}@posto.vaimoto.app`,password:b.password,email_confirm:true});
- if(error||!created.user)return response({error:'Não foi possível criar o acesso. Verifique o login e a senha.'},400);
+ if(error||!created.user){const msg=String(error?.message||'');const weak=/weak|easy to guess|pwned/i.test(msg);const dup=/already|registered|exists/i.test(msg);return response({error:weak?'Senha muito fraca ou comum. Use uma senha mais forte (misture letras e números, evite 12345678, senha123 etc.).':dup?'Este login já está em uso. Escolha outro.':'Não foi possível criar o acesso. Verifique o login e a senha.'},400);}
  const id=created.user.id;
  const {error:accountError}=await db.from('fuel_accounts').insert({user_id:id,company_id:profile.company_id,motoboy_id:motoboyId,username:b.username});
  const {error:roleError}=accountError?{error:accountError}:await db.from('user_roles').insert({user_id:id,role:b.kind});
