@@ -416,7 +416,7 @@ const Motorcyclists = () => {
                   </TableCell>
                   <TableCell className={`font-medium ${shiftValueColors[motoboy.shift]}`}>
                     {Number((motoboy as any).weekly_payment || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </TableCell>}
+                  </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${shiftColors[motoboy.shift]}`}>
                       {shiftLabels[motoboy.shift]}
