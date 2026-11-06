@@ -379,7 +379,7 @@ const Motorcyclists = () => {
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>Nº</TableHead>
                 <TableHead>Nome</TableHead>
-                {!addOnly && <TableHead>Valor Semanal</TableHead>}
+                <TableHead>Valor Semanal</TableHead>
                 <TableHead>Turno</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Pagamento</TableHead>
@@ -414,7 +414,7 @@ const Motorcyclists = () => {
                       {motoboy.name}
                     </div>
                   </TableCell>
-                  {!addOnly && <TableCell className={`font-medium ${shiftValueColors[motoboy.shift]}`}>
+                  <TableCell className={`font-medium ${shiftValueColors[motoboy.shift]}`}>
                     {Number((motoboy as any).weekly_payment || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </TableCell>}
                   <TableCell>
@@ -493,7 +493,6 @@ const Motorcyclists = () => {
         open={formOpen}
         onOpenChange={setFormOpen}
         motoboy={selectedMotoboy}
-        hideWeeklyPayment={addOnly}
       />
 
       <MotoboyPaymentDialog
