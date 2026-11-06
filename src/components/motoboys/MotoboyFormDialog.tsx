@@ -12,6 +12,7 @@ type ShiftType = Database['public']['Enums']['shift_type'];
 type StatusType = Database['public']['Enums']['status_type'];
 
 interface MotoboyFormDialogProps {
+  hideWeeklyPayment?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   motoboy?: Motoboy | null;
@@ -25,7 +26,7 @@ const shiftLabels: Record<ShiftType, string> = {
   free: 'Free',
 };
 
-export function MotoboyFormDialog({ open, onOpenChange, motoboy }: MotoboyFormDialogProps) {
+export function MotoboyFormDialog({ open, onOpenChange, motoboy, hideWeeklyPayment = false }: MotoboyFormDialogProps) {
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
