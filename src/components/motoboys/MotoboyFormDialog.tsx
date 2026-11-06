@@ -153,7 +153,7 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy, hideWeeklyPayme
             />
           </div>
 
-          <div className="space-y-2">
+          {!hideWeeklyPayment && <div className="space-y-2">
             <Label htmlFor="weeklyPayment">Valor Semanal (R$) *</Label>
             <Input
               id="weeklyPayment"
@@ -165,7 +165,7 @@ export function MotoboyFormDialog({ open, onOpenChange, motoboy, hideWeeklyPayme
               placeholder="0,00"
               required
             />
-          </div>
+          </div>}
 
           <div className="space-y-2">
             <Label htmlFor="pixKey">Chave PIX</Label>
