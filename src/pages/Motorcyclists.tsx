@@ -32,6 +32,8 @@ import {
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, Power, Loader2, DollarSign, CheckCircle, XCircle, History, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useMotoboys, useDeleteMotoboy, useUpdateMotoboy, Motoboy } from "@/hooks/useMotoboys";
+import { useAuth } from "@/hooks/useAuth";
+import { isAddOnlyStaff } from "@/lib/staffAccess";
 import { MotoboyFormDialog } from "@/components/motoboys/MotoboyFormDialog";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { MotoboyPaymentDialog, PaymentBreakdown } from "@/components/motoboys/MotoboyPaymentDialog";
@@ -87,6 +89,8 @@ const Motorcyclists = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [motoboyToView, setMotoboyToView] = useState<Motoboy | null>(null);
 
+  const { user } = useAuth();
+  const addOnly = isAddOnlyStaff(user?.id);
   const { data: motoboys, isLoading } = useMotoboys();
   const deleteMotoboy = useDeleteMotoboy();
   const updateMotoboy = useUpdateMotoboy();
@@ -161,6 +165,7 @@ const Motorcyclists = () => {
   };
 
   const handleViewDetails = (motoboy: Motoboy) => {
+    if (addOnly) return;
     setMotoboyToView(motoboy);
     setDetailsOpen(true);
   };
@@ -296,10 +301,10 @@ const Motorcyclists = () => {
 
         <div className="hidden lg:flex lg:flex-1" />
 
-        <Button variant="outline" onClick={() => setHistoryOpen(true)} className="w-full sm:w-auto">
+        {!addOnly && <Button variant="outline" onClick={() => setHistoryOpen(true)} className="w-full sm:w-auto">
           <History className="mr-2 h-4 w-4" />
           Histórico de Pagamentos
-        </Button>
+        </Button>}
 
         <Button onClick={handleCreate} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
@@ -308,7 +313,7 @@ const Motorcyclists = () => {
       </div>
 
       {/* Shift Totals Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-4">
+      {!addOnly && <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-4">
         {Object.entries(shiftLabels).map(([shift, label]) => {
           const data = shiftTotals[shift as ShiftType] || { count: 0, total: 0 };
           const isSelected = shiftFilter === shift;
@@ -354,7 +359,7 @@ const Motorcyclists = () => {
             {grandCount} motoboy{grandCount !== 1 ? 's' : ''} ativo{grandCount !== 1 ? 's' : ''}
           </div>
         </button>
-      </div>
+      </div>}
 
       {/* Table */}
       <div className="data-table">
@@ -374,11 +379,11 @@ const Motorcyclists = () => {
               <TableRow className="border-border hover:bg-transparent">
                 <TableHead>Nº</TableHead>
                 <TableHead>Nome</TableHead>
-                <TableHead>Valor Semanal</TableHead>
+                {!addOnly && <TableHead>Valor Semanal</TableHead>}
                 <TableHead>Turno</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Pagamento</TableHead>
-                <TableHead className="w-[70px]">Ações</TableHead>
+                {!addOnly && <TableHead className="w-[70px]">Ações</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -409,9 +414,9 @@ const Motorcyclists = () => {
                       {motoboy.name}
                     </div>
                   </TableCell>
-                  <TableCell className={`font-medium ${shiftValueColors[motoboy.shift]}`}>
+                  {!addOnly && <TableCell className={`font-medium ${shiftValueColors[motoboy.shift]}`}>
                     {Number((motoboy as any).weekly_payment || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </TableCell>
+                  </TableCell>}
                   <TableCell>
                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${shiftColors[motoboy.shift]}`}>
                       {shiftLabels[motoboy.shift]}
@@ -435,7 +440,7 @@ const Motorcyclists = () => {
                       )}
                     </span>
                   </TableCell>
-                  <TableCell onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
+                  {!addOnly && <TableCell onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -467,7 +472,7 @@ const Motorcyclists = () => {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </TableCell>
+                  </TableCell>}
                 </TableRow>
               ))}
             </TableBody>
@@ -478,9 +483,9 @@ const Motorcyclists = () => {
       {/* Summary */}
       <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
         <span>Mostrando {filteredMotoboys.length} de {motoboys?.length || 0} motoboys</span>
-        <span className="font-medium text-foreground">
+        {!addOnly && <span className="font-medium text-foreground">
           Total semanal (ativos filtrados): {filteredTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-        </span>
+        </span>}
       </div>
 
       {/* Form Dialog */}
@@ -488,6 +493,7 @@ const Motorcyclists = () => {
         open={formOpen}
         onOpenChange={setFormOpen}
         motoboy={selectedMotoboy}
+        hideWeeklyPayment={addOnly}
       />
 
       <MotoboyPaymentDialog

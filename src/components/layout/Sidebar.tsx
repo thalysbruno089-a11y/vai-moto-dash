@@ -66,6 +66,7 @@ const financeNavigation = [
 ];
 
 const secretarioNavigation = [
+  { name: "Motoboys", href: "/motorcyclists", icon: Bike },
   { name: "Clientes", href: "/clients", icon: CreditCard },
 ];
 
