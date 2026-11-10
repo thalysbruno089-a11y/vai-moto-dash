@@ -1846,6 +1846,7 @@ export type Database = {
         Args: { r: Database["public"]["Enums"]["fuel_role"] }
         Returns: boolean
       }
+      is_full_queue_staff: { Args: never; Returns: boolean }
       queue_call_next: { Args: never; Returns: string }
       queue_finish_current: { Args: never; Returns: string }
       queue_return_called: { Args: { p_entry_id: string }; Returns: undefined }
