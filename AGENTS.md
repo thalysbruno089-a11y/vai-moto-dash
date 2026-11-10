@@ -1,4 +1,5 @@
 - Keep queue staff access in `src/lib/queueAccess.ts` for navigation and route checks, mirrored by database policies and queue functions, because client checks alone cannot authorize mutations.
+- Full queue operators may manage queue entries and reports without inheriting motoboy-edit privileges; apply staff restrictions to the queue's registration tab too, because queue access must not bypass registration security.
 - Keep fuel accounts separate from staff profiles, with protected user_roles and dedicated fuel RLS and server-validated admin provisioning, because rider and station accounts must not inherit staff permissions.
 - Calculate and snapshot fuel price, rider identity and liters in the insert trigger, because client estimates cannot authorize financial values and historical consumption must remain stable.
 - Use manifest-only home-screen support without app-shell service workers, because installability is requested but offline operation is not.

@@ -15,6 +15,7 @@ import { MotoboyFormDialog } from "@/components/motoboys/MotoboyFormDialog";
 import { Motoboy, useDeleteMotoboy, useMotoboys, useUpdateMotoboy } from "@/hooks/useMotoboys";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { isAddOnlyStaff } from "@/lib/staffAccess";
 
 interface QueueRow {
   id: string;
@@ -37,6 +38,7 @@ interface SavedReport {
 export default function QueueAdmin() {
   const { user } = useAuth();
   const isGabriel = user?.id === '9ac4e986-ff35-49af-a377-4dd9e281af4a';
+  const addOnly = isAddOnlyStaff(user?.id);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -222,7 +224,7 @@ export default function QueueAdmin() {
               <div className="relative max-w-sm flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar motoboy" className="pl-9" /></div>
               <Button onClick={() => { setSelectedMotoboy(null); setFormOpen(true); }}><Plus className="mr-2 h-4 w-4" /> Novo motoboy</Button>
             </div>
-            <Table><TableHeader><TableRow><TableHead>Nº</TableHead><TableHead>Nome</TableHead><TableHead>Status</TableHead><TableHead>Pagamento</TableHead><TableHead className="w-14"><span className="sr-only">Ações</span></TableHead></TableRow></TableHeader>
+            <Table><TableHeader><TableRow><TableHead>Nº</TableHead><TableHead>Nome</TableHead><TableHead>Status</TableHead><TableHead>Pagamento</TableHead>{!addOnly && <TableHead className="w-14"><span className="sr-only">Ações</span></TableHead>}</TableRow></TableHeader>
               <TableBody>{filteredMotoboys.map((motoboy) => <TableRow key={motoboy.id}><TableCell className="font-mono font-bold text-primary">{motoboy.number ?? "—"}</TableCell><TableCell className="font-semibold">{motoboy.name}</TableCell><TableCell><Badge variant={motoboy.status === "active" ? "default" : "secondary"}>{motoboy.status === "active" ? "Ativo" : "Inativo"}</Badge></TableCell><TableCell><span className={motoboy.payment_status === "paid" ? "font-semibold text-success" : "font-semibold text-destructive"}>{motoboy.payment_status === "paid" ? "Pago" : "Pendente"}</span></TableCell><TableCell><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-5 w-5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => { setSelectedMotoboy(motoboy); setFormOpen(true); }}><Pencil className="mr-2 h-4 w-4" /> Editar</DropdownMenuItem><DropdownMenuItem onClick={() => updateMotoboy.mutate({ id: motoboy.id, status: motoboy.status === "active" ? "inactive" : "active" })}><RotateCcw className="mr-2 h-4 w-4" /> {motoboy.status === "active" ? "Inativar" : "Ativar"}</DropdownMenuItem><DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(motoboy)}><Trash2 className="mr-2 h-4 w-4" /> Excluir</DropdownMenuItem></DropdownMenuContent></DropdownMenu></TableCell></TableRow>)}</TableBody>
             </Table>
           </div>
