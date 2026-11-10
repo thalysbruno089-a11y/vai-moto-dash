@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Liberar acesso completo do Pedro à fila e validar permissões sem liberar alterações nos cadastros
+- [x] Liberar acesso completo do Pedro à fila e validar permissões sem liberar alterações nos cadastros
 
 - [x] Criar áreas Carlos, motoboy e posto com acessos seguros
 - [x] Criar comprovantes privados, preço do litro e consumo automático
