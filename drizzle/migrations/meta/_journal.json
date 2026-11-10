@@ -43,6 +43,13 @@
       "when": 1793988197888,
       "tag": "0005_restrict_secretaries_motoboys",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794336605433,
+      "tag": "0006_allow_pedro_full_queue_access",
+      "breakpoints": true
     }
   ]
 }
