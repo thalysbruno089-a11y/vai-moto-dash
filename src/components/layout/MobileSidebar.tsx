@@ -45,7 +45,7 @@ const adminNavigation = [
   { name: "Peguei Emprestado", href: "/loans-borrowed", icon: Landmark },
   { name: "ULTRA", href: "/ultra", icon: Zap },
   { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
-  { name: "Posto", href: "https://www.vaimoto-chuva.online", icon: Fuel },
+  { name: "Posto", href: "https://vaimoto-chuva.online", icon: Fuel },
   { name: "Panificadora Lagoinha", href: "/lagoinha", icon: Store },
   { name: "Burgazzo", href: "/burgazzo", icon: Store },
   { name: "Aluguel Moto", href: "/motorcycle-rentals", icon: CarFront },
@@ -57,7 +57,7 @@ const employeeNavigation = [
   { name: "Clientes", href: "/clients", icon: CreditCard },
   { name: "ULTRA", href: "/ultra", icon: Zap },
   { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
-  { name: "Posto", href: "https://www.vaimoto-chuva.online", icon: Fuel },
+  { name: "Posto", href: "https://vaimoto-chuva.online", icon: Fuel },
   { name: "Panificadora Lagoinha", href: "/lagoinha", icon: Store },
   { name: "Burgazzo", href: "/burgazzo", icon: Store },
 ];
@@ -66,7 +66,7 @@ const managerNavigation = [
   ...fullNavigation,
   { name: "ULTRA", href: "/ultra", icon: Zap },
   { name: "Santa Luzia", href: "/santa-luzia", icon: Store },
-  { name: "Posto", href: "https://www.vaimoto-chuva.online", icon: Fuel },
+  { name: "Posto", href: "https://vaimoto-chuva.online", icon: Fuel },
   { name: "Panificadora Lagoinha", href: "/lagoinha", icon: Store },
   { name: "Burgazzo", href: "/burgazzo", icon: Store },
 ];
