@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Liberar e validar remoção e retorno à fila para Pedro e Gabriel sem alterar permissões de cadastro
+- [x] Liberar remoção e retorno à fila para Pedro e Gabriel; validar remoção em ambos os acessos, botão de retorno e autorização no banco sem alterar cadastros
 
 - [x] Liberar acesso completo do Pedro à fila e validar permissões sem liberar alterações nos cadastros
 
