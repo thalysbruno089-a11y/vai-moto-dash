@@ -9,3 +9,7 @@ export function canFullyManageQueue(profile: { role: string; name: string } | nu
 export function canManageQueue(profile: { role: string; name: string } | null, userId: string | undefined): boolean {
   return canFullyManageQueue(profile, userId) || Boolean(profile && userId === GABRIEL_USER_ID);
 }
+
+export function canModifyQueueEntries(profile: { role: string; name: string } | null, userId: string | undefined): boolean {
+  return canManageQueue(profile, userId);
+}
