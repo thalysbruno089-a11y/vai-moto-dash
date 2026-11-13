@@ -16,6 +16,7 @@ import { Motoboy, useDeleteMotoboy, useMotoboys, useUpdateMotoboy } from "@/hook
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { isAddOnlyStaff } from "@/lib/staffAccess";
+import { canModifyQueueEntries } from "@/lib/queueAccess";
 
 interface QueueRow {
   id: string;
@@ -36,8 +37,9 @@ interface SavedReport {
 }
 
 export default function QueueAdmin() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const isGabriel = user?.id === '9ac4e986-ff35-49af-a377-4dd9e281af4a';
+  const canModifyEntries = canModifyQueueEntries(profile, user?.id);
   const addOnly = isAddOnlyStaff(user?.id);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -98,7 +100,7 @@ export default function QueueAdmin() {
 
   const action = useMutation({
     mutationFn: async ({ name, args }: { name: "queue_call_next" | "queue_finish_current" | "queue_return_called" | "queue_save_and_reset"; args?: { p_entry_id: string } }) => {
-      if (isGabriel && name !== "queue_call_next") throw new Error("Acesso negado");
+      if (isGabriel && name !== "queue_call_next" && !(name === "queue_return_called" && canModifyEntries)) throw new Error("Acesso negado");
       const response = name === "queue_return_called"
         ? await supabase.rpc(name, args ?? { p_entry_id: "" })
         : await supabase.rpc(name);
@@ -115,6 +117,7 @@ export default function QueueAdmin() {
 
   const removeEntry = useMutation({
     mutationFn: async (id: string) => {
+      if (!canModifyEntries) throw new Error("Acesso negado");
       const { error } = await supabase.from("queue_entries").delete().eq("id", id);
       if (error) throw error;
     },
@@ -162,7 +165,7 @@ export default function QueueAdmin() {
                   <div className="mt-5 flex items-center gap-4"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#f1edff] text-xl text-[#7880a5]">◷</span><div><p className="font-mono text-4xl font-black leading-none text-[#8e35dc]">{called.motoboys?.number ?? "—"}</p><p className="mt-1 text-sm font-medium uppercase tracking-wide text-slate-500">{called.motoboys?.name}</p></div></div>
                   <div className="mt-6 flex flex-wrap justify-end gap-2">
                      {!isGabriel && <Button onClick={() => action.mutate({ name: "queue_finish_current" })} disabled={action.isPending}><Check className="mr-2 h-4 w-4" /> Finalizar</Button>}
-                     {!isGabriel && <Button variant="outline" onClick={() => action.mutate({ name: "queue_return_called", args: { p_entry_id: called.id } })} disabled={action.isPending}><RotateCcw className="mr-2 h-4 w-4" /> Voltar para fila</Button>}
+                     {canModifyEntries && <Button variant="outline" onClick={() => action.mutate({ name: "queue_return_called", args: { p_entry_id: called.id } })} disabled={action.isPending}><RotateCcw className="mr-2 h-4 w-4" /> Voltar para fila</Button>}
                     <Button className="bg-gradient-to-r from-[#a33ee1] to-[#cf8bea] text-white hover:opacity-90" onClick={() => action.mutate({ name: "queue_call_next" })} disabled={action.isPending || waiting.length === 0}><PhoneCall className="mr-2 h-4 w-4" /> Próximo</Button>
                   </div>
                 </div>
@@ -184,7 +187,7 @@ export default function QueueAdmin() {
                     <span className="w-8 font-mono text-sm text-muted-foreground">{index + 1}º</span>
                     <span className="font-mono text-2xl font-black text-[#8e35dc]">{entry.motoboys?.number ?? "—"}</span>
                     <span className="min-w-0 flex-1 truncate font-semibold text-slate-700">{entry.motoboys?.name}</span>
-                    <Button variant="ghost" size="icon" onClick={() => removeEntry.mutate(entry.id)} aria-label={`Remover ${entry.motoboys?.name ?? "motoboy"}`}><UserRoundX className="h-5 w-5 text-destructive" /></Button>
+                    {canModifyEntries && <Button variant="ghost" size="icon" onClick={() => removeEntry.mutate(entry.id)} disabled={removeEntry.isPending} aria-label={`Remover ${entry.motoboys?.name ?? "motoboy"}`}><UserRoundX className="h-5 w-5 text-destructive" /></Button>}
                   </div>
                 ))}
                 {queueError && <p className="p-10 text-center text-destructive">Não foi possível carregar a fila. Tentando novamente...</p>}
